@@ -19,6 +19,7 @@
 #include "FilterHeader.h"
 #include "HeartbeatFrameHeader.h"
 #include "FrameContainer.h"
+#include "Flt.cxx"
 
 namespace nestdaq {
    class FilterTimeFrameSliceABC;
@@ -64,6 +65,8 @@ protected:
 
    std::vector<TTF> fTFs; // time frame
 //   std::vector<TLF> fLFs; // logic filter
+   std::unique_ptr<Flt> flt = std::make_unique<Flt>();
+   std::map<uint64_t, Flt::Wire_map> wireMap; 
 
 
 

@@ -32,7 +32,7 @@ public:
    virtual ~FilterTimeFrameSliceBySomething() override = default;
 
    virtual bool ProcessSlice(TTF& ) override;
-
+   std::map<int, std::vector<int>> GeoIDs;//チャンネルマップ(Geo=Ipアドレス)
 };
 
 
