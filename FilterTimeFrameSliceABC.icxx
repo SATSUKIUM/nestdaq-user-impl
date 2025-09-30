@@ -1,3 +1,5 @@
+// original filename : FilterTimeFrameSliceABC.icxx
+
 /*
  * @file FilterTimeFrameSliceABC
  * @brief Slice Timeframe by Logic timing for NestDAQ
@@ -11,7 +13,9 @@
 #include "utility/MessageUtil.h"
 #include "UnpackTdc.h"
 
-#define DEBUG 0
+#include <chrono> //処理時間計測用
+
+#define DEBUG 1
 
 using nestdaq::FilterTimeFrameSliceABC;
 namespace bpo = boost::program_options;
@@ -53,7 +57,31 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    
    FairMQParts inParts;
    FairMQParts outParts;
+   // メッセージをTFSから受け取る直前でストップウォッチ開始
+   auto t_start_inparts = std::chrono::high_resolution_clock::now();
+   auto t_end_inparts = std::chrono::high_resolution_clock::now();
+   double elapsed_ms_inparts = 0; // 全部のsliceを処理するのにかかる時間
+
    if (Receive(inParts, fInputChannelName,0,1) <= 0) return true;
+   
+   #if 1
+   unsigned long long startDataSize = 0;
+   {  // debug
+      std::ofstream outFile("/home/nestdaq/kashima/run/output.txt", std::ios::app);
+      outFile << "received_messages" << std::endl;
+      outFile <<  "parts size(number_of_split): " << inParts.Size() << std::endl;
+      for(int i=0; i<inParts.Size(); ++i){
+         const auto& msg = inParts.At(i);
+	 // unsigned long long partSize = msg->GetSize();
+         unsigned long long partSize = msg->GetSize();
+         startDataSize += partSize;
+
+         outFile << "Message_index: " << i << " size: " << partSize << " [byte]" << std::endl;
+      }
+      outFile << "overall_inParts_size(=not_slice_size): " << startDataSize << " [byte]" << std::endl;
+      outFile.close();
+   } // debug
+   #endif
 
    if (fDoCheck) {
       LOG(info) << "ConditionalRun";
@@ -68,6 +96,14 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    //if (fDoCheck) {
    // LOG(info) << "num tf = " << fTFs.size();
 //   }
+
+   int isSliceExist = 0; // sliceあるかどうか
+   int numSlice = 0; // sliceつまりコインシデンスの数
+   double sizeSlice = 0; // inPartsではなくsliceのサイズ
+   auto t_start = std::chrono::high_resolution_clock::now();
+   auto t_end = std::chrono::high_resolution_clock::now();
+   double elapsed_ms_for_slice = 0; // 全部のsliceを処理するのにかかる時間
+
    for (uint64_t ifrm = 0, nfrm = fTFs.size(); ifrm < nfrm; ++ifrm) {
       auto& tf = fTFs[ifrm];
       bool doKeep = false;
@@ -75,12 +111,31 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          LOG(info) << " META information";
          doKeep = true;
       } else {
+
+         // 各sliceごとにProcessSliceの時間を計測(ミリ秒だと精度出ないかも)
+         t_start = std::chrono::high_resolution_clock::now();
          doKeep = ProcessSlice(tf);
+         t_end = std::chrono::high_resolution_clock::now();
+         elapsed_ms_for_slice += std::chrono::duration<double, std::milli>(t_end - t_start).count();
+
+
+         sizeSlice += tf.GetRealLength();
+         isSliceExist = 1;
+         numSlice++;
       }
       if (!doKeep) continue;
       tf.GetHeader()->length = tf.GetRealLength();
       tf.CopyAllTo<copyUnit>(outdata);
    }
+   {
+      std::ofstream outFile("/home/nestdaq/kashima/run/output.txt", std::ios::app);
+      outFile << "isSliceExist: " << isSliceExist << std::endl;
+      outFile << "numSlice: " << numSlice << std::endl;
+      outFile << "sizeSlice: " << sizeSlice << std::endl;
+      outFile << "elapsed_ms: " << elapsed_ms_for_slice << std::endl;
+      outFile.close();
+   }
+   
    // LOG(info) << outdata->size() ;
    
    FairMQMessagePtr msgall(MessageUtil::NewMessage(*this,std::move(outdataptr)));
@@ -111,7 +166,19 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
       }
    }
    
-   
+   // メッセージを送った後でストップウォッチ停止
+   // auto t_end = std::chrono::high_resolution_clock::now();
+   // 経過時間をミリ秒単位で取得
+   // double elapsed_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
+   #if 1
+   {
+      std::ofstream outFile("/home/nestdaq/kashima/run/output.txt", std::ios::app);
+      t_end_inparts = std::chrono::high_resolution_clock::now();
+      elapsed_ms_inparts = std::chrono::duration<double, std::milli>(t_end_inparts - t_start_inparts).count();
+      outFile << "process_time_per_conditionalRun: " << elapsed_ms_inparts << " [ms]" << std::endl;
+      outFile.close();
+   }
+   #endif
 
    return true;
 }
@@ -203,4 +270,3 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
    return true;
 }
    
-

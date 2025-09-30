@@ -41,6 +41,7 @@ public:
     //bool Chargelogic(int ChargeSum, int u2ChargeSum, int nu1, int nu2);
     //bool TOFlogic(int tdc1, int tdc2);
     std::vector<std::unique_ptr<int>> CalculateAveragePairs(const std::vector<std::unique_ptr<int>>& r_hits, const std::vector<std::unique_ptr<int>>& l_hits);
+    std::vector<std::unique_ptr<int>> CalculateAveragePairs_limited(const std::vector<std::unique_ptr<int>>& r_hits, const std::vector<std::unique_ptr<int>>& l_hits);
     void CalculateAndPrintTOF(const std::vector<std::unique_ptr<int>>& utof_averages, const std::vector<std::unique_ptr<int>>& t1_averages);
     void PrintList(const std::vector<std::unique_ptr<int>>& list, const std::string& listName);
     bool CheckAllTOFConditions(int t1tof_ave, int utof_ave, const std::vector<std::unique_ptr<int>>& t1tof_r_hits, const std::vector<std::unique_ptr<int>>& t1tof_l_hits,
@@ -63,6 +64,17 @@ std::vector<std::unique_ptr<int>> Flt::CalculateAveragePairs(const std::vector<s
     std::vector<std::unique_ptr<int>> averages;
     for (const auto& r : r_hits) {
         for (const auto& l : l_hits) {
+            averages.push_back(std::make_unique<int>((*r + *l) / 2.0));
+        }
+    }
+    return averages;
+}
+// TOF 特定の検出機のマルチヒットの中からRとLのコンビネーションを探し、平均値を計算。ただし、RとLの差が10ns以上離れている組み合わせは除外。2
+std::vector<std::unique_ptr<int>> Flt::CalculateAveragePairs_limited(const std::vector<std::unique_ptr<int>>& r_hits, const std::vector<std::unique_ptr<int>>& l_hits) {
+    std::vector<std::unique_ptr<int>> averages;
+    for (const auto& r : r_hits) {
+        for (const auto& l : l_hits) {
+            if(std::abs(*r - *l) * 0.9765625 * 0.001 > 10) continue; // 左右で10 ns以上離れている組み合わせは除外
             averages.push_back(std::make_unique<int>((*r + *l) / 2.0));
         }
     }
