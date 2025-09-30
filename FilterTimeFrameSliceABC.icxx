@@ -69,7 +69,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    {  // debug
       std::ofstream outFile("/home/nestdaq/kashima/run/output.txt", std::ios::app);
       outFile << "received_messages" << std::endl;
-      outFile <<  "parts size(number_of_split): " << inParts.Size() << std::endl;
+      outFile <<  "parts size(number_of_split): " << inParts.Size() << std::endl; // おそらく、STFのなかにいくつHBFがあるか(T103だと4つ)
       for(int i=0; i<inParts.Size(); ++i){
          const auto& msg = inParts.At(i);
 	 // unsigned long long partSize = msg->GetSize();
