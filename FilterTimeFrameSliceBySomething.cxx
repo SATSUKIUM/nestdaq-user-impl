@@ -17,28 +17,13 @@
 #include <sstream>
 
 #define DEBUG 0
+#define OF_DEBUG 0
 
 using nestdaq::FilterTimeFrameSliceBySomething;
 namespace bpo = boost::program_options;
 
 FilterTimeFrameSliceBySomething::FilterTimeFrameSliceBySomething()
 {
-    // 書き出しファイル名の設定
-    /*
-    std::string outputFilename_;
-    public:
-        FilterTimeFrameSliceBySomething(){
-            auto now = std::chrono::system_clock::now();
-            std::time_t t = std::chrono::system_clock::to_time_t(now);
-            std::tm tm = *std::localtime(&t);
-
-            std::ostringstream filename;
-            filename << "/home/nestdaq/kashima/run/output_FilterTimeFrameSliceBySomething_"
-                    << std::put_time(&tm, "%Y%m%d_%H%M%S")
-                    << ".txt";
-            outputFilename_ = filename.str();
-        }
-    */
 }
 
 bool FilterTimeFrameSliceBySomething::ProcessSlice(TTF& tf)
