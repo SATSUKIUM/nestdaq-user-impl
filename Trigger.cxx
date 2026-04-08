@@ -242,6 +242,14 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 			uint32_t leftwidth = fEntryChLeftWidth[fem][i];
 			uint32_t rightwidth = fEntryChRightWidth[fem][i];
 			uint32_t markbit = fEntryChBit[fem][i];
+			#if 1
+			std::cout << "fem: " << std::setw(8) << std::setfill('0') << std::hex << fem
+				<< " ch: " << std::dec << std::setw(3) << ch
+				<< " offset: " << std::setw(6) << delay
+				<< " leftwidth: " << std::setw(6) << leftwidth
+				<< " rightwidth: " << std::setw(6) << rightwidth
+				<< std::endl;
+			#endif
 
 			#if 0
 			std::cout << "#DD Trigger::Mark " 

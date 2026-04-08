@@ -214,7 +214,16 @@ void LogicFilter::InitTask()
 	std::vector< std::vector<uint32_t> > signals = SignalParser::Parsing(str_signals);
 	int i = 0;
 	for (auto &v : signals) {
+		#if 1
+		for(auto &vv : v) {
+			std::cout << std::hex << std::setw(8) << std::setfill('0') << vv << " ";
+		}
+		std::cout << std::endl;
+		#endif
 		if (v.size() == 3) {
+			#if 1
+			std::cout << "in case 3" << std::endl;
+			#endif
 			fTrig->Entry(v[0], v[1], static_cast<int>(v[2]));
 			union ipval {
 				uint32_t u32;
@@ -231,6 +240,9 @@ void LogicFilter::InitTask()
 			i++;
 		}
 		else if(v.size() == 5) {
+			#if 1
+			std::cout << "in case 5" << std::endl;
+			#endif
 			fTrig->Entry(v[0], v[1], static_cast<int>(v[2]), v[3], v[4]);
 			union ipval {
 				uint32_t u32;
