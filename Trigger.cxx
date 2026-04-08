@@ -172,6 +172,8 @@ void Trigger::Entry(uint32_t fem, int ch, int offset)
 	fEntryCh[fem].emplace_back(ch);
 	fEntryChDelay[fem].emplace_back(offset);
 	fEntryChBit[fem].emplace_back(0x0000001 << fEntryCounts);
+	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
+	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
 	fEntryMask |= 0x00000001 << fEntryCounts;
 	fEntryCounts++;
 
@@ -237,6 +239,8 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 		for (unsigned int i = 0 ; i < fEntryCh[fem].size() ; i++) {
 			int ch = fEntryCh[fem][i];
 			int delay = fEntryChDelay[fem][i];
+			uint32_t leftwidth = fEntryChLeftWidth[fem][i];
+			uint32_t rightwidth = fEntryChRightWidth[fem][i];
 			uint32_t markbit = fEntryChBit[fem][i];
 
 			#if 0
@@ -262,8 +266,8 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 								<< std::endl;
 							#endif
 
-							if (hit < fTimeRegionSize - (fMarkLen/2)) {
-								for (int k = -1 * (fMarkLen/2) ; k < ((fMarkLen/2) + 1) ; k++) {
+							if (hit < fTimeRegionSize - leftwidth) {
+								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
 										fTimeRegion[hit + k] |= markbit;
 									} else if ((static_cast<int>(hit) + k) >= 0) {
@@ -287,8 +291,8 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 							//std::cout << "#D Mark Ch: " << std::dec << ch
 							//	<< " Hit: " << hit << std::endl;
 
-							if (hit < fTimeRegionSize - (fMarkLen/2)) {
-								for (int k = -1 * (fMarkLen/2) ; k < ((fMarkLen/2) + 1) ; k++) {
+							if (hit < fTimeRegionSize - leftwidth) {
+								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
 										fTimeRegion[hit + k] |= markbit;
 									} else if ((static_cast<int>(hit) + k) >= 0) {
@@ -318,8 +322,8 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 								<< std::endl;
 							#endif
 
-							if (hit < fTimeRegionSize - (fMarkLen/2)) {
-								for (int k = -1 * (fMarkLen/2) ; k < ((fMarkLen/2) + 1) ; k++) {
+							if (hit < fTimeRegionSize - leftwidth) {
+								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
 										fTimeRegion[hit + k] |= markbit;
 									} else if ((static_cast<int>(hit) + k) >= 0) {
@@ -344,8 +348,8 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 							//std::cout << "#D Mark Ch: " << std::dec << ch
 							//	<< " Hit: " << hit << std::endl;
 
-							if (hit < fTimeRegionSize - (fMarkLen/2)) {
-								for (int k = -1 * (fMarkLen/2) ; k < ((fMarkLen/2) + 1) ; k++) {
+							if (hit < fTimeRegionSize - leftwidth) {
+								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
 										fTimeRegion[hit + k] |= markbit;
 									} else if ((static_cast<int>(hit) + k) >= 0) {
