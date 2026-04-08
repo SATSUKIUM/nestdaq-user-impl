@@ -207,6 +207,9 @@ void LogicFilter::InitTask()
 	fTrig->SetTimeRegion(1024 * 128);
 	fTrig->ClearEntry();
 
+	LOG(info) << "Trigger windows width: " << window_width;
+	fTrig->SetMarkLen(window_width);
+
 	std::string str_signals = fConfig->GetProperty<std::string>(opt::TriggerSignals.data());
 	std::string formula = fConfig->GetProperty<std::string>(opt::TriggerFormula.data());
 	int window_width = std::stoi(fConfig->GetProperty<std::string>(opt::TriggerWidth.data()));
@@ -263,8 +266,7 @@ void LogicFilter::InitTask()
 	LOG(info) << "Formula: " << formula;
 	fTrig->MakeTable(formula);
 
-	LOG(info) << "Trigger windows width: " << window_width;
-	fTrig->SetMarkLen(window_width);
+
 
 }
 
