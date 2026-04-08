@@ -214,7 +214,7 @@ void LogicFilter::InitTask()
 	std::vector< std::vector<uint32_t> > signals = SignalParser::Parsing(str_signals);
 	int i = 0;
 	for (auto &v : signals) {
-		if (v.size() >= 3) {
+		if (v.size() == 3) {
 			fTrig->Entry(v[0], v[1], static_cast<int>(v[2]));
 			union ipval {
 				uint32_t u32;
@@ -228,6 +228,22 @@ void LogicFilter::InitTask()
 				<< "."      << static_cast<unsigned int>(mid.c[1] & 0xff)
 				<< "."      << static_cast<unsigned int>(mid.c[0] & 0xff)
 				<< ", Ch.: " << std::setw(3) << v[1] << ", Offset: " << std::setw(6) << static_cast<int>(v[2]);
+			i++;
+		}
+		else if(v.size() == 5) {
+			fTrig->Entry(v[0], v[1], static_cast<int>(v[2]), v[3], v[4]);
+			union ipval {
+				uint32_t u32;
+				char c[4];
+			};
+			ipval mid; mid.u32 = v[0];
+			LOG(info) << std::setw(4) << i << ": "
+				<< "M_id: " << static_cast<unsigned int>(mid.c[3] & 0xff)
+				<< "."      << static_cast<unsigned int>(mid.c[2] & 0xff)
+				<< "."      << static_cast<unsigned int>(mid.c[1] & 0xff)
+				<< "."      << static_cast<unsigned int>(mid.c[0] & 0xff)
+				<< ", Ch.: " << std::setw(3) << v[1] << ", Offset: " << std::setw(6) << static_cast<int>(v[2])
+				<< ", LeftWidth: " << std::setw(6) << v[3] << ", RightWidth: " << std::setw(6) << v[4];
 			i++;
 		}
 	}

@@ -36,7 +36,8 @@ public:
 	void CleanUpTimeRegion();
 	uint32_t *GetTimeRegion();
 	uint32_t GetTimeRegionSize();
-	void Entry(uint32_t, int, int);
+	void Entry(uint32_t, int, int); // fem, ch, offset
+	void Entry(uint32_t, int, int, uint32_t, uint32_t); // fem, ch, offset, leftwidth, rightwidth
 	void ClearEntry();
 	bool CheckEntryFEM(uint32_t);
 	void Mark(unsigned char *, int, int, uint32_t);
@@ -52,6 +53,8 @@ private:
 	std::map< uint32_t, std::vector<int> > fEntryCh;
 	std::map< uint32_t, std::vector<int> > fEntryChDelay;
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChBit;
+	std::map< uint32_t, std::vector<uint32_t> > fEntryChLeftWidth; // [T - leftwidth, T + rightwidth]
+	std::map< uint32_t, std::vector<uint32_t> > fEntryChRightWidth; // [T - leftwidth, T + rightwidth]
 	int fEntryCounts = 0;
 	uint32_t fEntryMask = 0;
 
@@ -183,6 +186,28 @@ void Trigger::Entry(uint32_t fem, int ch, int offset)
 	return;
 }
 
+void Trigger::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth)
+{
+
+	fEntryCh[fem].emplace_back(ch);
+	fEntryChDelay[fem].emplace_back(offset);
+	fEntryChBit[fem].emplace_back(0x0000001 << fEntryCounts);
+	fEntryChLeftWidth[fem].emplace_back(leftwidth);
+	fEntryChRightWidth[fem].emplace_back(rightwidth);
+	fEntryMask |= 0x00000001 << fEntryCounts;
+	fEntryCounts++;
+
+	#if 0
+	std::cout << "#D Trig Entry : Module: " << fem << " Ch: " << ch << std::endl;
+	#endif
+	if (static_cast<unsigned int>(fEntryCounts) > (sizeof(uint32_t) * 8)) {
+		std::cerr << "Entry Ch. exceed " << sizeof(uint32_t) * 8<< std::endl;
+	}
+	assert(fEntryCounts <= static_cast<int>(sizeof(uint32_t) * 8));
+
+	return;
+}
+
 void Trigger::ClearEntry()
 {
 	fEntryCh.clear();
@@ -190,6 +215,8 @@ void Trigger::ClearEntry()
 	fEntryChBit.clear();
 	fEntryMask = 0x00000000;
 	fEntryCounts = 0;
+	fEntryChLeftWidth.clear();
+	fEntryChRightWidth.clear();
 
 	return;
 }
