@@ -34,7 +34,7 @@ public:
 	void InitParam();
 	bool SetTimeRegion(int);
 	void CleanUpTimeRegion();
-	uint32_t *GetTimeRegion();
+	std::vector<uint32_t> GetTimeRegion();
 	uint32_t GetTimeRegionSize();
 	void Entry(uint32_t, int, int); // fem, ch, offset
 	void Entry(uint32_t, int, int, uint32_t, uint32_t); // fem, ch, offset, leftwidth, rightwidth
@@ -52,7 +52,7 @@ private:
 	//std::vector<struct CoinCh> fEntry;
 	std::map< uint32_t, std::vector<int> > fEntryCh;
 	std::map< uint32_t, std::vector<int> > fEntryChDelay;
-	std::map< uint32_t, std::vector<uint32_t> > fEntryChBit;
+	std::map< uint32_t, std::vector<uint32_t> > fEntryChBit; // future: bitset
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChLeftWidth; // [T - leftwidth, T + rightwidth]
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChRightWidth; // [T - leftwidth, T + rightwidth]
 	int fEntryCounts = 0;
@@ -60,7 +60,7 @@ private:
 
 	int fNentry = 0;
 	uint32_t fTimeRegionSize;
-	uint32_t *fTimeRegion = nullptr;
+	std::vector<uint32_t> fTimeRegion;
 	//int fMarkCount = 0;
 	//uint32_t fMarkMask = 0;
 	std::vector<uint32_t> fHits;
@@ -76,11 +76,7 @@ Trigger::Trigger()
 
 Trigger::~Trigger()
 {
-	if (fTimeRegion != nullptr) {
-		delete[] fTimeRegion;
-		fTimeRegion = nullptr;
-	}
-
+	fTimeRegion.clear();
 	return;
 }
 
@@ -97,9 +93,8 @@ void Trigger::InitParam()
 	//fMarkMask = 0;
 	fHits.clear();
 	fHits.resize(0);
-	if (fTimeRegion != nullptr) {
-		memset(fTimeRegion, 0, fTimeRegionSize * sizeof(uint32_t));
-	}
+	fTimeRegion.clear();
+	fTimeRegion.resize(fTimeRegionSize, 0);
 
 	return;
 }
@@ -107,11 +102,8 @@ void Trigger::InitParam()
 bool Trigger::SetTimeRegion(int size)
 {
 	fTimeRegionSize = size;
-	if (fTimeRegion != nullptr) {
-		delete[] fTimeRegion;
-		fTimeRegion = nullptr;
-	}
-	fTimeRegion = new uint32_t[size];
+
+	fTimeRegion.resize(fTimeRegionSize, 0x00000000);
 
 	return true;
 }
@@ -122,7 +114,7 @@ void Trigger::CleanUpTimeRegion()
 	return;
 }
 
-uint32_t *Trigger::GetTimeRegion()
+std::vector<uint32_t> Trigger::GetTimeRegion()
 {
 	return fTimeRegion;
 }
