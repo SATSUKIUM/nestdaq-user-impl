@@ -20,7 +20,7 @@ public:
 	TriggerMap(){};
 	virtual ~TriggerMap(){};
 	void MakeTable(std::string &);
-	bool LookUp(uint32_t);
+	bool LookUp(std::bitset<Trigger::default_size_bitset>);
 	void Dump();
 protected:
 private:
@@ -95,10 +95,10 @@ void TriggerMap::MakeTable(std::string & formula)
 	return;
 }
 
-bool TriggerMap::LookUp(uint32_t val)
+bool TriggerMap::LookUp(std::bitset<Trigger::default_size_bitset> val)
 {
-	if (val < fMapSize) {
-		return fLut[val];
+	if (val_uint32 < fMapSize) {
+		return fLut[val_uint32];
 	} else {
 		return false;
 	}

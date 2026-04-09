@@ -15,6 +15,8 @@
 #include "SubTimeFrameHeader.h"
 #include "TriggerMap.cxx"
 
+#include <bitset>
+
 
 struct HBFIndex {
 	int msg_index;
@@ -29,12 +31,13 @@ struct HBFIndex {
 class Trigger
 {
 public:
+	static const int default_size_bitset = 512; // recommended to be multiple of 64
 	Trigger();
 	virtual ~Trigger();
 	void InitParam();
 	bool SetTimeRegion(int);
 	void CleanUpTimeRegion();
-	std::vector<uint32_t> GetTimeRegion();
+	std::vector<std::bitset<default_size_bitset>> GetTimeRegion();
 	uint32_t GetTimeRegionSize();
 	void Entry(uint32_t, int, int); // fem, ch, offset
 	void Entry(uint32_t, int, int, uint32_t, uint32_t); // fem, ch, offset, leftwidth, rightwidth
@@ -52,7 +55,7 @@ private:
 	//std::vector<struct CoinCh> fEntry;
 	std::map< uint32_t, std::vector<int> > fEntryCh;
 	std::map< uint32_t, std::vector<int> > fEntryChDelay;
-	std::map< uint32_t, std::vector<uint32_t> > fEntryChBit; // future: bitset
+	std::map< uint32_t, std::vector<std::bitset<default_size_bitset>> > fEntryChBit;
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChLeftWidth; // [T - leftwidth, T + rightwidth]
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChRightWidth; // [T - leftwidth, T + rightwidth]
 	int fEntryCounts = 0;
@@ -60,13 +63,14 @@ private:
 
 	int fNentry = 0;
 	uint32_t fTimeRegionSize;
-	std::vector<uint32_t> fTimeRegion;
+	std::vector<std::bitset<default_size_bitset>> fTimeRegion;
 	//int fMarkCount = 0;
 	//uint32_t fMarkMask = 0;
 	std::vector<uint32_t> fHits;
 	int fMarkLen = 5;
 
 	TriggerMap fTMap;
+
 };
 
 Trigger::Trigger()
@@ -103,18 +107,18 @@ bool Trigger::SetTimeRegion(int size)
 {
 	fTimeRegionSize = size;
 
-	fTimeRegion.resize(fTimeRegionSize, 0x00000000);
+	fTimeRegion.resize(fTimeRegionSize, std::bitset<default_size_bitset>(0));
 
 	return true;
 }
 
 void Trigger::CleanUpTimeRegion()
 {
-	for (uint32_t i = 0 ; i < fTimeRegionSize ; i++) fTimeRegion[i] = 0;
+	for (uint32_t i = 0 ; i < fTimeRegionSize ; i++) fTimeRegion[i] = std::bitset<default_size_bitset>(0);
 	return;
 }
 
-std::vector<uint32_t> Trigger::GetTimeRegion()
+std::vector<std::bitset<Trigger::default_size_bitset>> Trigger::GetTimeRegion()
 {
 	return fTimeRegion;
 }
@@ -163,7 +167,7 @@ void Trigger::Entry(uint32_t fem, int ch, int offset)
 
 	fEntryCh[fem].emplace_back(ch);
 	fEntryChDelay[fem].emplace_back(offset);
-	fEntryChBit[fem].emplace_back(0x0000001 << fEntryCounts);
+	fEntryChBit[fem].emplace_back(std::bitset<default_size_bitset>(0x0000001 << fEntryCounts));
 	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
 	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
 	fEntryMask |= 0x00000001 << fEntryCounts;
@@ -185,7 +189,7 @@ void Trigger::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32
 
 	fEntryCh[fem].emplace_back(ch);
 	fEntryChDelay[fem].emplace_back(offset);
-	fEntryChBit[fem].emplace_back(0x0000001 << fEntryCounts);
+	fEntryChBit[fem].emplace_back(std::bitset<default_size_bitset>(0x0000001 << fEntryCounts));
 	fEntryChLeftWidth[fem].emplace_back(leftwidth);
 	fEntryChRightWidth[fem].emplace_back(rightwidth);
 	fEntryMask |= 0x00000001 << fEntryCounts;
@@ -233,7 +237,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 			int delay = fEntryChDelay[fem][i];
 			uint32_t leftwidth = fEntryChLeftWidth[fem][i];
 			uint32_t rightwidth = fEntryChRightWidth[fem][i];
-			uint32_t markbit = fEntryChBit[fem][i];
+			std::bitset<default_size_bitset> markbit = fEntryChBit[fem][i];
 
 			#if 0
 			std::cout << "#DD Trigger::Mark " 
