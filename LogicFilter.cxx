@@ -204,7 +204,7 @@ void LogicFilter::InitTask()
 	LOG(info) << "InitTask: RemoveHB : " << fIsRemoveHB;
 
 
-	fTrig->SetTimeRegion(1024 * 128);
+	fTrig->SetTimeRegion(1024 * 128); // 524.288 us with 4 ns bin
 	fTrig->ClearEntry();
 
 	std::string str_signals = fConfig->GetProperty<std::string>(opt::TriggerSignals.data());
