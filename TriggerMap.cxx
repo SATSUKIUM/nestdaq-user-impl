@@ -14,13 +14,15 @@
 
 #include "LogiCalc.cxx"
 
+#include "Trigger.cxx"
+
 class TriggerMap
 {
 public:
 	TriggerMap(){};
 	virtual ~TriggerMap(){};
 	void MakeTable(std::string &);
-	bool LookUp(std::bitset<Trigger::default_size_bitset>);
+	bool LookUp(uint32_t);
 	void Dump();
 protected:
 private:
@@ -95,7 +97,7 @@ void TriggerMap::MakeTable(std::string & formula)
 	return;
 }
 
-bool TriggerMap::LookUp(std::bitset<Trigger::default_size_bitset> val)
+bool TriggerMap::LookUp(uint32_t val_uint32)
 {
 	if (val_uint32 < fMapSize) {
 		return fLut[val_uint32];
