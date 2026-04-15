@@ -15,6 +15,8 @@
 #include "SubTimeFrameHeader.h"
 #include "TriggerMap.cxx"
 
+#include <bitset>
+
 
 struct HBFIndex {
 	int msg_index;
@@ -23,6 +25,25 @@ struct HBFIndex {
 	uint32_t femId;
 	unsigned char* data;
 	int size;
+};
+
+class Trigger32 : public Trigger{
+public:
+	Trigger32() : Trigger() {};
+	virtual ~Trigger32() {};
+
+private:
+	uint32_t* fTimeRegion = nullptr;
+};
+
+class TriggerBitSet : public Trigger{
+public:
+	TriggerBitSet() : Trigger() {};
+	virtual ~TriggerBitSet() {};
+	constexpr static int defaultSizeFTimeRegion = 512;
+
+private:
+	std::bitset<defaultSizeFTimeRegion>* fBitSet = nullptr;
 };
 
 
