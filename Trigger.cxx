@@ -498,7 +498,112 @@ void Trigger32::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 
 void TriggerBitSet::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 {
-	// to be implemented
+	if (fEntryCh.count(fem) >= 1) {
+		uint64_t *tdcval;
+		tdcval = reinterpret_cast<uint64_t *>(pdata);
+
+		for(unsigned int i = 0; i < fEntryCh[fem].size(); i++){
+			int ch = fEntryCh[fem][i];
+			int delay = fEntryChDelay[fem][i];
+			uint32_t leftwidth = fEntryChLeftWidth[fem][i];
+			uint32_t rightwidth = fEntryChRightWidth[fem][i];
+			std::bitset<defaultSizeFTimeRegion> markbit = fEntryChBit[fem][i];
+
+			for(unsigned int j = 0; j < (len / sizeof(uint64_t)); j++){
+				if(type == SubTimeFrame::TDC64H){
+					struct TDC64H::tdc64 tdc;
+					if(TDC64H::Unpack(tdcval[j], &tdc) == TDC64H::T_TDC){
+						if(tdc.ch == ch){
+							uint32_t hit = tdc.tdc4n + delay;
+
+							if(hit < fTimeRegionSize - leftwidth){
+								for(int k = -1 * leftwidth; k < (rightwidth + 1); k++){
+									if((hit + k) < fTimeRegionSize){
+										fTimeRegion[hit + k] |= markbit;
+									}else if((static_cast<int>(hit) + k) >= 0){
+										std::cout << "#E Over range hit!"
+											<< " FEM: " << std::hex << fem
+											<< " Ch: " << std::dec << ch
+											<< " Hit: " << hit
+											<< std::endl;
+									}
+								}
+							}
+						}
+					}
+				} // endif(type == SubTimeFrame::TDC64H)
+				else if(type == SubTimeFrame::TDC64L){
+					struct TDC64L::tdc64 tdc;
+					if(TDC64L::Unpack(tdcval[j], &tdc) == TDC64L::T_TDC){
+						if(tdc.ch == ch){
+							uint32_t hit = tdc.tdc4n + delay;
+
+							if(hit < fTimeRegionSize - leftwidth){
+								for(int k = -1 * leftwidth; k < (rightwidth + 1); k++){
+									if((hit + k) < fTimeRegionSize){
+										fTimeRegion[hit + k] |= markbit;
+									}else if((static_cast<int>(hit) + k) >= 0){
+										std::cout << "#E Over range hit!"
+											<< " FEM: " << std::hex << fem
+											<< " Ch: " << std::dec << ch
+											<< " Hit: " << hit
+											<< std::endl;
+									}
+								}
+							}
+						}
+					}
+				} // endif(type == SubTimeFrame::TDC64L)
+				else if(type == SubTimeFrame::TDC64H_V3){
+					struct TDC64H_V3::tdc64 tdc;
+					if(TDC64H_V3::Unpack(tdcval[j], &tdc) == TDC64H_V3::T_TDC){
+						if(tdc.ch == ch){
+							uint32_t hit = tdc.tdc4n + delay;
+
+							if(hit < fTimeRegionSize - leftwidth){
+								for(int k = -1 * leftwidth; k < (rightwidth + 1); k++){
+									if((hit + k) < fTimeRegionSize){
+										fTimeRegion[hit + k] |= markbit;
+									}else if((static_cast<int>(hit) + k) >= 0){
+										std::cout << "#E Over range hit!"
+											<< " FEM: " << std::hex << fem
+											<< " Ch: " << std::dec << ch
+											<< " Hit: " << hit
+											<< std::endl;
+									}
+								}
+							}
+						}
+					}
+				} // endif(type == SubTimeFrame::TDC64H_V3)
+				else if(type == SubTimeFrame::TDC64L_V3){
+					struct TDC64L_V3::tdc64 tdc;
+					if(TDC64L_V3::Unpack(tdcval[j], &tdc) == TDC64L_V3::T_TDC){
+						if(tdc.ch == ch){
+							uint32_t hit = tdc.tdc4n + delay;
+
+							if(hit < fTimeRegionSize - leftwidth){
+								for(int k = -1 * leftwidth; k < (rightwidth + 1); k++){
+									if((hit + k) < fTimeRegionSize){
+										fTimeRegion[hit + k] |= markbit;
+									}else if((static_cast<int>(hit) + k) >= 0){
+										std::cout << "#E Over range hit!"
+											<< " FEM: " << std::hex << fem
+											<< " Ch: " << std::dec << ch
+											<< " Hit: " << hit
+											<< std::endl;
+									}
+								}
+							}
+						}
+					}
+				}
+
+			}
+		}
+	}
+	
+	return;
 } // void TriggerBitSet::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 
 std::vector<uint32_t> *Trigger32::Scan()
@@ -566,7 +671,7 @@ std::vector<uint32_t> *TriggerBitSet::Scan()
 } // std::vector<uint32_t> *TriggerBitSet::Scan()
 
 bool TriggerBitSet::DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection){
-	// to be implemented
+	// to be implemented (or, call back user defined function)
 	return false;
 } // bool TriggerBitSet::DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection)
 
