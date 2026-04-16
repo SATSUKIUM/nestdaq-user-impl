@@ -31,19 +31,42 @@ class Trigger32 : public Trigger{
 public:
 	Trigger32() : Trigger() {};
 	virtual ~Trigger32() {};
+	void InitParam() override; // もともと誰からも呼ばれてなかったが、一応。
+	bool SetTimeRegion(int size) override;
+	void CleanUpTimeRegion() override;
+	void Mark(unsigned char *, int, int, uint32_t) override;
+	std::vector<uint32_t> *Scan() override;
+	void Entry(uint32_t fem, int ch, int offset) override;
+	void Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth) override;
+	void ClearEntry() override;
 
 private:
 	uint32_t* fTimeRegion = nullptr;
+	uint32_t fEntryMask = 0;
+
+	std::map< uint32_t, std::vector<uint32_t> > fEntryChBit;
 };
 
 class TriggerBitSet : public Trigger{
 public:
 	TriggerBitSet() : Trigger() {};
 	virtual ~TriggerBitSet() {};
+	void InitParam() override; // もともと誰からも呼ばれてなかったが、一応。
 	constexpr static int defaultSizeFTimeRegion = 512;
+	bool SetTimeRegion(int size) override;
+	void CleanUpTimeRegion() override;
+	void Mark(unsigned char *, int, int, uint32_t) override;
+	std::vector<uint32_t> *Scan() override;
+	bool DetCoin(std::bitset<defaultSizeFTimeRegion> &);
+	void Entry(uint32_t fem, int ch, int offset) override;
+	void Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth) override;
+	void ClearEntry() override;
 
 private:
-	std::bitset<defaultSizeFTimeRegion>* fBitSet = nullptr;
+	std::bitset<defaultSizeFTimeRegion>* fTimeRegion = nullptr;
+	std::bitset<defaultSizeFTimeRegion> fEntryMask = ~std::bitset<defaultSizeFTimeRegion>(0x00000000);
+
+	std::map< uint32_t, std::vector<std::bitset<defaultSizeFTimeRegion>> > fEntryChBit;
 };
 
 
@@ -52,41 +75,37 @@ class Trigger
 public:
 	Trigger();
 	virtual ~Trigger();
-	void InitParam();
-	bool SetTimeRegion(int);
-	void CleanUpTimeRegion();
-	uint32_t *GetTimeRegion();
+	virtual void InitParam();
+	virtual bool SetTimeRegion(int);
+	virtual void CleanUpTimeRegion();
+	// uint32_t *GetTimeRegion();
 	uint32_t GetTimeRegionSize();
-	void Entry(uint32_t, int, int); // fem, ch, offset
-	void Entry(uint32_t, int, int, uint32_t, uint32_t); // fem, ch, offset, leftwidth, rightwidth
-	void ClearEntry();
+	virtual void Entry(uint32_t, int, int); // fem, ch, offset
+	virtual void Entry(uint32_t, int, int, uint32_t, uint32_t); // fem, ch, offset, leftwidth, rightwidth
+	virtual void ClearEntry();
 	bool CheckEntryFEM(uint32_t);
-	void Mark(unsigned char *, int, int, uint32_t);
-	std::vector<uint32_t> *Scan();
+	virtual void Mark(unsigned char *, int, int, uint32_t);
+	virtual std::vector<uint32_t> *Scan();
 	std::vector<uint32_t> *Exec(std::vector<struct HBFIndex> &);
 	void SetMarkLen(int val) {fMarkLen = val;};
 	int GetMarkLen() {return fMarkLen;};
 	//void SetLogic(int);
 	void MakeTable(std::string &);
 protected:
-private:
 	//std::vector<struct CoinCh> fEntry;
 	std::map< uint32_t, std::vector<int> > fEntryCh;
 	std::map< uint32_t, std::vector<int> > fEntryChDelay;
-	std::map< uint32_t, std::vector<uint32_t> > fEntryChBit;
+	// std::map< uint32_t, std::vector<uint32_t> > fEntryChBit;
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChLeftWidth; // [T - leftwidth, T + rightwidth]
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChRightWidth; // [T - leftwidth, T + rightwidth]
 	int fEntryCounts = 0;
-	uint32_t fEntryMask = 0;
+
+	uint32_t fTimeRegionSize;
+	int fMarkLen = 5; // default set value ( to be changed by mq-param )
 
 	int fNentry = 0;
-	uint32_t fTimeRegionSize;
-	uint32_t *fTimeRegion = nullptr;
-	//int fMarkCount = 0;
-	//uint32_t fMarkMask = 0;
+	
 	std::vector<uint32_t> fHits;
-	int fMarkLen = 5;
-
 	TriggerMap fTMap;
 };
 
@@ -97,11 +116,6 @@ Trigger::Trigger()
 
 Trigger::~Trigger()
 {
-	if (fTimeRegion != nullptr) {
-		delete[] fTimeRegion;
-		fTimeRegion = nullptr;
-	}
-
 	return;
 }
 
@@ -112,7 +126,7 @@ void Trigger::MakeTable(std::string & formula)
 	return;
 }
 
-void Trigger::InitParam()
+void Trigger32::InitParam()
 {
 	//fMarkCount = 0;
 	//fMarkMask = 0;
@@ -125,7 +139,20 @@ void Trigger::InitParam()
 	return;
 }
 
-bool Trigger::SetTimeRegion(int size)
+void TriggerBitSet::InitParam()
+{
+	//fMarkCount = 0;
+	//fMarkMask = 0;
+	fHits.clear();
+	fHits.resize(0);
+	if (fTimeRegion != nullptr) {
+		for (uint32_t i = 0 ; i < fTimeRegionSize ; i++) fTimeRegion[i].reset();
+	}
+
+	return;
+}
+
+bool Trigger32::SetTimeRegion(int size)
 {
 	fTimeRegionSize = size;
 	if (fTimeRegion != nullptr) {
@@ -135,17 +162,30 @@ bool Trigger::SetTimeRegion(int size)
 	fTimeRegion = new uint32_t[size];
 
 	return true;
-}
+} // bool Trigger32::SetTimeRegion(int size)
 
-void Trigger::CleanUpTimeRegion()
+bool TriggerBitSet::SetTimeRegion(int size)
+{
+	fTimeRegionSize = size;
+	if (fTimeRegion != nullptr) {
+		delete[] fTimeRegion;
+		fTimeRegion = nullptr;
+	}
+	fTimeRegion = new std::bitset<defaultSizeFTimeRegion>[size];
+
+	return true;
+} // bool TriggerBitSet::SetTimeRegion(int size)
+
+void Trigger32::CleanUpTimeRegion()
 {
 	for (uint32_t i = 0 ; i < fTimeRegionSize ; i++) fTimeRegion[i] = 0;
 	return;
 }
 
-uint32_t *Trigger::GetTimeRegion()
+void TriggerBitSet::CleanUpTimeRegion()
 {
-	return fTimeRegion;
+	for (uint32_t i = 0 ; i < fTimeRegionSize ; i++) fTimeRegion[i].reset();
+	return;
 }
 
 uint32_t Trigger::GetTimeRegionSize()
@@ -187,7 +227,7 @@ bool Trigger::CheckEntryFEM(uint64_t fem)
 
 #endif
 
-void Trigger::Entry(uint32_t fem, int ch, int offset)
+void Trigger32::Entry(uint32_t fem, int ch, int offset)
 {
 
 	fEntryCh[fem].emplace_back(ch);
@@ -207,9 +247,9 @@ void Trigger::Entry(uint32_t fem, int ch, int offset)
 	assert(fEntryCounts <= static_cast<int>(sizeof(uint32_t) * 8));
 
 	return;
-}
+} // void Trigger32::Entry(uint32_t fem, int ch, int offset)
 
-void Trigger::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth)
+void Trigger32::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth)
 {
 
 	fEntryCh[fem].emplace_back(ch);
@@ -229,9 +269,51 @@ void Trigger::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32
 	assert(fEntryCounts <= static_cast<int>(sizeof(uint32_t) * 8));
 
 	return;
-}
+} // void Trigger32::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth)
 
-void Trigger::ClearEntry()
+void TriggerBitSet::Entry(uint32_t fem, int ch, int offset)
+{
+	fEntryCh[fem].emplace_back(ch);
+	fEntryChDelay[fem].emplace_back(offset);
+	fEntryChBit[fem].emplace_back(std::bitset<defaultSizeFTimeRegion>(0x1 << fEntryCounts));
+	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
+	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
+	fEntryMask |= std::bitset<defaultSizeFTimeRegion>(0x1 << fEntryCounts);
+	fEntryCounts++;
+
+	#if 0
+	std::cout << "#D Trig Entry : Module: " << fem << " Ch: " << ch << std::endl;
+	#endif
+	if (static_cast<unsigned int>(fEntryCounts) > (sizeof(uint32_t) * 8)) {
+		std::cerr << "Entry Ch. exceed " << sizeof(uint32_t) * 8<< std::endl;
+	}
+	assert(fEntryCounts <= static_cast<int>(sizeof(uint32_t) * 8));
+
+	return;
+} // void TriggerBitSet::Entry(uint32_t fem, int ch, int offset)
+
+void TriggerBitSet::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth)
+{
+	fEntryCh[fem].emplace_back(ch);
+	fEntryChDelay[fem].emplace_back(offset);
+	fEntryChBit[fem].emplace_back(std::bitset<defaultSizeFTimeRegion>(0x1 << fEntryCounts));
+	fEntryChLeftWidth[fem].emplace_back(leftwidth);
+	fEntryChRightWidth[fem].emplace_back(rightwidth);
+	fEntryMask |= std::bitset<defaultSizeFTimeRegion>(0x1 << fEntryCounts);
+	fEntryCounts++;
+
+	#if 0
+	std::cout << "#D Trig Entry : Module: " << fem << " Ch: " << ch << std::endl;
+	#endif
+	if (static_cast<unsigned int>(fEntryCounts) > (sizeof(uint32_t) * 8)) {
+		std::cerr << "Entry Ch. exceed " << sizeof(uint32_t) * 8<< std::endl;
+	}
+	assert(fEntryCounts <= static_cast<int>(sizeof(uint32_t) * 8));
+
+	return;
+} // void TriggerBitSet::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth)
+
+void Trigger32::ClearEntry()
 {
 	fEntryCh.clear();
 	fEntryChDelay.clear();
@@ -242,7 +324,19 @@ void Trigger::ClearEntry()
 	fEntryChRightWidth.clear();
 
 	return;
-}
+} // void Trigger32::ClearEntry()
+
+void TriggerBitSet::ClearEntry()
+{
+	fEntryChBit.clear();
+	fEntryChDelay.clear();
+	fEntryMask = std::bitset<defaultSizeFTimeRegion>(0x00000000);
+	fEntryCounts = 0;
+	fEntryChLeftWidth.clear();
+	fEntryChRightWidth.clear();
+
+	return;
+} // void TriggerBitSet::ClearEntry()
 
 bool Trigger::CheckEntryFEM(uint32_t fem)
 {
@@ -251,7 +345,7 @@ bool Trigger::CheckEntryFEM(uint32_t fem)
 	return rval;
 }
 
-void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
+void Trigger32::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 {
 	if (fEntryCh.count(fem) >= 1) {
 		uint64_t *tdcval;
@@ -400,9 +494,14 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 
 
 	return;
-}
+} // void Trigger32::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 
-std::vector<uint32_t> *Trigger::Scan()
+void TriggerBitSet::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
+{
+	// to be implemented
+} // void TriggerBitSet::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
+
+std::vector<uint32_t> *Trigger32::Scan()
 {
 	//std::cout << "#D Scan fMarkMask: " << std::hex << fMarkMask << std::endl;
 	//std::cout << "#D Scan fEntryMask: " << std::hex << fEntryMask << std::endl;
@@ -433,7 +532,43 @@ std::vector<uint32_t> *Trigger::Scan()
 	}
 
 	return &fHits;
-}
+} // std::vector<uint32_t> *Trigger32::Scan()
+
+std::vector<uint32_t> *TriggerBitSet::Scan()
+{
+	fHits.clear();
+	fHits.resize(0);
+
+	for (unsigned int i = 0 ; i < fTimeRegionSize - 1; i++) {
+		#if 0
+		if (((fEntryMask & fTimeRegion[i]) != fEntryMask)
+		&& ((fEntryMask & fTimeRegion[i + 1]) == fEntryMask)) {
+			fHits.emplace_back(i + 1);
+		}
+		#else
+		if ((! DetCoin(fTimeRegion[i]))
+		 && (DetCoin(fTimeRegion[i + 1]))) {
+			fHits.emplace_back(i + 1);
+		}
+		#endif
+
+		#if 0
+		if (fTimeRegion[i] != 0) {
+			std::cout << "#D Scan Time: " << std::dec << i
+				<< " Bits: " << std::hex << fTimeRegion[i]
+				//<< " Mask: " << fMarkMask << std::endl;
+				<< " Mask: " << fEntryMask << std::endl;
+		}
+		#endif
+	}
+
+	return &fHits;
+} // std::vector<uint32_t> *TriggerBitSet::Scan()
+
+bool TriggerBitSet::DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection){
+	// to be implemented
+	return false;
+} // bool TriggerBitSet::DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection)
 
 std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 {
