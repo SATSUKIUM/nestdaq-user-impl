@@ -152,7 +152,7 @@ private:
 	int fSplitMethod    {2};
 
 	uint32_t fId {0};
-	Trigger *fTrig;
+	std::unique_ptr<Trigger> fTrig;
 	bool fIsDataSuppress = true;
 	bool fIsRemoveHB = false;
 
@@ -162,6 +162,8 @@ private:
 	KTimer *fKt2;
 	KTimer *fKt3;
 	KTimer *fKt4;
+
+	bool isUseTrigger32 = true;
 };
 
 
@@ -210,13 +212,14 @@ void LogicFilter::InitTask()
 
 	std::vector< std::vector<uint32_t> > signals = SignalParser::Parsing(str_signals);
 
-	if(signals.size() >= 32) {
-		// TriggerBitSet
-		fTrig = new TriggerBitSet();
+	isUseTrigger32 = (signals.size() < 32);
+	if(isUseTrigger32) {
+		// Trigger32
+		fTrig = std::unique_ptr<Trigger32>();
 	}
 	else {
-		// Trigger32
-		fTrig = new Trigger32();
+		// TriggerBitSet
+		fTrig = std::unique_ptr<TriggerBitSet>();
 	}
 
 	fTrig->SetTimeRegion(1024 * 128); // 524.288 us with 4 ns bin
