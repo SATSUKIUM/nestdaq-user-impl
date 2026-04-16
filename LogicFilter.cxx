@@ -203,18 +203,26 @@ void LogicFilter::InitTask()
 	}
 	LOG(info) << "InitTask: RemoveHB : " << fIsRemoveHB;
 
-
-	fTrig->SetTimeRegion(1024 * 128); // 524.288 us with 4 ns bin
-	fTrig->ClearEntry();
-
 	std::string str_signals = fConfig->GetProperty<std::string>(opt::TriggerSignals.data());
 	std::string formula = fConfig->GetProperty<std::string>(opt::TriggerFormula.data());
 	int window_width = std::stoi(fConfig->GetProperty<std::string>(opt::TriggerWidth.data()));
-
 	LOG(info) << "Trigger windows width: " << window_width;
-	fTrig->SetMarkLen(window_width);
 
 	std::vector< std::vector<uint32_t> > signals = SignalParser::Parsing(str_signals);
+
+	if(signals.size() >= 32) {
+		// TriggerBitSet
+		fTrig = new TriggerBitSet();
+	}
+	else {
+		// Trigger32
+		fTrig = new Trigger32();
+	}
+
+	fTrig->SetTimeRegion(1024 * 128); // 524.288 us with 4 ns bin
+	fTrig->ClearEntry();
+	fTrig->SetMarkLen(window_width);
+
 	int i = 0;
 	for (auto &v : signals) {
 		if (v.size() == 3) {
@@ -252,7 +260,7 @@ void LogicFilter::InitTask()
 	}
 	
 	LOG(info) << "Formula: " << formula;
-	fTrig->MakeTable(formula);
+	fTrig->MakeTable(formula); // あとでmore32かどうかで条件分岐する
 
 
 
