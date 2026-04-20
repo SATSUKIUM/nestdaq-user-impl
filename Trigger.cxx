@@ -66,6 +66,7 @@ public:
 	void SetTExpression(std::string &tx) {
 		this->tx = tx;
 		fCommands = SetFormula(tx); // class LogiCalc member variable std::vector<std::string> fCommands, LogiCalc::SetFormula()
+		SetWorkFlowCalc(); // make job list for evaluation of a set of flags of hitmap
 	}
 	
 	using LogiCalc::Calc;
@@ -74,15 +75,49 @@ public:
 private:
 	std::string tx;
 	void SetWorkFlowCalc();
-	using OpFunc = void(*)(LogiCalc*, std::bitset<defaultSizeFTimeRegion> &);
-	std::vector<OpFunc> fWorkFlowCalc;
+	using OpFunc = void(*)(TriggerBitSet*, const std::bitset<defaultSizeFTimeRegion> &, int);
+	struct OpWithArg{
+		OpFunc func;
+		int sig;
+	};
+	std::vector<OpWithArg> fWorkFlowCalc;
 	using LogiCalc::ExtractBit;
-	bool ExtractBit(std::bitset<defaultSizeFTimeRegion> &flagcollection, int digit);
+	bool ExtractBit(const std::bitset<defaultSizeFTimeRegion> &flagcollection, int digit);
 
 	std::bitset<defaultSizeFTimeRegion>* fTimeRegion = nullptr;
 	std::bitset<defaultSizeFTimeRegion> fEntryMask = ~std::bitset<defaultSizeFTimeRegion>(0x00000000);
 
 	std::map< uint32_t, std::vector<std::bitset<defaultSizeFTimeRegion>> > fEntryChBit;
+
+	static void OpPush(TriggerBitSet* self, const std::bitset<defaultSizeFTimeRegion>& flagcollection, int sig){
+		self->fStack.push(self->ExtractBit(flagcollection, sig));
+	};
+	static void OpAnd(TriggerBitSet* self, const std::bitset<defaultSizeFTimeRegion>& flagcollection, int){
+		auto v1 = self->fStack.top(); self->fStack.pop();
+		auto v2 = self->fStack.top(); self->fStack.pop();
+		self->fStack.push(v1 & v2);
+	};
+	static void OpOr(TriggerBitSet* self, const std::bitset<defaultSizeFTimeRegion>& flagcollection, int){
+		auto v1 = self->fStack.top(); self->fStack.pop();
+		auto v2 = self->fStack.top(); self->fStack.pop();
+		self->fStack.push(v1 | v2);
+	};
+	static void OpSwap(TriggerBitSet* self, const std::bitset<defaultSizeFTimeRegion>& flagcollection, int){
+		auto vTop = self->fStack.top(); self->fStack.pop();
+		auto vBelowTheTop = self->fStack.top(); self->fStack.pop();
+		self->fStack.push(vTop);
+		self->fStack.push(vBelowTheTop);
+	};
+	static void OpNot(TriggerBitSet* self, const std::bitset<defaultSizeFTimeRegion>& flagcollection, int){
+		auto vTop = self->fStack.top(); self->fStack.pop();
+		self->fStack.push(!vTop);
+	};
+	static void OpPop(TriggerBitSet* self, const std::bitset<defaultSizeFTimeRegion>& flagcollection, int){
+		self->fStack.pop();
+	};
+
+
+
 };
 
 
@@ -681,10 +716,19 @@ std::vector<uint32_t> *TriggerBitSet::Scan()
 } // std::vector<uint32_t> *TriggerBitSet::Scan()
 
 bool TriggerBitSet::DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection){
-	// to be implemented (or, call back user defined function)
-
-	return false;
-} // bool TriggerBitSet::DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection, std::string &tExpression)
+	for(auto& op : fWorkFlowCalc){
+		op.func(this, flagcollection, op.sig);
+	}
+	bool ret;
+	if(fStack.size() > 0){
+		ret = fStack.top(); fStack.pop();
+	}
+	else{
+		std::cout << "#E empty stack result" << std::endl;
+		ret = false;
+	}
+	return ret;
+} // bool TriggerBitSet::DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection)
 
 std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 {
@@ -732,7 +776,7 @@ bool TriggerBitSet::Calc(std::bitset<defaultSizeFTimeRegion> &flagcollection){
 	return false;
 } // bool TriggerBitSet::Calc(std::bitset<defaultSizeFTimeRegion> &flagcollection)
 
-bool TriggerBitSet::ExtractBit(std::bitset<defaultSizeFTimeRegion> &flagcollection, int digit){
+bool TriggerBitSet::ExtractBit(const std::bitset<defaultSizeFTimeRegion> &flagcollection, int digit){
 	if (digit < defaultSizeFTimeRegion){
 		uint32_t bit = flagcollection[digit];
 		return bit;
@@ -741,6 +785,54 @@ bool TriggerBitSet::ExtractBit(std::bitset<defaultSizeFTimeRegion> &flagcollecti
 		return false;
 	}
 } // bool TriggerBitSet::ExtractBit(std::bitset<defaultSizeFTimeRegion> &flagcollection, int digit)
+
+void TriggerBitSet::SetWorkFlowCalc(){
+	while(!fStack.empty()) fStack.pop();
+
+	int nStack = 0;
+	for(auto& com : fCommands){
+		if(std::all_of(com.cbegin(), com.cend(), isdigit)){
+			int sig = atoi(com.c_str());
+			fWorkFlowCalc.push_back({OpPush, sig});
+			nStack++;
+		}
+		else{
+			if(nStack > 1){
+				if((com == "&") || (com == "*")){
+					fWorkFlowCalc.push_back({OpAnd, 0});
+					nStack--;
+				}
+				else if((com == "|") || (com == "+")){
+					fWorkFlowCalc.push_back({OpOr, 0});
+					nStack--;
+				}
+				else if(com == "x"){
+					fWorkFlowCalc.push_back({OpSwap, 0});
+				}
+				else{
+					std::cout << "\n#E Invalid command: " << com << " not enough operands in stack" << std::endl;
+				}
+			}
+			if((com == "!") || (com == "^")){
+				fWorkFlowCalc.push_back({OpNot, 0});
+			}
+			else if((com == "d") || (com == "p")){
+				if(nStack > 0){
+					fWorkFlowCalc.push_back({OpPop, 0});
+				}
+				else{
+					std::cout << "\n#E empty stack" << std::endl;
+				}
+			}
+			else{
+				std::cout << "\n#E Unknown command: " << com << std::endl;
+			}
+		}
+	}
+
+	return;
+} // void TriggerBitSet::SetWorkFlowCalc
+
 
 
 
