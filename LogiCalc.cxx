@@ -25,12 +25,13 @@ public:
 	bool Calc(uint32_t);
 	void Dump(){};
 protected:
-private:
 	bool ExtractBit(uint32_t, int);
+	std::vector<std::string> fCommands;
+private:
 	//std::vector<std::string> &Split(std::string);
 	int ComPushBack(std::string &);
 
-	std::vector<std::string> fCommands;
+	
 	std::stack<bool> fStack;
 	int fNsigMax = 32;
 	int fSigMax = 0;
