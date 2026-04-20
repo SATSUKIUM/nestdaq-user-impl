@@ -62,7 +62,7 @@ public:
 	void Entry(uint32_t fem, int ch, int offset) override;
 	void Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth) override;
 	void ClearEntry() override;
-	bool isUseUserDefinedCoin = false;
+	bool isUseUserDefinedCoin = false; // false: default, true: user defined coin (to be implemented)
 	void SetTExpression(std::string &tx) {
 		this->tx = tx;
 		fCommands = SetFormula(tx); // class LogiCalc member variable std::vector<std::string> fCommands, LogiCalc::SetFormula()
@@ -77,7 +77,7 @@ private:
 	void SetWorkFlowCalc();
 	using OpFunc = void(*)(TriggerBitSet*, const std::bitset<defaultSizeFTimeRegion> &, int);
 	struct OpWithArg{
-		OpFunc func;
+		OpFunc exec;
 		int sig;
 	};
 	std::vector<OpWithArg> fWorkFlowCalc;
@@ -698,27 +698,27 @@ std::vector<uint32_t> *TriggerBitSet::Scan()
 	fHits.clear();
 	fHits.resize(0);
 	
-	if(isUseUserDefinedCoin){
+	if(isUseUserDefinedCoin){ // user defined coin (to be implemented)
+		// to be implemented
+	}
+	else{ // default coin
 		for(unsigned int i = 0; i < fTimeRegionSize; i++){
 			if ((! DetCoin(fTimeRegion[i]))
 			&& (DetCoin(fTimeRegion[i + 1]))) {
 				fHits.emplace_back(i + 1);
 			}
 		}
-		return &fHits;
 	}
-	else{
-		for(unsigned int i = 0; i < fTimeRegionSize - 1; i++){
-			// later
-		}
-	}
+
+	return &fHits;
 
 } // std::vector<uint32_t> *TriggerBitSet::Scan()
 
 bool TriggerBitSet::DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection){
-	for(auto& op : fWorkFlowCalc){
-		op.func(this, flagcollection, op.sig);
+	for(auto& step : fWorkFlowCalc){
+		step.exec(this, flagcollection, step.sig);
 	}
+
 	bool ret;
 	if(fStack.size() > 0){
 		ret = fStack.top(); fStack.pop();
@@ -778,7 +778,7 @@ bool TriggerBitSet::Calc(std::bitset<defaultSizeFTimeRegion> &flagcollection){
 
 bool TriggerBitSet::ExtractBit(const std::bitset<defaultSizeFTimeRegion> &flagcollection, int digit){
 	if (digit < defaultSizeFTimeRegion){
-		uint32_t bit = flagcollection[digit];
+		bool bit = flagcollection[digit];
 		return bit;
 	}
 	else{
