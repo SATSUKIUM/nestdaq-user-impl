@@ -14,6 +14,7 @@
 #include "UnpackTdc.h"
 #include "SubTimeFrameHeader.h"
 #include "TriggerMap.cxx"
+#include "LogiCalc.cxx"
 
 #include <bitset>
 
@@ -31,7 +32,7 @@ class Trigger32 : public Trigger{
 public:
 	Trigger32() : Trigger() {};
 	virtual ~Trigger32() {};
-	void InitParam() override; // もともと誰からも呼ばれてなかったが、一応。
+	void InitParam() override;
 	bool SetTimeRegion(int size) override;
 	void CleanUpTimeRegion() override;
 	void Mark(unsigned char *, int, int, uint32_t) override;
@@ -47,9 +48,9 @@ private:
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChBit;
 };
 
-class TriggerBitSet : public Trigger{
+class TriggerBitSet : public Trigger, public LogiCalc {
 public:
-	TriggerBitSet() : Trigger() {};
+	TriggerBitSet() : Trigger(), LogiCalc() {};
 	virtual ~TriggerBitSet() {};
 	void InitParam() override; // もともと誰からも呼ばれてなかったが、一応。
 	constexpr static int defaultSizeFTimeRegion = 512;
@@ -57,12 +58,23 @@ public:
 	void CleanUpTimeRegion() override;
 	void Mark(unsigned char *, int, int, uint32_t) override;
 	std::vector<uint32_t> *Scan() override;
-	bool DetCoin(std::bitset<defaultSizeFTimeRegion> &);
+	bool DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection);
 	void Entry(uint32_t fem, int ch, int offset) override;
 	void Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth) override;
 	void ClearEntry() override;
+	bool isUseUserDefinedCoin = false;
+	void SetTExpression(std::string &tx) {
+		this->tx = tx;
+	}
+	
+	using LogiCalc::Calc;
+	bool Calc(std::bitset<defaultSizeFTimeRegion> &flagcollection);
 
 private:
+	std::string tx;
+	using LogiCalc::ExtractBit;
+	bool ExtractBit(std::bitset<defaultSizeFTimeRegion> &flagcollection, int digit);
+
 	std::bitset<defaultSizeFTimeRegion>* fTimeRegion = nullptr;
 	std::bitset<defaultSizeFTimeRegion> fEntryMask = ~std::bitset<defaultSizeFTimeRegion>(0x00000000);
 
@@ -148,6 +160,9 @@ void TriggerBitSet::InitParam()
 	if (fTimeRegion != nullptr) {
 		for (uint32_t i = 0 ; i < fTimeRegionSize ; i++) fTimeRegion[i].reset();
 	}
+
+	// SetFormula
+	fCommands = SetFormula(tx);
 
 	return;
 }
@@ -602,7 +617,7 @@ void TriggerBitSet::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 			}
 		}
 	}
-	
+
 	return;
 } // void TriggerBitSet::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 
@@ -643,37 +658,29 @@ std::vector<uint32_t> *TriggerBitSet::Scan()
 {
 	fHits.clear();
 	fHits.resize(0);
-
-	for (unsigned int i = 0 ; i < fTimeRegionSize - 1; i++) {
-		#if 0
-		if (((fEntryMask & fTimeRegion[i]) != fEntryMask)
-		&& ((fEntryMask & fTimeRegion[i + 1]) == fEntryMask)) {
-			fHits.emplace_back(i + 1);
+	
+	if(isUseUserDefinedCoin){
+		for(unsigned int i = 0; i < fTimeRegionSize; i++){
+			if ((! DetCoin(fTimeRegion[i]))
+			&& (DetCoin(fTimeRegion[i + 1]))) {
+				fHits.emplace_back(i + 1);
+			}
 		}
-		#else
-		if ((! DetCoin(fTimeRegion[i]))
-		 && (DetCoin(fTimeRegion[i + 1]))) {
-			fHits.emplace_back(i + 1);
+		return &fHits;
+	}
+	else{
+		for(unsigned int i = 0; i < fTimeRegionSize - 1; i++){
+			// later
 		}
-		#endif
-
-		#if 0
-		if (fTimeRegion[i] != 0) {
-			std::cout << "#D Scan Time: " << std::dec << i
-				<< " Bits: " << std::hex << fTimeRegion[i]
-				//<< " Mask: " << fMarkMask << std::endl;
-				<< " Mask: " << fEntryMask << std::endl;
-		}
-		#endif
 	}
 
-	return &fHits;
 } // std::vector<uint32_t> *TriggerBitSet::Scan()
 
 bool TriggerBitSet::DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection){
 	// to be implemented (or, call back user defined function)
+
 	return false;
-} // bool TriggerBitSet::DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection)
+} // bool TriggerBitSet::DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection, std::string &tExpression)
 
 std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 {
@@ -714,7 +721,22 @@ std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 	#endif
 
 	return Trigger::Scan();
-}
+} // std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
+
+bool TriggerBitSet::Calc(std::bitset<defaultSizeFTimeRegion> &flagcollection){
+	
+	return false;
+} // bool TriggerBitSet::Calc(std::bitset<defaultSizeFTimeRegion> &flagcollection)
+
+bool TriggerBitSet::ExtractBit(std::bitset<defaultSizeFTimeRegion> &flagcollection, int digit){
+	if (digit < defaultSizeFTimeRegion){
+		uint32_t bit = flagcollection[digit];
+		return bit;
+	}
+	else{
+		return false;
+	}
+} // bool TriggerBitSet::ExtractBit(std::bitset<defaultSizeFTimeRegion> &flagcollection, int digit)
 
 
 
