@@ -9,10 +9,12 @@
 #include <iomanip>
 #include <vector>
 #include <stack>
+#include <bitset>
 
 #include <algorithm>
 
 #include "infixtorp.cxx"
+#include "Trigger.cxx"
 
 class LogiCalc
 {
@@ -27,12 +29,14 @@ public:
 protected:
 	bool ExtractBit(uint32_t, int);
 	std::vector<std::string> fCommands;
+	std::stack<bool> fStack;
+
 private:
 	//std::vector<std::string> &Split(std::string);
 	int ComPushBack(std::string &);
 
 	
-	std::stack<bool> fStack;
+	
 	int fNsigMax = 32;
 	int fSigMax = 0;
 	const std::vector<std::string> fFuncs = {"&", "|", "!", "x", "d"};
