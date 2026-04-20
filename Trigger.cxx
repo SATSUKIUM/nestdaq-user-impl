@@ -65,6 +65,7 @@ public:
 	bool isUseUserDefinedCoin = false;
 	void SetTExpression(std::string &tx) {
 		this->tx = tx;
+		fCommands = SetFormula(tx); // class LogiCalc member variable std::vector<std::string> fCommands, LogiCalc::SetFormula()
 	}
 	
 	using LogiCalc::Calc;
@@ -72,6 +73,9 @@ public:
 
 private:
 	std::string tx;
+	void SetWorkFlowCalc();
+	using OpFunc = void(*)(LogiCalc*, std::bitset<defaultSizeFTimeRegion> &);
+	std::vector<OpFunc> fWorkFlowCalc;
 	using LogiCalc::ExtractBit;
 	bool ExtractBit(std::bitset<defaultSizeFTimeRegion> &flagcollection, int digit);
 
