@@ -1,4 +1,4 @@
-#include <infixtorp.h>
+#include "infixtorp.h"
 // - - - - - - - - - - - - - - - - 8< - - - - - - - - - - - - - - - - //
 // infixtorp.cxx //
 
