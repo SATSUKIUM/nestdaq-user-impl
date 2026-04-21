@@ -4,6 +4,7 @@
  */
 
 #include "Trigger.h"
+#include "UnpackTdc.h"
 
 Trigger::Trigger()
 {
