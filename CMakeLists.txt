@@ -175,6 +175,7 @@ add_library(triggerlib
   Trigger.cxx
   TriggerMap.cxx
   LogiCalc.cxx
+  infixtorp.cxx
 )
 
 foreach(lvar IN ITEMS
