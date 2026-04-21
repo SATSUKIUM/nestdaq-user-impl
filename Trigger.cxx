@@ -33,17 +33,17 @@ class Trigger
 public:
 	Trigger();
 	virtual ~Trigger();
-	virtual void InitParam();
-	virtual bool SetTimeRegion(int);
-	virtual void CleanUpTimeRegion();
+	virtual void InitParam() = 0;
+	virtual bool SetTimeRegion(int) = 0;
+	virtual void CleanUpTimeRegion() = 0;
 	// uint32_t *GetTimeRegion();
 	uint32_t GetTimeRegionSize();
-	virtual void Entry(uint32_t, int, int); // fem, ch, offset
-	virtual void Entry(uint32_t, int, int, uint32_t, uint32_t); // fem, ch, offset, leftwidth, rightwidth
+	virtual void Entry(uint32_t, int, int) = 0; // fem, ch, offset
+	virtual void Entry(uint32_t, int, int, uint32_t, uint32_t) = 0; // fem, ch, offset, leftwidth, rightwidth
 	virtual void ClearEntry();
 	bool CheckEntryFEM(uint32_t);
-	virtual void Mark(unsigned char *, int, int, uint32_t);
-	virtual std::vector<uint32_t> *Scan();
+	virtual void Mark(unsigned char *, int, int, uint32_t) = 0;
+	virtual std::vector<uint32_t> *Scan() = 0;
 	std::vector<uint32_t> *Exec(std::vector<struct HBFIndex> &);
 	void SetMarkLen(int val) {fMarkLen = val;};
 	int GetMarkLen() {return fMarkLen;};
