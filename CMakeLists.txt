@@ -171,6 +171,12 @@ message(STATUS "UHBOOK_HEADER:    ${UHBOOK_HEADER}")
 #==============================================================================
 # Sampler(for Emulator), Sink, FileSink, STFBuilder, TimeFrameBuilder
 #==============================================================================
+add_library(triggerlib
+  Trigger.cxx
+  TriggerMap.cxx
+  LogiCalc.cxx
+)
+
 foreach(lvar IN ITEMS
   Sampler; Sink; FileSink; STFBuilder;
   TimeFrameBuilder; TFBFilePlayer; STFBFilePlayer;
@@ -187,6 +193,7 @@ foreach(lvar IN ITEMS
   ScalerSQ)
 
   set(EXEC ${lvar})
+  target_link_libraries(${EXEC} triggerlib)
   add_executable(${EXEC} 
     ${EXEC}.cxx;
   )
