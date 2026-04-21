@@ -32,6 +32,7 @@
 #include "Trigger.h"
 
 #define DEBUG_MORE32 0
+#define BENCHMARK_MORE32 1
 
 //std::atomic<int> gQdepth = 0;
 
@@ -1140,8 +1141,14 @@ bool LogicFilter::ConditionalRun()
 		// Trigger processing in unit of HBF
 		std::vector< std::vector<uint32_t> > fltdata;
 		int totalhits = 0;
+		#if BENCHMARK_MORE32
+		std::cout << "\n[LogicFilter::ConditionalRun] before for(size_t i = 0; i < bsize_min; i++)" << std::endl;
+		std::cout << "\tbsize_min: " << bsize_min << std::endl;
+		#endif
 		for (size_t i = 0 ; i < bsize_min ; i++) {
-
+			#if BENCHMARK_MORE32
+			std::cout << "[LogicFilter::ConditionalRun] Processing block " << i << " / " << bsize_min << std::endl;
+			#endif
 			//HBF building
 			std::vector<struct HBFIndex> hbf_list;
 			BuildHBF(hbf_list, block_map, inParts, i);
@@ -1170,6 +1177,9 @@ bool LogicFilter::ConditionalRun()
 
 			totalhits += nhits;
 		}
+		#if BENCHMARK_MORE32
+		std::cout << "[LogicFilter::ConditionalRun] end for(size_t i = 0; i < bsize_min; i())" << std::endl;
+		#endif
 
 		#if 0
 		if (fKt2->Check()) {
