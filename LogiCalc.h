@@ -13,7 +13,7 @@
 
 #include <algorithm>
 
-#include "infixtorp.cxx"
+#include "infixtorp.h"
 // #include "Trigger.cxx"
 
 class LogiCalc
