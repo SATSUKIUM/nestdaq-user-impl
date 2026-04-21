@@ -823,11 +823,14 @@ void TriggerBitSet::SetWorkFlowCalc(){
 	while(!fStack.empty()) fStack.pop();
 
 	int nStack = 0;
+	bool handled = false;
 	for(auto& com : fCommands){
+		handled = false;
 		if(std::all_of(com.cbegin(), com.cend(), isdigit)){
 			int sig = atoi(com.c_str());
 			fWorkFlowCalc.push_back({OpPush, sig});
 			nStack++;
+			handled = true;
 		}
 		else{
 			if(nStack > 1){
@@ -845,19 +848,23 @@ void TriggerBitSet::SetWorkFlowCalc(){
 				else{
 					std::cout << "\n#E Invalid command: " << com << " not enough operands in stack" << std::endl;
 				}
+				handled = true;
 			}
 			if((com == "!") || (com == "^")){
 				fWorkFlowCalc.push_back({OpNot, 0});
+				handled = true;
 			}
 			else if((com == "d") || (com == "p")){
 				if(nStack > 0){
 					fWorkFlowCalc.push_back({OpPop, 0});
+					nStack--;
 				}
 				else{
 					std::cout << "\n#E empty stack" << std::endl;
 				}
+				handled = true;
 			}
-			else{
+			else if(!handled){
 				std::cout << "\n#E Unknown command: " << com << std::endl;
 			}
 		}
