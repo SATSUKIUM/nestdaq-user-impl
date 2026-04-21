@@ -37,7 +37,6 @@ private:
 
 	
 	
-	int fNsigMax = 32;
 	int fSigMax = 0;
 	const std::vector<std::string> fFuncs = {"&", "|", "!", "x", "d"};
 	const std::string fSeparator = std::string(" ");

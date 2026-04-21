@@ -20,7 +20,7 @@ int LogiCalc::ComPushBack(std::string &word)
 	if (word.length() > 0) {
 		if (std::all_of(word.cbegin(), word.cend(), isdigit)) {
 			int sig = atoi(word.c_str());
-			if ((sig >= 0) && (sig < fNsigMax)) {
+			if (sig >= 0) {
 				fCommands.push_back(word);
 				if (sig > fSigMax) fSigMax = sig;
 			} else {
