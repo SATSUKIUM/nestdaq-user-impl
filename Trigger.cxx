@@ -170,6 +170,15 @@ Trigger::~Trigger()
 	return;
 }
 
+void Trigger::InitParam() {};
+bool Trigger::SetTimeRegion(int) {};
+void Trigger::CleanUpTimeRegion() {};
+void Trigger::Entry(uint32_t, int, int) {};
+void Trigger::Entry(uint32_t, int, int, uint32_t, uint32_t) {};
+void Trigger::Mark(unsigned char *, int, int, uint32_t) {};
+std::vector<uint32_t> *Trigger::Scan() {};
+
+
 void Trigger32::SetTExpression(std::string &tx)
 {
 	MakeTable(tx); // convert mq-param to RPN, and make LUT
