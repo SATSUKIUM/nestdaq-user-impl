@@ -193,10 +193,11 @@ foreach(lvar IN ITEMS
   ScalerSQ)
 
   set(EXEC ${lvar})
-  target_link_libraries(${EXEC} triggerlib)
-  add_executable(${EXEC} 
+
+  add_executable(${EXEC}
     ${EXEC}.cxx;
   )
+  target_link_libraries(${EXEC} triggerlib)
 
   target_include_directories(${EXEC} PUBLIC 
     ${Boost_INCLUDE_DIRS};  
