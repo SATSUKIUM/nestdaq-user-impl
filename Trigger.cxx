@@ -28,6 +28,45 @@ struct HBFIndex {
 	int size;
 };
 
+class Trigger
+{
+public:
+	Trigger();
+	virtual ~Trigger();
+	virtual void InitParam();
+	virtual bool SetTimeRegion(int);
+	virtual void CleanUpTimeRegion();
+	// uint32_t *GetTimeRegion();
+	uint32_t GetTimeRegionSize();
+	virtual void Entry(uint32_t, int, int); // fem, ch, offset
+	virtual void Entry(uint32_t, int, int, uint32_t, uint32_t); // fem, ch, offset, leftwidth, rightwidth
+	virtual void ClearEntry();
+	bool CheckEntryFEM(uint32_t);
+	virtual void Mark(unsigned char *, int, int, uint32_t);
+	virtual std::vector<uint32_t> *Scan();
+	std::vector<uint32_t> *Exec(std::vector<struct HBFIndex> &);
+	void SetMarkLen(int val) {fMarkLen = val;};
+	int GetMarkLen() {return fMarkLen;};
+	//void SetLogic(int);
+	virtual void SetTExpression(std::string &) = 0;
+protected:
+	//std::vector<struct CoinCh> fEntry;
+	std::map< uint32_t, std::vector<int> > fEntryCh;
+	std::map< uint32_t, std::vector<int> > fEntryChDelay;
+	// std::map< uint32_t, std::vector<uint32_t> > fEntryChBit;
+	std::map< uint32_t, std::vector<uint32_t> > fEntryChLeftWidth; // [T - leftwidth, T + rightwidth]
+	std::map< uint32_t, std::vector<uint32_t> > fEntryChRightWidth; // [T - leftwidth, T + rightwidth]
+	int fEntryCounts = 0;
+
+	uint32_t fTimeRegionSize;
+	int fMarkLen = 5; // default set value ( to be changed by mq-param ), common for all channels
+
+	int fNentry = 0;
+	
+	std::vector<uint32_t> fHits;
+	TriggerMap fTMap; // これ持つのTrigger32だけでええかもな...
+}; // class Trigger
+
 class Trigger32 : public Trigger, public TriggerMap{
 public:
 	Trigger32() : Trigger() {};
@@ -119,44 +158,7 @@ private:
 }; // class TriggerBitSet : public Trigger, public LogiCalc
 
 
-class Trigger
-{
-public:
-	Trigger();
-	virtual ~Trigger();
-	virtual void InitParam();
-	virtual bool SetTimeRegion(int);
-	virtual void CleanUpTimeRegion();
-	// uint32_t *GetTimeRegion();
-	uint32_t GetTimeRegionSize();
-	virtual void Entry(uint32_t, int, int); // fem, ch, offset
-	virtual void Entry(uint32_t, int, int, uint32_t, uint32_t); // fem, ch, offset, leftwidth, rightwidth
-	virtual void ClearEntry();
-	bool CheckEntryFEM(uint32_t);
-	virtual void Mark(unsigned char *, int, int, uint32_t);
-	virtual std::vector<uint32_t> *Scan();
-	std::vector<uint32_t> *Exec(std::vector<struct HBFIndex> &);
-	void SetMarkLen(int val) {fMarkLen = val;};
-	int GetMarkLen() {return fMarkLen;};
-	//void SetLogic(int);
-	virtual void SetTExpression(std::string &) = 0;
-protected:
-	//std::vector<struct CoinCh> fEntry;
-	std::map< uint32_t, std::vector<int> > fEntryCh;
-	std::map< uint32_t, std::vector<int> > fEntryChDelay;
-	// std::map< uint32_t, std::vector<uint32_t> > fEntryChBit;
-	std::map< uint32_t, std::vector<uint32_t> > fEntryChLeftWidth; // [T - leftwidth, T + rightwidth]
-	std::map< uint32_t, std::vector<uint32_t> > fEntryChRightWidth; // [T - leftwidth, T + rightwidth]
-	int fEntryCounts = 0;
 
-	uint32_t fTimeRegionSize;
-	int fMarkLen = 5; // default set value ( to be changed by mq-param ), common for all channels
-
-	int fNentry = 0;
-	
-	std::vector<uint32_t> fHits;
-	TriggerMap fTMap; // これ持つのTrigger32だけでええかもな...
-}; // class Trigger
 
 Trigger::Trigger()
 {
