@@ -48,7 +48,7 @@ struct LogicFilter : fair::mq::Device
 		static constexpr std::string_view SplitMethod        {"split"};
 
 		static constexpr std::string_view TriggerSignals     {"trigger-signals"};
-		static constexpr std::string_view TriggerFormula     {"trigger-expression"};
+		static constexpr std::string_view TriggerExpression     {"trigger-expression"};
 		static constexpr std::string_view TriggerWidth       {"trigger-width"};
 	};
 
@@ -206,7 +206,7 @@ void LogicFilter::InitTask()
 	LOG(info) << "InitTask: RemoveHB : " << fIsRemoveHB;
 
 	std::string str_signals = fConfig->GetProperty<std::string>(opt::TriggerSignals.data());
-	std::string formula = fConfig->GetProperty<std::string>(opt::TriggerFormula.data());
+	std::string tx = fConfig->GetProperty<std::string>(opt::TriggerExpression.data());
 	int window_width = std::stoi(fConfig->GetProperty<std::string>(opt::TriggerWidth.data()));
 	LOG(info) << "Trigger windows width: " << window_width;
 
@@ -262,8 +262,13 @@ void LogicFilter::InitTask()
 		}
 	}
 	
-	LOG(info) << "Formula: " << formula;
-	fTrig->MakeTable(formula); // あとでmore32かどうかで条件分岐する
+	LOG(info) << "Trigger Expression: " << tx;
+	if(isUseTrigger32){
+		fTrig->SetTExpression(tx); // Trigger32
+	}
+	else{
+		fTrig->SetTExpression(tx); // TriggerBitSet
+	}
 
 
 

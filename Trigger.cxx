@@ -28,11 +28,12 @@ struct HBFIndex {
 	int size;
 };
 
-class Trigger32 : public Trigger{
+class Trigger32 : public Trigger, public TriggerMap{
 public:
 	Trigger32() : Trigger() {};
 	virtual ~Trigger32() {};
 	void InitParam() override;
+	void SetTExpression(std::string &tx) override; // call TriggerMap::MakeTable()
 	bool SetTimeRegion(int size) override;
 	void CleanUpTimeRegion() override;
 	void Mark(unsigned char *, int, int, uint32_t) override;
@@ -46,7 +47,8 @@ private:
 	uint32_t fEntryMask = 0;
 
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChBit;
-};
+}; // class Trigger32 : public Trigger, public TriggerMap
+
 
 class TriggerBitSet : public Trigger, public LogiCalc {
 public:
@@ -63,17 +65,13 @@ public:
 	void Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth) override;
 	void ClearEntry() override;
 	bool isUseUserDefinedCoin = false; // false: default, true: user defined coin (to be implemented)
-	void SetTExpression(std::string &tx) {
-		this->tx = tx;
-		fCommands = SetFormula(tx); // class LogiCalc member variable std::vector<std::string> fCommands, LogiCalc::SetFormula()
-		SetWorkFlowCalc(); // make job list for evaluation of a set of flags of hitmap
-	}
+	void SetTExpression(std::string &tx) override {};
 	
 	using LogiCalc::Calc;
 	bool Calc(std::bitset<defaultSizeFTimeRegion> &flagcollection);
 
 private:
-	std::string tx;
+	// std::string tx;
 	void SetWorkFlowCalc();
 	using OpFunc = void(*)(TriggerBitSet*, const std::bitset<defaultSizeFTimeRegion> &, int);
 	struct OpWithArg{
@@ -118,7 +116,7 @@ private:
 
 
 
-};
+}; // class TriggerBitSet : public Trigger, public LogiCalc
 
 
 class Trigger
@@ -141,7 +139,7 @@ public:
 	void SetMarkLen(int val) {fMarkLen = val;};
 	int GetMarkLen() {return fMarkLen;};
 	//void SetLogic(int);
-	void MakeTable(std::string &);
+	virtual void SetTExpression(std::string &) = 0;
 protected:
 	//std::vector<struct CoinCh> fEntry;
 	std::map< uint32_t, std::vector<int> > fEntryCh;
@@ -152,13 +150,13 @@ protected:
 	int fEntryCounts = 0;
 
 	uint32_t fTimeRegionSize;
-	int fMarkLen = 5; // default set value ( to be changed by mq-param )
+	int fMarkLen = 5; // default set value ( to be changed by mq-param ), common for all channels
 
 	int fNentry = 0;
 	
 	std::vector<uint32_t> fHits;
-	TriggerMap fTMap;
-};
+	TriggerMap fTMap; // これ持つのTrigger32だけでええかもな...
+}; // class Trigger
 
 Trigger::Trigger()
 {
@@ -170,12 +168,19 @@ Trigger::~Trigger()
 	return;
 }
 
-//void Trigger::SetLogic(int nsignal, std::string formula)
-void Trigger::MakeTable(std::string & formula)
+void Trigger32::SetTExpression(std::string &tx)
 {
-	fTMap.MakeTable(formula);
+	MakeTable(tx); // convert mq-param to RPN, and make LUT
 	return;
 }
+
+void TriggerBitSet::SetTExpression(std::string &tx)
+{
+	fCommands = SetFormula(tx); // class LogiCalc member variable std::vector<std::string> fCommands, LogiCalc::SetFormula()
+	SetWorkFlowCalc(); // make job list for evaluation of a set of flags of hitmap, stored in TriggerBitSet::fWorkFlowCalc
+	return;
+}
+
 
 void Trigger32::InitParam()
 {
@@ -201,7 +206,7 @@ void TriggerBitSet::InitParam()
 	}
 
 	// SetFormula
-	fCommands = SetFormula(tx);
+	// fCommands = SetFormula(tx);
 
 	return;
 }
