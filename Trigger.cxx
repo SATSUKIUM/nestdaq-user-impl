@@ -825,7 +825,7 @@ std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 	auto t0_scan = std::chrono::high_resolution_clock::now();
 	auto hits = Scan();
 	auto t1_scan = std::chrono::high_resolution_clock::now();
-	return hits;
+	
 	double elapsed_cleanuptimeregion = 0.0;
 	double elapsed_mark = 0.0;
 	double elapsed_scan = 0.0;
@@ -835,6 +835,8 @@ std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 	std::cout << "\n[Trigger::Exec] CleanUpTimeRegion: " << elapsed_cleanuptimeregion << " us" << std::endl;
 	std::cout << "[Trigger::Exec] Mark: " << elapsed_mark << " us" << std::endl;
 	std::cout << "[Trigger::Exec] Scan: " << elapsed_scan << " us" << std::endl;
+	
+	return hits;
 	#endif
 
 } // std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
