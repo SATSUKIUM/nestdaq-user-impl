@@ -3,9 +3,6 @@
  *
  */
 
-#ifndef TriggerMap_cxx
-#define TriggerMap_cxx
-
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -13,32 +10,7 @@
 #include <stack>
 
 #include "LogiCalc.cxx"
-
-class TriggerMap
-{
-public:
-	TriggerMap(){};
-	virtual ~TriggerMap(){};
-	void MakeTable(std::string &);
-	bool LookUp(uint32_t);
-	void Dump();
-protected:
-private:
-	bool ExtractBit(uint32_t, int);
-	std::vector<bool> fLut;
-	unsigned int fNsignal = 0;
-	unsigned int fMapSize = 0;
-};
-
-bool TriggerMap::ExtractBit(uint32_t val, int digit)
-{
-	if (digit < 32) {
-		uint32_t bit = (val >> digit) & 0x00000001;
-		return (bit > 0) ? true : false;
-	} else {
-		return false;
-	}
-}
+#include "TriggerMap.h"
 
 void TriggerMap::MakeTable(std::string & formula)
 {
@@ -139,4 +111,3 @@ int main(int argc, char *argv[])
 }
 #endif
 
-#endif //#ifdef TriggerMap_cxx

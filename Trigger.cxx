@@ -13,8 +13,8 @@
 
 #include "UnpackTdc.h"
 #include "SubTimeFrameHeader.h"
-#include "TriggerMap.cxx"
-#include "LogiCalc.cxx"
+#include "TriggerMap.h"
+#include "LogiCalc.h"
 
 #include <bitset>
 
