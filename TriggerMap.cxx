@@ -9,7 +9,7 @@
 #include <vector>
 #include <stack>
 
-#include "LogiCalc.cxx"
+#include "LogiCalc.h"
 #include "TriggerMap.h"
 
 void TriggerMap::MakeTable(std::string & formula)
