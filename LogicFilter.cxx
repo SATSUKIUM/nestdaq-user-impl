@@ -211,8 +211,10 @@ void LogicFilter::InitTask()
 
 	std::string sIsUseUserDefinedCoin = fConfig->GetValue<std::string>(opt::IsUseUserDefinedCoin.data());
 	if(sIsUseUserDefinedCoin == "true") {
+		std::cout << "\n[LogicFilter::InitTask] fTrig->SetIsUseUserDefinedCoin(true)" << std::endl;
 		fTrig->SetIsUseUserDefinedCoin(true);
 	} else {
+		std::cout << "\n[LogicFilter::InitTask] fTrig->SetIsUseUserDefinedCoin(false)" << std::endl;
 		fTrig->SetIsUseUserDefinedCoin(false);
 	}
 	LOG(info) << "InitTask: IsUseUserDefinedCoin : " << sIsUseUserDefinedCoin;
