@@ -25,7 +25,7 @@
 #include "FilterHeader.h"
 
 #include "KTimer.cxx"
-#include "Trigger.cxx"
+#include "Trigger.h"
 
 
 //std::atomic<int> gQdepth = 0;
