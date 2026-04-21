@@ -1135,16 +1135,28 @@ bool LogicFilter::ConditionalRun()
 		}
 
 		// Trigger processing in unit of HBF
+		#if DEBUG_MORE32
+		std::cout << "[LogicFilter::ConditionalRun] Processing triggers..." << std::endl
+		#endif
 		std::vector< std::vector<uint32_t> > fltdata;
 		int totalhits = 0;
 		for (size_t i = 0 ; i < bsize_min ; i++) {
 
 			//HBF building
 			std::vector<struct HBFIndex> hbf_list;
+			#if DEBUG_MORE32
+			std::cout << "[LogicFilter::ConditionalRun] Building HBF for block index " << i << "..." << std::endl;
+			#endif
 			BuildHBF(hbf_list, block_map, inParts, i);
 
 			//Trigger process
+			#if DEBUG_MORE32
+			std::cout << "[LogicFilter::ConditionalRun] Executing trigger for block index " << i << "..." << std::endl;
+			#endif
 			std::vector<uint32_t> *hits = fTrig->Exec(hbf_list);
+			#if DEBUG_MORE32
+			std::cout << "[LogicFilter::ConditionalRun] Executed trigger for block index " << i << std::endl;
+			#endif
 			fltdata.emplace_back(*hits);
 			int nhits = hits->size();
 
