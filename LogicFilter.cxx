@@ -164,6 +164,7 @@ private:
 	KTimer *fKt4;
 
 	bool isUseTrigger32 = true;
+	uint64_t fNumIterations {0};
 };
 
 
@@ -1055,6 +1056,11 @@ int LogicFilter::MarkFlagSending(
 
 bool LogicFilter::ConditionalRun()
 {
+	#if 1
+	fNumIterations++;
+	std::cout << "\n[LogicFilter::ConditionalRun] Iteration " << fNumIterations << "started" << std::endl;
+	#endif
+
 	//Receive
 	FairMQParts inParts;
 
