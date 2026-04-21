@@ -383,6 +383,7 @@ void TriggerBitSet::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, 
 	return;
 } // void TriggerBitSet::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth)
 
+void Trigger::ClearEntry() {};
 void Trigger32::ClearEntry()
 {
 	fEntryCh.clear();
