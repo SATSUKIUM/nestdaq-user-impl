@@ -765,14 +765,14 @@ bool TriggerBitSet::DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection)
 
 std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 {
-	Trigger::CleanUpTimeRegion();
+	CleanUpTimeRegion();
 
 	for (auto &seg : hbf) {
 		//fTrig->Mark(
 		//	reinterpret_cast<unsigned char *>(inParts[mindex].GetData()),
 		//	inParts[mindex].GetSize(),
 		//	vfemid, dbl->Type);
-		Trigger::Mark(seg.data, seg.size, seg.femId, seg.femType);
+		Mark(seg.data, seg.size, seg.femId, seg.femType);
 	}
 
 	#if 0
@@ -801,7 +801,7 @@ std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 	std::cout << std::endl;
 	#endif
 
-	return Trigger::Scan();
+	return Scan();
 } // std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 
 bool TriggerBitSet::Calc(std::bitset<defaultSizeFTimeRegion> &flagcollection){
