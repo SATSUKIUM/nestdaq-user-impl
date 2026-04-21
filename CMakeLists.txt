@@ -183,7 +183,7 @@ foreach(lvar IN ITEMS
   Sampler; Sink; FileSink; STFBuilder;
   TimeFrameBuilder; TFBFilePlayer; STFBFilePlayer;
   TimeFrameSlicerByLogicTiming;
-  fltcoin;
+  # fltcoin;
   LogicFilter;
   tfdump;
 # onlinedisplay;
