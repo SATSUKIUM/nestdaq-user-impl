@@ -212,6 +212,13 @@ void LogicFilter::InitTask()
 
 	std::vector< std::vector<uint32_t> > signals = SignalParser::Parsing(str_signals);
 
+	LOG(info) << "Signal parseing finished.";
+	for(auto& v : signals){
+		std::stringstream ss;
+		for(auto& i : v) ss << i << " ";
+		LOG(info) << "Signal: " << ss.str();
+	}
+
 	isUseTrigger32 = (signals.size() < 32);
 	if(isUseTrigger32) {
 		// Trigger32
