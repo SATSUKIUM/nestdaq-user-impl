@@ -21,6 +21,9 @@
 
 #include <bitset>
 
+#define BENCHMARK_MORE32 1
+#include <chrono>
+
 
 struct HBFIndex {
 	int msg_index;
@@ -112,6 +115,9 @@ public:
 	using LogiCalc::Calc;
 	bool Calc(std::bitset<defaultSizeFTimeRegion> &flagcollection);
 
+	#if BENCHMARK_MORE32
+
+	#endif
 private:
 	// std::string tx;
 	void SetWorkFlowCalc();
@@ -765,8 +771,17 @@ bool TriggerBitSet::DetCoin(std::bitset<defaultSizeFTimeRegion> &flagcollection)
 
 std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 {
+	#if BENCHMARK_MORE32
+	auto t0_cleanuptimeregion = std::chrono::high_resolution_clock::now();
+	#endif
 	CleanUpTimeRegion();
+	#if BENCHMARK_MORE32
+	auto t1_cleanuptimeregion = std::chrono::high_resolution_clock::now();
+	#endif
 
+	#if BENCHMARK_MORE32
+	auto t0_mark = std::chrono::high_resolution_clock::now();
+	#endif
 	for (auto &seg : hbf) {
 		//fTrig->Mark(
 		//	reinterpret_cast<unsigned char *>(inParts[mindex].GetData()),
@@ -774,6 +789,9 @@ std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 		//	vfemid, dbl->Type);
 		Mark(seg.data, seg.size, seg.femId, seg.femType);
 	}
+	#if BENCHMARK_MORE32
+	auto t1_mark = std::chrono::high_resolution_clock::now();
+	#endif
 
 	#if 0
 	uint32_t *tr = fTrig->GetTimeRegion();
@@ -801,7 +819,24 @@ std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 	std::cout << std::endl;
 	#endif
 
+	#if !BENCHMARK_MORE32
 	return Scan();
+	#else
+	auto t0_scan = std::chrono::high_resolution_clock::now();
+	auto hits = Scan();
+	auto t1_scan = std::chrono::high_resolution_clock::now();
+	return hits;
+	double elapsed_cleanuptimeregion = 0.0;
+	double elapsed_mark = 0.0;
+	double elapsed_scan = 0.0;
+	elapsed_cleanuptimeregion = std::chrono::duration<double, std::micro>(t1_cleanuptimeregion - t0_cleanuptimeregion).count();
+	elapsed_mark = std::chrono::duration<double, std::micro>(t1_mark - t0_mark).count();
+	elapsed_scan = std::chrono::duration<double, std::micro>(t1_scan - t0_scan).count();
+	std::cout << "\n[Trigger::Exec] CleanUpTimeRegion: " << elapsed_cleanuptimeregion << " us" << std::endl;
+	std::cout << "[Trigger::Exec] Mark: " << elapsed_mark << " us" << std::endl;
+	std::cout << "[Trigger::Exec] Scan: " << elapsed_scan << " us" << std::endl;
+	#endif
+
 } // std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 
 bool TriggerBitSet::Calc(std::bitset<defaultSizeFTimeRegion> &flagcollection){
