@@ -25,7 +25,7 @@
 #include "FilterHeader.h"
 
 #include "KTimer.cxx"
-#include "Trigger.h"
+#include "Trigger.cxx"
 
 
 //std::atomic<int> gQdepth = 0;
@@ -112,7 +112,7 @@ private:
 	int fSplitMethod{0};
 
 	uint32_t fId {0};
-	std::unique_ptr<Trigger> fTrig;
+	Trigger *fTrig;
 	bool fIsDataSuppress = true;
 	bool fIsRemoveHB = false;
 
