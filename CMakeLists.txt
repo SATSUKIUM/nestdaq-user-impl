@@ -178,6 +178,9 @@ add_library(triggerlib
   infixtorp.cxx
   TriggerBySomething.cxx
 )
+add_library(unptdc
+  UnpackTdc.cxx
+)
 
 foreach(lvar IN ITEMS
   Sampler; Sink; FileSink; STFBuilder;
@@ -203,6 +206,8 @@ foreach(lvar IN ITEMS
   if(${EXEC} STREQUAL "LogicFilter" OR ${EXEC} STREQUAL "fltcoin")
     target_link_libraries(${EXEC} PUBLIC triggerlib)
   endif()
+
+  target_link_libraries(${EXEC} PUBLIC unptdc)
 
   target_include_directories(${EXEC} PUBLIC 
     ${Boost_INCLUDE_DIRS};  
