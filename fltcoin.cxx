@@ -49,7 +49,7 @@ struct FltCoin : fair::mq::Device
 		// register a handler for data arriving on "data" channel
 		//OnData("in", &FltCoin::HandleData);
 
-		fTrig = new Trigger();
+		fTrig = std::make_unique<Trigger32>();
 		fKt1 = new KTimer(1000);
 		fKt2 = new KTimer(1000);
 		fKt3 = new KTimer(1000);
@@ -112,7 +112,7 @@ private:
 	int fSplitMethod{0};
 
 	uint32_t fId {0};
-	Trigger *fTrig;
+	std::unique_ptr<Trigger> fTrig;
 	bool fIsDataSuppress = true;
 	bool fIsRemoveHB = false;
 
@@ -206,7 +206,7 @@ void FltCoin::InitTask()
 	fTrig->Entry(0xc0a802a8,  8, 0);
 	fTrig->Entry(0xc0a802a8, 10, 0);
 	std::string form("RPN 0 1 &");
-	fTrig->MakeTable(form);
+	fTrig->SetTExpression(form);
 #endif
 
 }
