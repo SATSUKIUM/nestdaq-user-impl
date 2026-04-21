@@ -225,12 +225,12 @@ void LogicFilter::InitTask()
 	if(isUseTrigger32) {
 		// Trigger32
 		LOG(info) << "Use Trigger32";
-		fTrig = std::unique_ptr<Trigger32>();
+		fTrig = std::make_unique<Trigger32>();
 	}
 	else {
 		// TriggerBitSet
 		LOG(info) << "Use TriggerBitSet";
-		fTrig = std::unique_ptr<TriggerBitSet>();
+		fTrig = std::make_unique<TriggerBitSet>();
 	}
 
 	fTrig->SetTimeRegion(1024 * 128); // 524.288 us with 4 ns bin
