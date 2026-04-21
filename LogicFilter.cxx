@@ -1136,7 +1136,7 @@ bool LogicFilter::ConditionalRun()
 
 		// Trigger processing in unit of HBF
 		#if DEBUG_MORE32
-		std::cout << "[LogicFilter::ConditionalRun] Processing triggers..." << std::endl
+		std::cout << "[LogicFilter::ConditionalRun] Processing triggers..." << std::endl;
 		#endif
 		std::vector< std::vector<uint32_t> > fltdata;
 		int totalhits = 0;
