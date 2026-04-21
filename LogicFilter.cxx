@@ -67,7 +67,7 @@ struct LogicFilter : fair::mq::Device
 		// register a handler for data arriving on "data" channel
 		//OnData("in", &LogicFilter::HandleData);
 
-		fTrig = new Trigger();
+		// fTrig = new Trigger();
 		fKt1 = new KTimer(1000);
 		fKt2 = new KTimer(1000);
 		fKt3 = new KTimer(1000);
@@ -1497,9 +1497,9 @@ void addCustomOptions(bpo::options_description& options)
 			bpo::value<std::string>()->default_value(
 			"(0xc0a802a9 0 0) (0xc0a802a9 1 0)"),
 			"Triger signals (module_IP Channel_number Offset)")
-		(opt::TriggerFormula.data(),
+		(opt::TriggerExpression.data(),
 			bpo::value<std::string>()->default_value("RPN 0 1 &"),
-			"Trigger formula")
+			"Trigger Expression")
 		(opt::TriggerWidth.data(),
 			bpo::value<std::string>()->default_value("10"),
 			"Trigger window width (4 ns unit)")
