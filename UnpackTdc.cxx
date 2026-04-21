@@ -287,32 +287,7 @@ int Unpack(uint64_t data, struct tdc64 *tdc)
  
 namespace TDC64L_V3 {
 
-struct tdc64 {
-	int type;
-	int ch;
-	int tot;
-	int tdc;
-	int tdc4n;
-	int flag;
-	int toffset;
-	int genesize;
-	int transize;
-	int hartbeat;
-};
-
 inline namespace v2 {
-static constexpr unsigned int T_TDC        = (0x2c >> 2);
-static constexpr unsigned int T_TDC_L      = (0x2c >> 2);
-static constexpr unsigned int T_TDC_T      = (0x34 >> 2);
-static constexpr unsigned int T_THR1_START = (0x64 >> 2);
-static constexpr unsigned int T_THR1_END   = (0x44 >> 2);
-static constexpr unsigned int T_THR2_START = (0x68 >> 2);
-static constexpr unsigned int T_THR2_END   = (0x48 >> 2);
-static constexpr unsigned int T_HB         = (0x70 >> 2);
-static constexpr unsigned int T_HB1        = (0x70 >> 2);
-static constexpr unsigned int T_HB2        = (0x78 >> 2);
-static constexpr unsigned int T_SPL_START  = (0x60 >> 2);
-static constexpr unsigned int T_SPL_END    = (0x50 >> 2);
 
 int Unpack(uint64_t data, struct tdc64 *tdc)
 {
