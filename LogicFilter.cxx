@@ -31,6 +31,7 @@
 #include "KTimer.cxx"
 #include "Trigger.cxx"
 
+#define DEBUG_MORE32 1
 
 //std::atomic<int> gQdepth = 0;
 
@@ -1056,9 +1057,9 @@ int LogicFilter::MarkFlagSending(
 
 bool LogicFilter::ConditionalRun()
 {
-	#if 1
+	#if DEBUG_MORE32
 	fNumIterations++;
-	std::cout << "\n[LogicFilter::ConditionalRun] Iteration " << fNumIterations << "started" << std::endl;
+	std::cout << "\n[LogicFilter::ConditionalRun] Iteration " << fNumIterations << " started" << std::endl;
 	#endif
 
 	//Receive
@@ -1072,6 +1073,9 @@ bool LogicFilter::ConditionalRun()
 	std::chrono::system_clock::time_point sw_start, sw_end;
 
 	if (Receive(inParts, fInputChannelName, 0, 1000) > 0) {
+		#if DEBUG_MORE32
+		std::cout << "[LogicFilter::ConditionalRun] Received " << inParts.Size() << " parts" << std::endl;
+		#endif
 		assert(inParts.Size() >= 2);
 		sw_start = std::chrono::system_clock::now();
 
