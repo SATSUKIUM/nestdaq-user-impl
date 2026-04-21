@@ -197,7 +197,10 @@ foreach(lvar IN ITEMS
   add_executable(${EXEC}
     ${EXEC}.cxx;
   )
-  target_link_libraries(${EXEC} triggerlib)
+  
+  if(${EXEC} STREQUAL "LogicFilter" OR ${EXEC} STREQUAL "fltcoin")
+    target_link_libraries(${EXEC} PUBLIC triggerlib)
+  endif()
 
   target_include_directories(${EXEC} PUBLIC 
     ${Boost_INCLUDE_DIRS};  
