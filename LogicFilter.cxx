@@ -209,15 +209,6 @@ void LogicFilter::InitTask()
 	}
 	LOG(info) << "InitTask: RemoveHB : " << fIsRemoveHB;
 
-	std::string sIsUseUserDefinedCoin = fConfig->GetValue<std::string>(opt::IsUseUserDefinedCoin.data());
-	if(sIsUseUserDefinedCoin == "true") {
-		std::cout << "\n[LogicFilter::InitTask] fTrig->SetIsUseUserDefinedCoin(true)" << std::endl;
-		fTrig->SetIsUseUserDefinedCoin(true);
-	} else {
-		std::cout << "\n[LogicFilter::InitTask] fTrig->SetIsUseUserDefinedCoin(false)" << std::endl;
-		fTrig->SetIsUseUserDefinedCoin(false);
-	}
-	LOG(info) << "InitTask: IsUseUserDefinedCoin : " << sIsUseUserDefinedCoin;
 
 	std::string str_signals = fConfig->GetProperty<std::string>(opt::TriggerSignals.data());
 	std::string tx = fConfig->GetProperty<std::string>(opt::TriggerExpression.data());
@@ -246,6 +237,16 @@ void LogicFilter::InitTask()
 		LOG(info) << "Use TriggerBitSet";
 		fTrig = std::make_unique<TriggerBitSet>();
 	}
+
+	std::string sIsUseUserDefinedCoin = fConfig->GetValue<std::string>(opt::IsUseUserDefinedCoin.data());
+	if(sIsUseUserDefinedCoin == "true") {
+		std::cout << "\n[LogicFilter::InitTask] fTrig->SetIsUseUserDefinedCoin(true)" << std::endl;
+		fTrig->SetIsUseUserDefinedCoin(true);
+	} else {
+		std::cout << "\n[LogicFilter::InitTask] fTrig->SetIsUseUserDefinedCoin(false)" << std::endl;
+		fTrig->SetIsUseUserDefinedCoin(false);
+	}
+	LOG(info) << "InitTask: IsUseUserDefinedCoin : " << sIsUseUserDefinedCoin;
 
 	fTrig->SetTimeRegion(1024 * 128); // 524.288 us with 4 ns bin
 	fTrig->ClearEntry();
