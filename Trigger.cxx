@@ -104,7 +104,7 @@ public:
 	void Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth) override;
 	void ClearEntry() override;
 	bool isUseUserDefinedCoin = false; // false: default, true: user defined coin (to be implemented)
-	void SetTExpression(std::string &tx) override {};
+	void SetTExpression(std::string &tx) override;
 	
 	using LogiCalc::Calc;
 	bool Calc(std::bitset<defaultSizeFTimeRegion> &flagcollection);
