@@ -11,6 +11,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include <chrono>
+
 #include "UnpackTdc.h"
 #include "SubTimeFrameHeader.h"
 #include "TriggerMap.h"
@@ -181,13 +183,28 @@ std::vector<uint32_t> *Trigger::Scan() {};
 
 void Trigger32::SetTExpression(std::string &tx)
 {
+	#if 1
+	std::cout << "\n[Trigger32::SetTExpression] start makeing LUT" << std::endl;
+	#endif
+	auto t0 = std::chrono::high_resolution_clock::now();
 	MakeTable(tx); // convert mq-param to RPN, and make LUT
+	auto t1 = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+	#if 1
+	std::cout << "[Trigger32::SetTExpression] finished makeing LUT in " << duration << " ms" << std::endl;
+	#endif
+
 	return;
 }
 
 void TriggerBitSet::SetTExpression(std::string &tx)
 {
 	fCommands = SetFormula(tx); // class LogiCalc member variable std::vector<std::string> fCommands, LogiCalc::SetFormula()
+	#if 1
+	std::cout << "\n[TriggerBitSet::SetTExpression] Commands:";
+	for (auto & com : fCommands) std::cout << " " << com;
+	std::cout << std::endl;
+	#endif
 	SetWorkFlowCalc(); // make job list for evaluation of a set of flags of hitmap, stored in TriggerBitSet::fWorkFlowCalc
 	return;
 }
