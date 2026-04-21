@@ -14,7 +14,7 @@
 #include <algorithm>
 
 #include "infixtorp.cxx"
-#include "Trigger.cxx"
+// #include "Trigger.cxx"
 
 class LogiCalc
 {
