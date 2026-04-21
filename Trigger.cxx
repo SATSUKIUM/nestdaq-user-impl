@@ -192,6 +192,8 @@ void Trigger32::SetTExpression(std::string &tx)
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
 	#if 1
 	std::cout << "[Trigger32::SetTExpression] finished makeing LUT in " << duration << " ms" << std::endl;
+	double lut_size = 2^(fNentry) / (8 * 1024.0); // LUT size in KB
+	std::cout << "[Trigger32::SetTExpression] LUT size: " << lut_size << " KB" << std::endl;
 	#endif
 
 	return;
