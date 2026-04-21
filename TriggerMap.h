@@ -12,7 +12,7 @@
 #include <vector>
 #include <stack>
 
-#include "LogiCalc.cxx"
+#include "LogiCalc.h"
 
 class TriggerMap
 {
