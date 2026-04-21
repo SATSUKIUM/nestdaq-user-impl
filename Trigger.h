@@ -53,6 +53,7 @@ public:
 	int GetMarkLen() {return fMarkLen;};
 	//void SetLogic(int);
 	virtual void SetTExpression(std::string &) = 0;
+    virtual void SetIsUseUserDefinedCoin(bool val) = 0;
 protected:
 	//std::vector<struct CoinCh> fEntry;
 	std::map< uint32_t, std::vector<int> > fEntryCh;
