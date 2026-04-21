@@ -25,44 +25,11 @@ struct tdc40 {
 	int hartbeat;
 };
 
-void Rev5(unsigned char *val, unsigned char *rval)
-{
-	rval[4] = val[0];
-	rval[3] = val[1];
-	rval[2] = val[2];
-	rval[1] = val[3];
-	rval[0] = val[4];
+void Rev5(unsigned char *val, unsigned char *rval);
 
-	return;
-}
+int Unpack(unsigned char *data, struct tdc40 *tdc);
 
-int Unpack(unsigned char *data, struct tdc40 *tdc)
-{
-	tdc->type = (data[4] & 0xf0) >> 4;
-	if (tdc->type == T_TDC) {
-		tdc->tot  = ((data[4] & 0x07) << 5) | ((data[3] & 0xf8) >> 3);
-		tdc->flag = (data[3] & 0x06) >> 1;
-		tdc->ch   = ((data[3] & 0x01) << 5) | (data[2] & 0xf8) >> 3;
-		tdc->tdc  = ((data[2] & 0x07) << 16) | (data[1] << 8) | data[0];
-		tdc->hartbeat = 0;
-	} else 
-	if ((tdc->type == T_HB) || (tdc->type == T_ERROR)) {
-		tdc->tot  = -1;
-		tdc->flag = -1;
-		tdc->ch   = -1;
-		tdc->tdc  = -1;
-		tdc->hartbeat = ((data[1] << 8) | data[0]);
-	} else {
-		tdc->tot  = -1;
-		tdc->flag = -1;
-		tdc->ch   = -1;
-		tdc->tdc  = -1;
-		tdc->hartbeat = 0;
-	}
-
-	return tdc->type;
-}
-} //namespace TDC40
+} // namespace TDC40
 
 
 namespace TDC64H {
@@ -89,48 +56,7 @@ static constexpr unsigned int T_THR2_END   = (0x48 >> 2);
 static constexpr unsigned int T_SPL_START  = (0x60 >> 2);
 static constexpr unsigned int T_SPL_END    = (0x50 >> 2);
 
-int Unpack(uint64_t data, struct tdc64 *tdc)
-{
-	//unsigned char *cdata = reinterpret_cast<unsigned char *>(&data);
-
-	tdc->type = (data & 0xfc00'0000'0000'0000) >> 58;
-	if (tdc->type == T_TDC) {
-		tdc->ch	      = (data & 0x03f8'0000'0000'0000) >> 51;
-		tdc->tot      = (data & 0x0007'ffff'e000'0000) >> 29;
-		tdc->tdc      = (data & 0x0000'0000'1fff'ffff);
-		tdc->tdc4n    = (data & 0x0000'0000'1fff'ffff) >> 12;
-		tdc->spill    = -1;
-		tdc->hartbeat = -1;
-	} else
-	if (tdc->type == T_HB) {
-		tdc->ch	= -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = (data & 0x03ff'0000'0000'0000) >> 48;
-		tdc->spill    = (data & 0x0000'ff00'0000'0000) >> 40;
-		tdc->hartbeat = (data & 0x0000'00ff'ff00'0000) >> 24;
-	} else
-	if ((tdc->type == T_SPL_START) || (tdc->type == T_SPL_END)) {
-		tdc->ch	= -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = (data & 0x03ff'0000'0000'0000) >> 48;
-		tdc->spill    = (data & 0x0000'ff00'0000'0000) >> 40;
-		tdc->hartbeat = (data & 0x0000'00ff'ff00'0000) >> 24;
-	} else {
-		tdc->ch	= -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = -1;
-		tdc->spill    = -1;
-		tdc->hartbeat = -1;
-	}
-
-	return tdc->type;
-}
+int Unpack(uint64_t data, struct tdc64 *tdc);
 
 #if 0
 int Unpack(uint64_t data, struct tdc64 *tdc)
@@ -140,29 +66,9 @@ int Unpack(uint64_t data, struct tdc64 *tdc)
 }
 #endif
 
-int Unpack(unsigned char *data, struct tdc64 *tdc)
-{
-	uint64_t *pdata = reinterpret_cast<uint64_t *>(data);
-	return Unpack(*pdata, tdc);
-}
+int Unpack(unsigned char *data, struct tdc64 *tdc);
 
-int GetHBFrame(unsigned char *pdata, unsigned char *pend, unsigned char **ppnext)
-{
-	uint64_t *tdcword = reinterpret_cast<uint64_t *>(pdata);
-	struct tdc64 tdc;
-	int i = 0;
-	while (true) {
-		if (Unpack(tdcword[i++], &tdc) == T_HB) break;
-		if (reinterpret_cast<unsigned char*>(&(tdcword[i])) > pend) {
-			*ppnext = nullptr;
-			return 0;
-		}
-	}
-	i++;
-	*ppnext = reinterpret_cast<unsigned char *>(tdcword + i);
-
-	return i * sizeof(uint64_t);
-}
+int GetHBFrame(unsigned char *pdata, unsigned char *pend, unsigned char **ppnext);
 } //namespace TDC64H
 
 namespace TDC64L {
@@ -184,49 +90,7 @@ static constexpr unsigned int T_HB        = (0x70 >> 2);
 static constexpr unsigned int T_SPL_START = (0x60 >> 2);
 static constexpr unsigned int T_SPL_END   = (0x50 >> 2);
 
-int Unpack(uint64_t data, struct tdc64 *tdc)
-{
-	//unsigned char *cdata = reinterpret_cast<unsigned char *>(&data);
-
-	tdc->type = (data & 0xfc00'0000'0000'0000) >> 58;
-	if (tdc->type == T_TDC) {
-		tdc->ch	= (data & 0x03f8'0000'0000'0000) >> 51;
-		tdc->tot      = (data & 0x0007'f800'0000'0000) >> 43;
-		tdc->tdc      = (data & 0x0000'07ff'ff00'0000) >> 24;
-		tdc->tdc4n    = (data & 0x0000'07ff'ff00'0000) >> 26;
-		tdc->flag     = -1;
-		tdc->spill    = -1;
-		tdc->hartbeat = -1;
-	} else
-	if (tdc->type == T_HB) {
-		tdc->ch	= -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = (data & 0x03ff'0000'0000'0000) >> 48;
-		tdc->spill    = (data & 0x0000'ff00'0000'0000) >> 40;
-		tdc->hartbeat = (data & 0x0000'00ff'ff00'0000) >> 24;
-	} else
-	if ((tdc->type == T_SPL_START) || (tdc->type == T_SPL_END)) {
-		tdc->ch	= -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = (data & 0x03ff'0000'0000'0000) >> 48;
-		tdc->spill    = (data & 0x0000'ff00'0000'0000) >> 40;
-		tdc->hartbeat = (data & 0x0000'00ff'ff00'0000) >> 24;
-	} else {
-		tdc->ch	= -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = -1;
-		tdc->spill    = -1;
-		tdc->hartbeat = -1;
-	}
-
-	return tdc->type;
-}
+int Unpack(uint64_t data, struct tdc64 *tdc);
 } //namespace v1
 
 inline namespace v2 {
@@ -243,51 +107,7 @@ static constexpr unsigned int T_HB2        = (0x78 >> 2);
 static constexpr unsigned int T_SPL_START  = (0x60 >> 2);
 static constexpr unsigned int T_SPL_END    = (0x50 >> 2);
 
-int Unpack(uint64_t data, struct tdc64 *tdc)
-{
-	//unsigned char *cdata = reinterpret_cast<unsigned char *>(&data);
-
-	tdc->type = (data & 0xfc00'0000'0000'0000) >> 58;
-	if (  (tdc->type == T_TDC_L)     || (tdc->type == T_TDC_T)
-	   || (tdc->type == T_THR1_START) || (tdc->type == T_THR1_END)
-	   || (tdc->type == T_THR2_START) || (tdc->type == T_THR2_END)  ) {
-		tdc->ch	      = (data & 0x03f8'0000'0000'0000) >> 51;
-		tdc->tot      = (data & 0x0007'fff8'0000'0000) >> 35;
-		tdc->tdc      = (data & 0x0000'0007'ffff'0000) >> 16;
-		tdc->tdc4n    = (data & 0x0000'0007'fffc'0000) >> 18;
-		tdc->flag     = -1;
-		tdc->spill    = -1;
-		tdc->hartbeat = -1;
-	} else
-	if (tdc->type == T_HB) {
-		tdc->ch	      = -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = (data & 0x03ff'0000'0000'0000) >> 48;
-		tdc->spill    = (data & 0x0000'ff00'0000'0000) >> 40;
-		tdc->hartbeat = (data & 0x0000'00ff'ff00'0000) >> 24;
-	} else
-	if ((tdc->type == T_SPL_START) || (tdc->type == T_SPL_END)) {
-		tdc->ch	= -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = (data & 0x03ff'0000'0000'0000) >> 48;
-		tdc->spill    = (data & 0x0000'ff00'0000'0000) >> 40;
-		tdc->hartbeat = (data & 0x0000'00ff'ff00'0000) >> 24;
-	} else {
-		tdc->ch	= -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = -1;
-		tdc->spill    = -1;
-		tdc->hartbeat = -1;
-	}
-
-	return tdc->type;
-}
+int Unpack(uint64_t data, struct tdc64 *tdc);
 } //namespace v2
 
 } //namespace TDC64L
@@ -322,60 +142,7 @@ static constexpr unsigned int T_HB2        = (0x78 >> 2);
 static constexpr unsigned int T_SPL_START  = (0x60 >> 2);
 static constexpr unsigned int T_SPL_END    = (0x50 >> 2);
 
-int Unpack(uint64_t data, struct tdc64 *tdc)
-{
-	//unsigned char *cdata = reinterpret_cast<unsigned char *>(&data);
-
-	tdc->type = (data & 0xfc00'0000'0000'0000) >> 58;
-	if (  (tdc->type == T_TDC_L)     || (tdc->type == T_TDC_T)
-	   || (tdc->type == T_THR1_START) || (tdc->type == T_THR1_END)
-	   || (tdc->type == T_THR2_START) || (tdc->type == T_THR2_END)  ) {
-		tdc->ch	      = (data & 0x03f8'0000'0000'0000) >> 51;
-		tdc->tot      = (data & 0x0007'ffff'e000'0000) >> 29;
-		tdc->tdc      = (data & 0x0000'0000'1fff'ffff);
-		tdc->tdc4n    = (data & 0x0000'0000'1fff'ffff) >> 12;
-		tdc->flag     = -1;
-		tdc->toffset  = -1;
-		tdc->hartbeat = -1;
-		tdc->genesize = -1;
-		tdc->transize = -1;
-	} else
-	if (tdc->type == T_HB1) {
-		tdc->ch	      = -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = (data & 0x00ff'ff00'0000'0000) >> 40;
-		tdc->toffset  = (data & 0x0000'00ff'ff00'0000) >> 24;
-		tdc->hartbeat = (data & 0x0000'0000'00ff'ffff) >>  0;
-		tdc->genesize = -1;
-		tdc->transize = -1;
-	} else
-	if (tdc->type == T_HB2) {
-		tdc->ch	      = -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = (data & 0x00ff'ff00'0000'0000) >> 40;
-		tdc->toffset  = -1;
-		tdc->hartbeat = -1;
-		tdc->genesize = (data & 0x0000'00ff'fff0'0000) >> 20;
-		tdc->transize = (data & 0x0000'0000'000f'ffff) >>  0;
-	} else
-	{
-		tdc->ch       = -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = -1;
-		tdc->toffset  = -1;
-		tdc->hartbeat = -1;
-		tdc->genesize = -1;
-		tdc->transize = -1;
-	}
-
-	return tdc->type;
-}
+int Unpack(uint64_t data, struct tdc64 *tdc);
 } //namespace v2
 
 } //namespace TDC64H_V3
@@ -409,60 +176,7 @@ static constexpr unsigned int T_HB2        = (0x78 >> 2);
 static constexpr unsigned int T_SPL_START  = (0x60 >> 2);
 static constexpr unsigned int T_SPL_END    = (0x50 >> 2);
 
-int Unpack(uint64_t data, struct tdc64 *tdc)
-{
-	//unsigned char *cdata = reinterpret_cast<unsigned char *>(&data);
-
-	tdc->type = (data & 0xfc00'0000'0000'0000) >> 58;
-	if (  (tdc->type == T_TDC_L)     || (tdc->type == T_TDC_T)
-	   || (tdc->type == T_THR1_START) || (tdc->type == T_THR1_END)
-	   || (tdc->type == T_THR2_START) || (tdc->type == T_THR2_END)  ) {
-		tdc->ch	      = (data & 0x03fc'0000'0000'0000) >> 50;
-		tdc->tot      = (data & 0x0003'fffc'0000'0000) >> 34;
-		tdc->tdc      = (data & 0x0000'0003'ffff'8000) >> 15;
-		tdc->tdc4n    = (data & 0x0000'0003'fffe'0000) >> 17;
-		tdc->flag     = -1;
-		tdc->toffset  = -1;
-		tdc->genesize = -1;
-		tdc->transize = -1;
-		tdc->hartbeat = -1;
-	} else
-	if (tdc->type == T_HB1) {
-		tdc->ch	      = -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = (data & 0x00ff'ff00'0000'0000) >> 40;
-		tdc->toffset  = (data & 0x0000'00ff'ff00'0000) >> 24;
-		tdc->hartbeat = (data & 0x0000'0000'00ff'ffff) >>  0;
-		tdc->genesize = -1;
-		tdc->transize = -1;
-	} else
-	if (tdc->type == T_HB2) {
-		tdc->ch	      = -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = (data & 0x00ff'ff00'0000'0000) >> 40;
-		tdc->toffset  = -1;
-		tdc->hartbeat = -1;
-		tdc->genesize   = (data & 0x0000'00ff'fff0'0000) >> 20;
-		tdc->transize   = (data & 0x0000'0000'000f'ffff) >>  0;
-	} else
-	{
-		tdc->ch       = -1;
-		tdc->tot      = -1;
-		tdc->tdc      = -1;
-		tdc->tdc4n    = -1;
-		tdc->flag     = -1;
-		tdc->toffset  = -1;
-		tdc->hartbeat = -1;
-		tdc->genesize = -1;
-		tdc->transize = -1;
-	}
-
-	return tdc->type;
-}
+int Unpack(uint64_t data, struct tdc64 *tdc);
 } //namespace v2
 
 } //namespace TDC64L3
