@@ -31,7 +31,7 @@
 #include "KTimer.cxx"
 #include "Trigger.cxx"
 
-#define DEBUG_MORE32 1
+#define DEBUG_MORE32 0
 
 //std::atomic<int> gQdepth = 0;
 
@@ -1079,14 +1079,8 @@ bool LogicFilter::ConditionalRun()
 		assert(inParts.Size() >= 2);
 		sw_start = std::chrono::system_clock::now();
 
-		#if DEBUG_MORE32
-		std::cout << "[LogicFilter::ConditionalRun] Checking multi-part messages..." << std::endl;
-		#endif
 		#if 1
 		if (fKt1->Check()) CheckMultiPart(inParts);
-		#endif
-		#if DEBUG_MORE32
-		std::cout << "[LogicFilter::ConditionalRun] Checked multi-part messages" << std::endl;
 		#endif
 
 		std::vector<struct DataBlock> blocks;
@@ -1135,28 +1129,16 @@ bool LogicFilter::ConditionalRun()
 		}
 
 		// Trigger processing in unit of HBF
-		#if DEBUG_MORE32
-		std::cout << "[LogicFilter::ConditionalRun] Processing triggers..." << std::endl;
-		#endif
 		std::vector< std::vector<uint32_t> > fltdata;
 		int totalhits = 0;
 		for (size_t i = 0 ; i < bsize_min ; i++) {
 
 			//HBF building
 			std::vector<struct HBFIndex> hbf_list;
-			#if DEBUG_MORE32
-			std::cout << "[LogicFilter::ConditionalRun] Building HBF for block index " << i << "..." << std::endl;
-			#endif
 			BuildHBF(hbf_list, block_map, inParts, i);
 
 			//Trigger process
-			#if DEBUG_MORE32
-			std::cout << "[LogicFilter::ConditionalRun] Executing trigger for block index " << i << "..." << std::endl;
-			#endif
 			std::vector<uint32_t> *hits = fTrig->Exec(hbf_list);
-			#if DEBUG_MORE32
-			std::cout << "[LogicFilter::ConditionalRun] Executed trigger for block index " << i << std::endl;
-			#endif
 			fltdata.emplace_back(*hits);
 			int nhits = hits->size();
 
