@@ -29,7 +29,7 @@
 
 #include "SignalParser.cxx"
 #include "KTimer.cxx"
-#include "Trigger.cxx"
+#include "Trigger.h"
 
 #define DEBUG_MORE32 0
 
@@ -51,6 +51,7 @@ struct LogicFilter : fair::mq::Device
 		static constexpr std::string_view TriggerSignals     {"trigger-signals"};
 		static constexpr std::string_view TriggerExpression     {"trigger-expression"};
 		static constexpr std::string_view TriggerWidth       {"trigger-width"};
+		static constexpr std::string_view IsUseUserDefinedCoin{"is-use-user-defined-coin"};
 	};
 
 	struct DataBlock {
@@ -206,6 +207,14 @@ void LogicFilter::InitTask()
 		fIsRemoveHB = false;
 	}
 	LOG(info) << "InitTask: RemoveHB : " << fIsRemoveHB;
+
+	std::string sIsUseUserDefinedCoin = fConfig->GetValue<std::string>(opt::IsUseUserDefinedCoin.data());
+	if(sIsUseUserDefinedCoin == "true") {
+		fTrig->SetIsUseUserDefinedCoin(true);
+	} else {
+		fTrig->SetIsUseUserDefinedCoin(false);
+	}
+	LOG(info) << "InitTask: IsUseUserDefinedCoin : " << sIsUseUserDefinedCoin;
 
 	std::string str_signals = fConfig->GetProperty<std::string>(opt::TriggerSignals.data());
 	std::string tx = fConfig->GetProperty<std::string>(opt::TriggerExpression.data());
@@ -1532,6 +1541,9 @@ void addCustomOptions(bpo::options_description& options)
 		(opt::TriggerWidth.data(),
 			bpo::value<std::string>()->default_value("10"),
 			"Trigger window width (4 ns unit)")
+		(opt::IsUseUserDefinedCoin.data(),
+			bpo::value<std::string>()->default_value("false"),
+			"Use user defined coincidence evaluation function")
 
     		;
 }
