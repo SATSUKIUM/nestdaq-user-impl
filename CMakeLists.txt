@@ -329,7 +329,6 @@ foreach(lvar IN ITEMS
 set(EXEC ${lvar})
   add_executable(${EXEC} 
   ${EXEC}.cxx;
-  target_link_libraries(${EXEC} PUBLIC unptdc)
 )
 
 target_include_directories(${EXEC} PUBLIC 
@@ -374,6 +373,8 @@ elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
 else()
     message(FATAL_ERROR "Unsupported FairMQ version ${FairMQ_VERSION}")
 endif()
+
+target_link_libraries(${EXEC} PUBLIC unptdc)
 
 install(TARGETS ${EXEC};
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
