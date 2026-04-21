@@ -329,6 +329,7 @@ foreach(lvar IN ITEMS
 set(EXEC ${lvar})
   add_executable(${EXEC} 
   ${EXEC}.cxx;
+  target_link_libraries(${EXEC} PUBLIC unptdc)
 )
 
 target_include_directories(${EXEC} PUBLIC 
