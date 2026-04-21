@@ -112,7 +112,7 @@ private:
 	int fSplitMethod{0};
 
 	uint32_t fId {0};
-	Trigger *fTrig;
+	std::unique_ptr<Trigger> fTrig;
 	bool fIsDataSuppress = true;
 	bool fIsRemoveHB = false;
 
