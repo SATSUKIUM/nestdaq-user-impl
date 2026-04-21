@@ -1079,8 +1079,14 @@ bool LogicFilter::ConditionalRun()
 		assert(inParts.Size() >= 2);
 		sw_start = std::chrono::system_clock::now();
 
+		#if DEBUG_MORE32
+		std::cout << "[LogicFilter::ConditionalRun] Checking multi-part messages..." << std::endl;
+		#endif
 		#if 1
 		if (fKt1->Check()) CheckMultiPart(inParts);
+		#endif
+		#if DEBUG_MORE32
+		std::cout << "[LogicFilter::ConditionalRun] Checked multi-part messages" << std::endl;
 		#endif
 
 		std::vector<struct DataBlock> blocks;
@@ -1096,7 +1102,14 @@ bool LogicFilter::ConditionalRun()
 				tf_tf_id = tfHeader->timeFrameId;
 			}
 		}
+
+		#if DEBUG_MORE32
+		std::cout << "[LogicFilter::ConditionalRun] Making block map..." << std::endl;
+		#endif
 		MakeBlockMap(inParts, block_map);
+		#if DEBUG_MORE32
+		std::cout << "[LogicFilter::ConditionalRun] Made block map" << std::endl;
+		#endif
 
 		#if 0 //BlockMap  check
 		if (fKt2->Check()) {
