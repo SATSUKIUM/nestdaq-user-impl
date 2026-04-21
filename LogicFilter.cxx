@@ -214,18 +214,22 @@ void LogicFilter::InitTask()
 
 	LOG(info) << "Signal parseing finished.";
 	for(auto& v : signals){
-		std::stringstream ss;
-		for(auto& i : v) ss << i << " ";
-		LOG(info) << "Signal: " << ss.str();
+		std::cout << "Signal: ";
+		for(auto& e : v){
+			std::cout << e << " ";
+		}
+		std::cout << std::endl;
 	}
 
 	isUseTrigger32 = (signals.size() < 32);
 	if(isUseTrigger32) {
 		// Trigger32
+		LOG(info) << "Use Trigger32";
 		fTrig = std::unique_ptr<Trigger32>();
 	}
 	else {
 		// TriggerBitSet
+		LOG(info) << "Use TriggerBitSet";
 		fTrig = std::unique_ptr<TriggerBitSet>();
 	}
 
@@ -233,6 +237,7 @@ void LogicFilter::InitTask()
 	fTrig->ClearEntry();
 	fTrig->SetMarkLen(window_width);
 
+	LOG(info) << "Entry setting...";
 	int i = 0;
 	for (auto &v : signals) {
 		if (v.size() == 3) {
