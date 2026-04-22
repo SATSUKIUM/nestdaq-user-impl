@@ -120,7 +120,7 @@ public:
 private:
     bool isUseUserDefinedCoin = false; // false: default, true: user defined coin (to be implemented)
 	// std::string tx;
-	void SetWorkFlowCalc();
+	void MakeWorkFlowCalc();
 	using OpFunc = void(*)(TriggerBitSet*, const std::bitset<defaultSizeFTimeRegion> &, int);
 	struct OpWithArg{
 		OpFunc exec;

@@ -52,7 +52,7 @@ void TriggerBitSet::SetTExpression(std::string &tx)
 	for (auto & com : fCommands) std::cout << " " << com;
 	std::cout << std::endl;
 	#endif
-	SetWorkFlowCalc(); // make job list for evaluation of a set of flags of hitmap, stored in TriggerBitSet::fWorkFlowCalc
+	MakeWorkFlowCalc(); // make job list for evaluation of a set of flags of hitmap, stored in TriggerBitSet::fWorkFlowCalc
 	return;
 }
 
@@ -698,7 +698,7 @@ bool TriggerBitSet::ExtractBit(const std::bitset<defaultSizeFTimeRegion> &flagco
 	}
 } // bool TriggerBitSet::ExtractBit(std::bitset<defaultSizeFTimeRegion> &flagcollection, int digit)
 
-void TriggerBitSet::SetWorkFlowCalc(){
+void TriggerBitSet::MakeWorkFlowCalc(){
 	while(!fStack.empty()) fStack.pop();
 
 	int nStack = 0;
@@ -750,7 +750,7 @@ void TriggerBitSet::SetWorkFlowCalc(){
 	}
 
 	return;
-} // void TriggerBitSet::SetWorkFlowCalc
+} // void TriggerBitSet::MakeWorkFlowCalc
 
 
 
