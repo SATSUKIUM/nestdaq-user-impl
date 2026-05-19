@@ -175,7 +175,8 @@ foreach(lvar IN ITEMS
   Sampler; Sink; FileSink; STFBuilder;
   TimeFrameBuilder; TFBFilePlayer; STFBFilePlayer;
   TimeFrameSlicerByLogicTiming;
-  fltcoin; LogicFilter;
+  # fltcoin;
+  LogicFilter;
   tfdump;
 # onlinedisplay;
   FilterTimeFrameSliceABC;
