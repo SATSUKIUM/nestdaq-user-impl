@@ -281,8 +281,8 @@ void LogicFilter::InitTask()
 	// --------------------------------
 	// register signals to Trigger
 	// --------------------------------
-	int iSubTCT = -1;
-	std::pair<uint32_t, uint32_t> last_subgroup = std::make_pair(UINT32_MAX, UINT32_MAX);
+	int iSubTCT = -1; // subgroupが見つかれば、0から順番に割り当てる
+	std::pair<uint32_t, uint32_t> last_subgroup = std::make_pair(UINT32_MAX, UINT32_MAX); // 最初にsubgroupが見つかれば必ず、このペアとは異なる
 	for(const auto &group : groups){
 		if(group.size() == 0) continue; // skip empty group
 		for(const auto &sig : group){
@@ -295,6 +295,12 @@ void LogicFilter::InitTask()
 			fTrig->EntryTo(sig.group_id, sig.subgroup_id, iSubTCT, sig.femId, sig.channel, static_cast<int>(sig.offset));
 		}
 	}
+
+	// --------------------------------
+	// SetTimeRegion for SubTCT
+	// --------------------------------	// later
+
+
 
 	LOG(info) << "Trigger Expression: " << tx;
 	fTrig->MakeTable(tx);
