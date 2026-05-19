@@ -38,6 +38,8 @@ public:
 	uint32_t GetTimeRegionSize();
 	void Entry(uint32_t, int, int); // fem, ch, offset
 	void Entry(uint32_t, int, int, uint32_t, uint32_t); // fem, ch, offset, leftwidth, rightwidth
+	void EntryTo(uint32_t, uint32_t, int, int); // group, fem, ch, offset
+	void EntryTo(uint32_t, uint32_t, int, int, uint32_t, uint32_t); // group, fem, ch, offset, leftwidth, rightwidth
 	void ClearEntry();
 	bool CheckEntryFEM(uint32_t);
 	void Mark(unsigned char *, int, int, uint32_t);
@@ -188,6 +190,18 @@ void Trigger::Entry(uint32_t fem, int ch, int offset)
 	return;
 }
 
+void Trigger::EntryTo(uint32_t group_id, uint32_t fem, int ch, int offset)
+{
+	fEntryCh[fem].emplace_back(ch);
+	fEntryChDelay[fem].emplace_back(offset);
+	fEntryChBit[fem].emplace_back(0x00000001 << group_id);
+	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(group_id, fem, ch, offset) with 4 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
+	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(group_id, fem, ch, offset) with 4 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
+	fEntryMask |= 0x00000001 << group_id; // this is not sure if this is correct or not. Should be checked later.
+	fEntryCounts++;
+	return;
+}
+
 void Trigger::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth)
 {
 
@@ -207,6 +221,12 @@ void Trigger::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32
 	}
 	assert(fEntryCounts <= static_cast<int>(sizeof(uint32_t) * 8));
 
+	return;
+}
+
+void Trigger::EntryTo(uint32_t group, uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth)
+{
+	// to be implemented later
 	return;
 }
 

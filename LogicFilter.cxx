@@ -48,7 +48,7 @@ struct LogicFilter : fair::mq::Device
 		static constexpr std::string_view SplitMethod        {"split"};
 
 		static constexpr std::string_view TriggerSignals     {"trigger-signals"};
-		static constexpr std::string_view TriggerFormula     {"trigger-expression"};
+		static constexpr std::string_view TriggerExpression     {"trigger-expression"};
 		static constexpr std::string_view TriggerWidth       {"trigger-width"};
 	};
 
@@ -208,13 +208,84 @@ void LogicFilter::InitTask()
 	fTrig->ClearEntry();
 
 	std::string str_signals = fConfig->GetProperty<std::string>(opt::TriggerSignals.data());
-	std::string formula = fConfig->GetProperty<std::string>(opt::TriggerFormula.data());
+	std::string tx = fConfig->GetProperty<std::string>(opt::TriggerExpression.data());
 	int window_width = std::stoi(fConfig->GetProperty<std::string>(opt::TriggerWidth.data()));
 
 	LOG(info) << "Trigger windows width: " << window_width;
 	fTrig->SetMarkLen(window_width);
 
-	std::vector< std::vector<uint32_t> > signals = SignalParser::Parsing(str_signals);
+	std::vector<struct psig> signals = SignalParser::Parsing(str_signals);
+
+	// --------------------------------
+	// distribute signals into groups
+	// --------------------------------
+	std::vector<std::vector<struct psig>> groups;
+
+	// --------------------------------
+	// scan max group id
+	// --------------------------------
+	uint32_t max_group_id = 0;
+	for(auto &sig : signals){
+		if(sig.group_id > max_group_id) max_group_id = sig.group_id;
+	}
+	groups.resize(max_group_id + 1);
+	for(auto &sig : signals){
+		groups[sig.group_id].emplace_back(sig);
+	}
+	groups.sort([](const std::vector<struct psig> &left, const std::vector<struct psig> &right){
+		return left[0].group_id < right[0].group_id;
+	});
+
+	// --------------------------------
+	// check and print group information
+	// --------------------------------
+	std::cout << "\n[LogicFilter::InitTask] Group IDs: " ;
+	for(size_t i = 0; i < max_group_id + 1; i++){
+		if(groups[i].size() > 0){
+			std::cout << "\tgroup " << i << " has " << groups[i].size() << std::endl;
+			std::cout << "\t\tSignals: ";
+			for(const auto &sig : groups[i]){
+				if(sig.subgroup_id != SignalParser::NO_SUBGROUP){
+					std::cout << sig.group_id << "-" << sig.subgroup_id << " ";
+				}
+				else{
+					std::cout << sig.group_id << " ";
+				}
+			}
+			std::cout << std::endl;
+		}
+		else{
+			std::cout << "\tgroup " << i << " is empty" << std::endl;
+		}
+	}
+
+	// --------------------------------
+	// register signals to Trigger
+	// --------------------------------
+	for(const auto &group : groups){
+		for(const auto &sig : group){
+			if(sig.subgroup_id == SignalParser::NO_SUBGROUP){
+				fTrig->EntryTo(sig.group_id, sig.femId, sig.channel, static_cast<int>(sig.offset));
+				LOG(info) << "Registered signal into Group #" << sig.group_id << ": "
+					<< "FrontEnd IP Addr.: " << static_cast<unsigned int>((sig.femId >> 24) & 0xff) << "."
+					<< static_cast<unsigned int>((sig.femId >> 16) & 0xff) << "."
+					<< static_cast<unsigned int>((sig.femId >> 8) & 0xff) << "."
+					<< static_cast<unsigned int>((sig.femId) & 0xff)
+					<< ", Ch.: " << std::setw(3) << sig.channel << ", Offset: " << std::setw(6) << static_cast<int>(sig.offset);
+			}
+			else{
+				// later: for AND group
+			}
+		}
+	}
+
+	LOG(info) << "Trigger Expression: " << tx;
+	fTrig->MakeTable(tx);
+
+
+
+	// below to be chanded to support subgroup later
+	#if 0
 	int i = 0;
 	for (auto &v : signals) {
 		if (v.size() == 3) {
@@ -253,6 +324,7 @@ void LogicFilter::InitTask()
 	
 	LOG(info) << "Formula: " << formula;
 	fTrig->MakeTable(formula);
+	#endif
 
 
 
@@ -1479,11 +1551,11 @@ void addCustomOptions(bpo::options_description& options)
 
 		(opt::TriggerSignals.data(),
 			bpo::value<std::string>()->default_value(
-			"(0xc0a802a9 0 0) (0xc0a802a9 1 0)"),
+			"(0 0xc0a802a9 0 0) (1 0xc0a802a9 1 0)"),
 			"Triger signals (module_IP Channel_number Offset)")
-		(opt::TriggerFormula.data(),
+		(opt::TriggerExpression.data(),
 			bpo::value<std::string>()->default_value("RPN 0 1 &"),
-			"Trigger formula")
+			"Trigger expression")
 		(opt::TriggerWidth.data(),
 			bpo::value<std::string>()->default_value("10"),
 			"Trigger window width (4 ns unit)")
