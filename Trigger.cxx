@@ -34,6 +34,7 @@ public:
 	virtual ~Trigger();
 	void InitParam();
 	bool SetTimeRegion(int);
+	bool SetTimeRegion_SubTCT(int, const std::map<int, int>&); // subTCTSize, nEntryInSubTCT
 	void CleanUpTimeRegion();
 	uint32_t *GetTimeRegion();
 	uint32_t GetTimeRegionSize();
@@ -67,6 +68,8 @@ private:
 	int fNentry = 0;
 	uint32_t fTimeRegionSize;
 	uint32_t *fTimeRegion = nullptr;
+	uint32_t fSubTCTSize;
+	std::vector<uint32_t*> fSubTCT;
 	//int fMarkCount = 0;
 	//uint32_t fMarkMask = 0;
 	std::vector<uint32_t> fHits;
@@ -121,6 +124,26 @@ bool Trigger::SetTimeRegion(int size)
 
 	return true;
 }
+
+bool Trigger::SetTimeRegion_SubTCT(int subTCTSize, const std::map<int, int>& nEntryInSubTCT){
+	// 単純にはSubTCTのサイズはMainTCTのサイズと同じだが、MainTCTより粗い時間分解能で作るというのも面白いと思う。宿題だ。SubTCTごとに決めるのも悪くないかも。
+	assert(fSubTCT.empty()); // this function called only once
+
+	fSubTCTSize = subTCTSize;
+	fSubTCT.resize(nEntryInSubTCT.size());
+	for(const auto &p : nEntryInSubTCT){
+		int iSubTCT = p.first;
+		int nEntryInSubTCT = p.second;
+		uint32_t initialValue = (0x00000001 << nEntryInSubTCT) - 1u; // nEntryInSubTCT個のビットが立っている値
+
+		uint32_t* subTCTRegion = new uint32_t[subTCTSize];
+		for( uint32_t i = 0 ; i < subTCTSize ; i++) {
+			subTCTRegion[i] = initialValue;
+		}
+		fSubTCT[iSubTCT] = subTCTRegion;
+	}
+
+} // bool Trigger::SetTimeRegion_SubTCT(int nSubTCT, int subTCTSize)
 
 void Trigger::CleanUpTimeRegion()
 {
@@ -258,6 +281,7 @@ void Trigger::ClearEntry()
 	fEntryCounts.clear();
 	fEntryChLeftWidth.clear();
 	fEntryChRightWidth.clear();
+	fEntryChiSubTCT.clear();
 
 	return;
 }

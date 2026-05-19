@@ -282,6 +282,7 @@ void LogicFilter::InitTask()
 	// register signals to Trigger
 	// --------------------------------
 	int iSubTCT = -1; // subgroupが見つかれば、0から順番に割り当てる
+	std::map<int, int> nEntryInSubTCT;
 	std::pair<uint32_t, uint32_t> last_subgroup = std::make_pair(UINT32_MAX, UINT32_MAX); // 最初にsubgroupが見つかれば必ず、このペアとは異なる
 	for(const auto &group : groups){
 		if(group.size() == 0) continue; // skip empty group
@@ -289,7 +290,11 @@ void LogicFilter::InitTask()
 			if(sig.subgroup_id != SignalParser::NO_SUBGROUP){
 				if(last_subgroup != std::make_pair(sig.group_id, sig.subgroup_id)){
 					iSubTCT++;
+					nEntryInSubTCT[iSubTCT] = 1;
 					last_subgroup = std::make_pair(sig.group_id, sig.subgroup_id);
+				}
+				else{
+					nEntryInSubTCT[iSubTCT]++;
 				}
 			}
 			fTrig->EntryTo(sig.group_id, sig.subgroup_id, iSubTCT, sig.femId, sig.channel, static_cast<int>(sig.offset));
@@ -298,14 +303,11 @@ void LogicFilter::InitTask()
 
 	// --------------------------------
 	// SetTimeRegion for SubTCT
-	// --------------------------------	// later
-
-
+	// --------------------------------
+	fTrig->SetTimeRegion_SubTCT(1024 * 128, nEntryInSubTCT); // (int, map<int, int>) -> (subTCTSize, nEntryInSubTCT)
 
 	LOG(info) << "Trigger Expression: " << tx;
 	fTrig->MakeTable(tx);
-
-
 
 	// below to be chanded to support subgroup later
 	#if 0
