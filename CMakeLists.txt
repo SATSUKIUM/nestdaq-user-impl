@@ -308,10 +308,10 @@ install(TARGETS
 #     TriggerView;
 # )
 
-set(EXEC ${lvar})
-  add_executable(${EXEC} 
-  ${EXEC}.cxx;
-)
+# set(EXEC ${lvar})
+#   add_executable(${EXEC} 
+#   ${EXEC}.cxx;
+# )
 
 target_include_directories(${EXEC} PUBLIC 
     ${Boost_INCLUDE_DIRS};  
