@@ -126,7 +126,7 @@ bool Trigger::SetTimeRegion(int size)
 }
 
 bool Trigger::SetTimeRegion_SubTCT(int subTCTSize, const std::map<int, int>& nEntryInSubTCT){
-	// 単純にはSubTCTのサイズはMainTCTのサイズと同じだが、MainTCTより粗い時間分解能で作るというのも面白いと思う。宿題だ。SubTCTごとに決めるのも悪くないかも。
+	// 単純にはSubTCTのサイズはMainTCTのサイズと同じだが、MainTCTより粗い時間分解能で作るというのも面白い工夫だと思う。宿題だ。SubTCTごとに決めるのも悪くないかも。
 	assert(fSubTCT.empty()); // this function called only once
 
 	fSubTCTSize = subTCTSize;
@@ -225,15 +225,14 @@ void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT,
 		fEntryChBit[fem].emplace_back(0x00000001 << group_id);
 	}
 	else{
-		fEntryChBit[fem].emplace_back(0x00000001 << fEntryCounts[std::make_pair(group_id, subgroup_id)]);
-		fEntryCounts[std::make_pair(group_id, subgroup_id)]++;
+		fEntryChBit[fem].emplace_back(0x00000001 << fEntryCounts[std::make_pair(group_id, subgroup_id)]++); // ひとりごと、後置インクリメントでテクいことをしてかっこいい。
 	}
 
 	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(group_id, fem, ch, offset) with 4 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
 	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(group_id, fem, ch, offset) with 4 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
 	
 	if(subgroup_id == SignalParser::NO_SUBGROUP){
-		fEntryChiSubTCT[fem].emplace_back(UINT32_MAX);
+		fEntryChiSubTCT[fem].emplace_back(UINT32_MAX); // なにか入れておかないと他のエントリーとずれてしまうので、とりあえず。
 	}
 	else{
 		fEntryChiSubTCT[fem].emplace_back(iSubTCT);

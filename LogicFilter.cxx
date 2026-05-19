@@ -218,27 +218,20 @@ void LogicFilter::InitTask()
 	std::vector<struct psig> signals = SignalParser::Parsing(str_signals);
 
 	// --------------------------------
-	// distribute signals into groups
+	// distribute signals into groups, and scan max group id
 	// --------------------------------
 	std::vector<std::vector<struct psig>> groups;
-
-	// --------------------------------
-	// scan max group id
-	// --------------------------------
 	uint32_t max_group_id = 0;
 	for(auto &sig : signals){
 		if(sig.group_id > max_group_id) max_group_id = sig.group_id;
 	}
 	groups.resize(max_group_id + 1);
-	// --------------------------------
-	// register signals into groups
-	// --------------------------------
 	for(auto &sig : signals){
 		groups[sig.group_id].emplace_back(sig);
 	}
 
 	// --------------------------------
-	// sort signals in groups
+	// sort signals in each group by subgroup_id for making SubTCT in order of subgroup_id
 	// --------------------------------
 	for(auto &group : groups){
 		if(group.size() == 0) continue; // skip empty group
@@ -258,7 +251,7 @@ void LogicFilter::InitTask()
 	// --------------------------------
 	// check and print group information
 	// --------------------------------
-	std::cout << "\n[LogicFilter::InitTask] Group IDs: ";
+	std::cout << "\n[LogicFilter::InitTask] Check group information: " << std::endl;
 	for(size_t i = 0; i < max_group_id + 1; i++){
 		if(groups[i].size() > 0){
 			std::cout << "\tgroup " << i << " has " << groups[i].size() << std::endl;
@@ -272,17 +265,17 @@ void LogicFilter::InitTask()
 				}
 			}
 			std::cout << std::endl;
-		}
+		} // endif(groups[i].size() > 0)
 		else{
 			std::cout << "\tgroup " << i << " is empty" << std::endl;
 		}
-	}
+	} // for(size_t i = 0; i < max_group_id + 1; i++)
 
 	// --------------------------------
 	// register signals to Trigger
 	// --------------------------------
 	int iSubTCT = -1; // subgroupが見つかれば、0から順番に割り当てる
-	std::map<int, int> nEntryInSubTCT;
+	std::map<int, int> nEntryInSubTCT; // <iSubTCT to nEntryInSubTCT>
 	std::pair<uint32_t, uint32_t> last_subgroup = std::make_pair(UINT32_MAX, UINT32_MAX); // 最初にsubgroupが見つかれば必ず、このペアとは異なる
 	for(const auto &group : groups){
 		if(group.size() == 0) continue; // skip empty group
@@ -309,51 +302,9 @@ void LogicFilter::InitTask()
 	LOG(info) << "Trigger Expression: " << tx;
 	fTrig->MakeTable(tx);
 
-	// below to be chanded to support subgroup later
-	#if 0
-	int i = 0;
-	for (auto &v : signals) {
-		if (v.size() == 3) {
-			fTrig->Entry(v[0], v[1], static_cast<int>(v[2]));
-			union ipval {
-				uint32_t u32;
-				char c[4];
-			};
-			ipval mid; mid.u32 = v[0];
-			//LOG(info) << "Module: " << std::hex << v[0] << ", Channel: " << v[1] << ", Offset: " << v[2];
-			LOG(info) << std::setw(4) << i << ": "
-				<< "M_id: " << static_cast<unsigned int>(mid.c[3] & 0xff)
-				<< "."      << static_cast<unsigned int>(mid.c[2] & 0xff)
-				<< "."      << static_cast<unsigned int>(mid.c[1] & 0xff)
-				<< "."      << static_cast<unsigned int>(mid.c[0] & 0xff)
-				<< ", Ch.: " << std::setw(3) << v[1] << ", Offset: " << std::setw(6) << static_cast<int>(v[2]);
-			i++;
-		}
-		else if(v.size() == 5) {
-			fTrig->Entry(v[0], v[1], static_cast<int>(v[2]), v[3], v[4]);
-			union ipval {
-				uint32_t u32;
-				char c[4];
-			};
-			ipval mid; mid.u32 = v[0];
-			LOG(info) << std::setw(4) << i << ": "
-				<< "M_id: " << static_cast<unsigned int>(mid.c[3] & 0xff)
-				<< "."      << static_cast<unsigned int>(mid.c[2] & 0xff)
-				<< "."      << static_cast<unsigned int>(mid.c[1] & 0xff)
-				<< "."      << static_cast<unsigned int>(mid.c[0] & 0xff)
-				<< ", Ch.: " << std::setw(3) << v[1] << ", Offset: " << std::setw(6) << static_cast<int>(v[2])
-				<< ", LeftWidth: " << std::setw(6) << v[3] << ", RightWidth: " << std::setw(6) << v[4];
-			i++;
-		}
-	}
-
-	LOG(info) << "Formula: " << formula;
-	fTrig->MakeTable(formula);
-	#endif
 
 
-
-}
+} // void LogicFilter::InitTask()
 
 bool LogicFilter::CheckData(fair::mq::MessagePtr &msg)
 {
