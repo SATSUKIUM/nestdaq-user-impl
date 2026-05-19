@@ -46,6 +46,7 @@ public:
 	bool CheckEntryFEM(uint32_t);
 	void Mark(unsigned char *, int, int, uint32_t);
 	std::vector<uint32_t> *Scan();
+	void ScanSubTCTandMarkMainTCT();
 	std::vector<uint32_t> *Exec(std::vector<struct HBFIndex> &);
 	void SetMarkLen(int val) {fMarkLen = val;};
 	int GetMarkLen() {return fMarkLen;};
@@ -60,7 +61,8 @@ private:
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChLeftWidth; // [T - leftwidth, T + rightwidth]
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChRightWidth; // [T - leftwidth, T + rightwidth]
 	std::map<std::pair<uint32_t, uint32_t>, int> fEntryCounts; // key: (gp_id, subgp_id), value: count of entry
-	std::map< uint32_t, std::vector<uint32_t> > fEntryChiSubTCT;
+	std::map< uint32_t, std::vector<uint32_t> > fEntryChiSubTCT; // key: fem, value: list of iSubTCT
+	std::map< uint32_t, uint32_t > fiSubTCTMainTCT; // key: iSubTCT, value: iMainTCT
 
 	// int fEntryCounts = 0;
 	uint32_t fEntryMask = 0;
@@ -237,6 +239,8 @@ void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT,
 	else{
 		fEntryChiSubTCT[fem].emplace_back(iSubTCT);
 	}
+
+	fiSubTCTMainTCT[iSubTCT] = group_id;
 
 	fEntryMask |= 0x00000001 << group_id; // this is not sure if this is correct or not. Should be checked later.
 	
@@ -496,7 +500,21 @@ std::vector<uint32_t> *Trigger::Scan()
 	}
 
 	return &fHits;
-}
+} // std::vector<uint32_t> *Trigger::Scan()
+
+void Trigger::ScanSubTCTandMarkMainTCT()
+{
+	for(const auto &p : fiSubTCTMainTCT){
+		uint32_t iSubTCT = p.first;
+		uint32_t iMainTCT = p.second;
+		for(uint32_t i = 0; i < fSubTCTSize - 1; ++i){
+			if((fSubTCT[iSubTCT][i] != 0u) && (fSubTCT[iSubTCT][i + 1] == 0u)){
+				fTimeRegion[i] |= iMainTCT;
+			}
+		}
+	}
+	return;
+} // void Trigger::ScanSubTCTandMarkMainTCT()
 
 std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 {
