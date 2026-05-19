@@ -14,6 +14,7 @@
 #include "UnpackTdc.h"
 #include "SubTimeFrameHeader.h"
 #include "TriggerMap.cxx"
+#include "SignalParser.h"
 
 
 struct HBFIndex {
@@ -38,8 +39,8 @@ public:
 	uint32_t GetTimeRegionSize();
 	void Entry(uint32_t, int, int); // fem, ch, offset
 	void Entry(uint32_t, int, int, uint32_t, uint32_t); // fem, ch, offset, leftwidth, rightwidth
-	void EntryTo(uint32_t, uint32_t, int, int); // group, fem, ch, offset
-	void EntryTo(uint32_t, uint32_t, int, int, uint32_t, uint32_t); // group, fem, ch, offset, leftwidth, rightwidth
+	void EntryTo(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, int); // group_id, subgroup_id, iSubTCT, fem, ch, offset
+	void EntryTo(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, int, uint32_t, uint32_t); // group_id, subgroup_id, iSubTCT, fem, ch, offset, leftwidth, rightwidth
 	void ClearEntry();
 	bool CheckEntryFEM(uint32_t);
 	void Mark(unsigned char *, int, int, uint32_t);
@@ -57,7 +58,10 @@ private:
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChBit;
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChLeftWidth; // [T - leftwidth, T + rightwidth]
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChRightWidth; // [T - leftwidth, T + rightwidth]
-	int fEntryCounts = 0;
+	std::map<std::pair<uint32_t, uint32_t>, int> fEntryCounts; // key: (gp_id, subgp_id), value: count of entry
+	std::map< uint32_t, std::vector<uint32_t> > fEntryChiSubTCT;
+
+	// int fEntryCounts = 0;
 	uint32_t fEntryMask = 0;
 
 	int fNentry = 0;
@@ -168,63 +172,78 @@ bool Trigger::CheckEntryFEM(uint64_t fem)
 
 #endif
 
-void Trigger::Entry(uint32_t fem, int ch, int offset)
-{
+// void Trigger::Entry(uint32_t fem, int ch, int offset)
+// {
 
+// 	fEntryCh[fem].emplace_back(ch);
+// 	fEntryChDelay[fem].emplace_back(offset);
+// 	fEntryChBit[fem].emplace_back(0x0000001 << fEntryCounts);
+// 	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
+// 	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
+// 	fEntryMask |= 0x00000001 << fEntryCounts;
+// 	fEntryCounts++;
+
+// 	#if 0
+// 	std::cout << "#D Trig Entry : Module: " << fem << " Ch: " << ch << std::endl;
+// 	#endif
+// 	if (static_cast<unsigned int>(fEntryCounts) > (sizeof(uint32_t) * 8)) {
+// 		std::cerr << "Entry Ch. exceed " << sizeof(uint32_t) * 8<< std::endl;
+// 	}
+// 	assert(fEntryCounts <= static_cast<int>(sizeof(uint32_t) * 8));
+
+// 	return;
+// }
+
+void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT, uint32_t fem, uint32_t ch, int offset)
+{
 	fEntryCh[fem].emplace_back(ch);
 	fEntryChDelay[fem].emplace_back(offset);
-	fEntryChBit[fem].emplace_back(0x0000001 << fEntryCounts);
-	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
-	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
-	fEntryMask |= 0x00000001 << fEntryCounts;
-	fEntryCounts++;
-
-	#if 0
-	std::cout << "#D Trig Entry : Module: " << fem << " Ch: " << ch << std::endl;
-	#endif
-	if (static_cast<unsigned int>(fEntryCounts) > (sizeof(uint32_t) * 8)) {
-		std::cerr << "Entry Ch. exceed " << sizeof(uint32_t) * 8<< std::endl;
+	if(subgroup_id == SignalParser::NO_SUBGROUP){
+		fEntryChBit[fem].emplace_back(0x00000001 << group_id);
 	}
-	assert(fEntryCounts <= static_cast<int>(sizeof(uint32_t) * 8));
+	else{
+		fEntryChBit[fem].emplace_back(0x00000001 << fEntryCounts[std::make_pair(group_id, subgroup_id)]);
+		fEntryCounts[std::make_pair(group_id, subgroup_id)]++;
+	}
 
-	return;
-}
-
-void Trigger::EntryTo(uint32_t group_id, uint32_t fem, int ch, int offset)
-{
-	fEntryCh[fem].emplace_back(ch);
-	fEntryChDelay[fem].emplace_back(offset);
-	fEntryChBit[fem].emplace_back(0x00000001 << group_id);
 	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(group_id, fem, ch, offset) with 4 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
 	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(group_id, fem, ch, offset) with 4 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
-	fEntryMask |= 0x00000001 << group_id; // this is not sure if this is correct or not. Should be checked later.
-	fEntryCounts++;
-	return;
-}
-
-void Trigger::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth)
-{
-
-	fEntryCh[fem].emplace_back(ch);
-	fEntryChDelay[fem].emplace_back(offset);
-	fEntryChBit[fem].emplace_back(0x0000001 << fEntryCounts);
-	fEntryChLeftWidth[fem].emplace_back(leftwidth);
-	fEntryChRightWidth[fem].emplace_back(rightwidth);
-	fEntryMask |= 0x00000001 << fEntryCounts;
-	fEntryCounts++;
-
-	#if 0
-	std::cout << "#D Trig Entry : Module: " << fem << " Ch: " << ch << std::endl;
-	#endif
-	if (static_cast<unsigned int>(fEntryCounts) > (sizeof(uint32_t) * 8)) {
-		std::cerr << "Entry Ch. exceed " << sizeof(uint32_t) * 8<< std::endl;
+	
+	if(subgroup_id == SignalParser::NO_SUBGROUP){
+		fEntryChiSubTCT[fem].emplace_back(UINT32_MAX);
 	}
-	assert(fEntryCounts <= static_cast<int>(sizeof(uint32_t) * 8));
+	else{
+		fEntryChiSubTCT[fem].emplace_back(iSubTCT);
+	}
 
+	fEntryMask |= 0x00000001 << group_id; // this is not sure if this is correct or not. Should be checked later.
+	
 	return;
 }
 
-void Trigger::EntryTo(uint32_t group, uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth)
+// void Trigger::Entry(uint32_t fem, int ch, int offset, uint32_t leftwidth, uint32_t rightwidth)
+// {
+
+// 	fEntryCh[fem].emplace_back(ch);
+// 	fEntryChDelay[fem].emplace_back(offset);
+// 	fEntryChBit[fem].emplace_back(0x0000001 << fEntryCounts);
+// 	fEntryChLeftWidth[fem].emplace_back(leftwidth);
+// 	fEntryChRightWidth[fem].emplace_back(rightwidth);
+// 	fEntryMask |= 0x00000001 << fEntryCounts;
+// 	fEntryCounts++;
+
+// 	#if 0
+// 	std::cout << "#D Trig Entry : Module: " << fem << " Ch: " << ch << std::endl;
+// 	#endif
+// 	if (static_cast<unsigned int>(fEntryCounts) > (sizeof(uint32_t) * 8)) {
+// 		std::cerr << "Entry Ch. exceed " << sizeof(uint32_t) * 8<< std::endl;
+// 	}
+// 	assert(fEntryCounts <= static_cast<int>(sizeof(uint32_t) * 8));
+
+// 	return;
+// }
+
+void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT, uint32_t fem, uint32_t ch, int offset, uint32_t leftwidth, uint32_t rightwidth)
 {
 	// to be implemented later
 	return;
@@ -236,7 +255,7 @@ void Trigger::ClearEntry()
 	fEntryChDelay.clear();
 	fEntryChBit.clear();
 	fEntryMask = 0x00000000;
-	fEntryCounts = 0;
+	fEntryCounts.clear();
 	fEntryChLeftWidth.clear();
 	fEntryChRightWidth.clear();
 

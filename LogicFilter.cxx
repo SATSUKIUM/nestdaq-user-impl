@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <string>
 #include <chrono>
+#include <vector>
 
 #include <unordered_map>
 #include <unordered_set>
@@ -229,17 +230,35 @@ void LogicFilter::InitTask()
 		if(sig.group_id > max_group_id) max_group_id = sig.group_id;
 	}
 	groups.resize(max_group_id + 1);
+	// --------------------------------
+	// register signals into groups
+	// --------------------------------
 	for(auto &sig : signals){
 		groups[sig.group_id].emplace_back(sig);
 	}
-	groups.sort([](const std::vector<struct psig> &left, const std::vector<struct psig> &right){
-		return left[0].group_id < right[0].group_id;
-	});
+
+	// --------------------------------
+	// sort signals in groups
+	// --------------------------------
+	for(auto &group : groups){
+		if(group.size() == 0) continue; // skip empty group
+		std::sort(group.begin(), group.end(),
+			[](const struct psig &left, const struct psig &right)
+			{
+				if(left.subgroup_id == right.subgroup_id){
+					return left.femId < right.femId;
+				}
+				else{
+					return left.subgroup_id < right.subgroup_id;
+				}
+			});
+	}
+
 
 	// --------------------------------
 	// check and print group information
 	// --------------------------------
-	std::cout << "\n[LogicFilter::InitTask] Group IDs: " ;
+	std::cout << "\n[LogicFilter::InitTask] Group IDs: ";
 	for(size_t i = 0; i < max_group_id + 1; i++){
 		if(groups[i].size() > 0){
 			std::cout << "\tgroup " << i << " has " << groups[i].size() << std::endl;
@@ -262,20 +281,18 @@ void LogicFilter::InitTask()
 	// --------------------------------
 	// register signals to Trigger
 	// --------------------------------
+	int iSubTCT = -1;
+	std::pair<uint32_t, uint32_t> last_subgroup = std::make_pair(UINT32_MAX, UINT32_MAX);
 	for(const auto &group : groups){
+		if(group.size() == 0) continue; // skip empty group
 		for(const auto &sig : group){
-			if(sig.subgroup_id == SignalParser::NO_SUBGROUP){
-				fTrig->EntryTo(sig.group_id, sig.femId, sig.channel, static_cast<int>(sig.offset));
-				LOG(info) << "Registered signal into Group #" << sig.group_id << ": "
-					<< "FrontEnd IP Addr.: " << static_cast<unsigned int>((sig.femId >> 24) & 0xff) << "."
-					<< static_cast<unsigned int>((sig.femId >> 16) & 0xff) << "."
-					<< static_cast<unsigned int>((sig.femId >> 8) & 0xff) << "."
-					<< static_cast<unsigned int>((sig.femId) & 0xff)
-					<< ", Ch.: " << std::setw(3) << sig.channel << ", Offset: " << std::setw(6) << static_cast<int>(sig.offset);
+			if(sig.subgroup_id != SignalParser::NO_SUBGROUP){
+				if(last_subgroup != std::make_pair(sig.group_id, sig.subgroup_id)){
+					iSubTCT++;
+					last_subgroup = std::make_pair(sig.group_id, sig.subgroup_id);
+				}
 			}
-			else{
-				// later: for AND group
-			}
+			fTrig->EntryTo(sig.group_id, sig.subgroup_id, iSubTCT, sig.femId, sig.channel, static_cast<int>(sig.offset));
 		}
 	}
 
@@ -321,7 +338,7 @@ void LogicFilter::InitTask()
 			i++;
 		}
 	}
-	
+
 	LOG(info) << "Formula: " << formula;
 	fTrig->MakeTable(formula);
 	#endif
