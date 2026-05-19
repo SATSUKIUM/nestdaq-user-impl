@@ -304,6 +304,8 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 			uint32_t leftwidth = fEntryChLeftWidth[fem][i];
 			uint32_t rightwidth = fEntryChRightWidth[fem][i];
 			uint32_t markbit = fEntryChBit[fem][i];
+			uint32_t iSubTCT = fEntryChiSubTCT[fem][i];
+			bool isMemberOfSubGroup = (iSubTCT != UINT32_MAX); // true for member of subgroup, false for not of subgroup
 
 			#if 0
 			std::cout << "#DD Trigger::Mark " 
@@ -331,7 +333,12 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 							if (hit < fTimeRegionSize - leftwidth) {
 								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
-										fTimeRegion[hit + k] |= markbit;
+										if(isMemberOfSubGroup){
+											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットをクリア
+										}
+										else{
+											fTimeRegion[hit + k] |= markbit;
+										}
 									} else if ((static_cast<int>(hit) + k) >= 0) {
 										std::cout << "#E Over range hit!"
 											<< " FEM: " << std::hex << fem
@@ -356,7 +363,12 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 							if (hit < fTimeRegionSize - leftwidth) {
 								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
-										fTimeRegion[hit + k] |= markbit;
+										if(isMemberOfSubGroup){
+											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットをクリア
+										}
+										else{
+											fTimeRegion[hit + k] |= markbit;
+										}
 									} else if ((static_cast<int>(hit) + k) >= 0) {
 										std::cout << "#E Over range hit!"
 											<< " FEM: " << std::hex << fem
@@ -387,7 +399,12 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 							if (hit < fTimeRegionSize - leftwidth) {
 								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
-										fTimeRegion[hit + k] |= markbit;
+										if(isMemberOfSubGroup){
+											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットをクリア
+										}
+										else{
+											fTimeRegion[hit + k] |= markbit;
+										}
 									} else if ((static_cast<int>(hit) + k) >= 0) {
 										std::cout << "#E Over range hit!"
 											<< " FEM: " << std::hex << fem
@@ -413,7 +430,12 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 							if (hit < fTimeRegionSize - leftwidth) {
 								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
-										fTimeRegion[hit + k] |= markbit;
+										if(isMemberOfSubGroup){
+											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットをクリア
+										}
+										else{
+											fTimeRegion[hit + k] |= markbit;
+										}
 									} else if ((static_cast<int>(hit) + k) >= 0) {
 										std::cout << "#E Over range hit!"
 											<< " FEM: " << std::hex << fem
