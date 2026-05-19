@@ -304,9 +304,9 @@ install(TARGETS
 #
 #
 
-foreach(lvar IN ITEMS
-    TriggerView;
-)
+# foreach(lvar IN ITEMS
+#     TriggerView;
+# )
 
 set(EXEC ${lvar})
   add_executable(${EXEC} 
