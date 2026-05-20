@@ -564,13 +564,28 @@ std::vector<uint32_t> *Trigger::Scan()
 void Trigger::ScanSubTCTandMarkMainTCT()
 {
 	for(const auto &p : fiSubTCTMainTCT){
+		#if DEBUG_MORE32
+		std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] fetch iSubTCT, iMainTCT" << std::endl;
+		#endif
+
 		uint32_t iSubTCT = p.first;
 		uint32_t iMainTCT = p.second;
+
+		#if DEBUG_MORE32
+		std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] fetch success: iSubTCT: " << iSubTCT << " iMainTCT: " << std::bitset<32>(iMainTCT) << std::endl;
+		#endif
+
+		#if DEBUG_MORE32
+		std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] Start scanning SubTCT " << iSubTCT << " and marking MainTCT..." << std::endl;
+		#endif
 		for(uint32_t i = 0; i < fSubTCTSize - 1; ++i){
 			if((fSubTCT[iSubTCT][i] != 0u) && (fSubTCT[iSubTCT][i + 1] == 0u)){
 				fTimeRegion[i] |= iMainTCT;
 			}
 		}
+		#if DEBUG_MORE32
+		std::cout << "\tDone." << std::endl;
+		#endif
 	}
 	return;
 } // void Trigger::ScanSubTCTandMarkMainTCT()
