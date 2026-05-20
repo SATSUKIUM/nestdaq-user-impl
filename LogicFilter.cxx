@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <string>
 #include <chrono>
+#include <vector>
 
 #include <unordered_map>
 #include <unordered_set>
@@ -35,6 +36,8 @@
 #include "KTimer.cxx"
 #include "Trigger.cxx"
 
+#define DUMP 1
+
 
 //std::atomic<int> gQdepth = 0;
 
@@ -52,7 +55,7 @@ struct LogicFilter : fair::mq::Device
 		static constexpr std::string_view SplitMethod        {"split"};
 
 		static constexpr std::string_view TriggerSignals     {"trigger-signals"};
-		static constexpr std::string_view TriggerFormula     {"trigger-expression"};
+		static constexpr std::string_view TriggerExpression     {"trigger-expression"};
 		static constexpr std::string_view TriggerWidth       {"trigger-width"};
 	};
 
@@ -167,9 +170,13 @@ private:
 	KTimer *fKt3;
 	KTimer *fKt4;
 
-	// fileout
-	std::ofstream fOut;
+	#if DUMP
+	// ofstream
+	std::ofstream fOutFile;
 	int fIteration = 0;
+	#endif
+
+	std::map<uint32_t, uint32_t> fNEntryInSubTCT_LogicFilter; // key: iSubTCT, value: nEntryInSubTCT
 };
 
 
@@ -216,49 +223,122 @@ void LogicFilter::InitTask()
 	fTrig->ClearEntry();
 
 	std::string str_signals = fConfig->GetProperty<std::string>(opt::TriggerSignals.data());
-	std::string formula = fConfig->GetProperty<std::string>(opt::TriggerFormula.data());
+	std::string tx = fConfig->GetProperty<std::string>(opt::TriggerExpression.data());
 	int window_width = std::stoi(fConfig->GetProperty<std::string>(opt::TriggerWidth.data()));
-
-	std::vector< std::vector<uint32_t> > signals = SignalParser::Parsing(str_signals);
-	int i = 0;
-	for (auto &v : signals) {
-		if (v.size() >= 3) {
-			fTrig->Entry(v[0], v[1], static_cast<int>(v[2]));
-			union ipval {
-				uint32_t u32;
-				char c[4];
-			};
-			ipval mid; mid.u32 = v[0];
-			//LOG(info) << "Module: " << std::hex << v[0] << ", Channel: " << v[1] << ", Offset: " << v[2];
-			LOG(info) << std::setw(4) << i << ": "
-				<< "M_id: " << static_cast<unsigned int>(mid.c[3] & 0xff)
-				<< "."      << static_cast<unsigned int>(mid.c[2] & 0xff)
-				<< "."      << static_cast<unsigned int>(mid.c[1] & 0xff)
-				<< "."      << static_cast<unsigned int>(mid.c[0] & 0xff)
-				<< ", Ch.: " << std::setw(3) << v[1] << ", Offset: " << std::setw(6) << static_cast<int>(v[2]);
-			i++;
-		}
-	}
-	
-	LOG(info) << "Formula: " << formula;
-	fTrig->MakeTable(formula);
 
 	LOG(info) << "Trigger windows width: " << window_width;
 	fTrig->SetMarkLen(window_width);
 
-	// fileout with file name with timestamp
+	std::vector<struct psig> signals = SignalParser::Parsing(str_signals);
+
+	// --------------------------------
+	// distribute signals into groups, and scan max group id
+	// --------------------------------
+	std::cout << "\n[LogicFilter::InitTask] Distributing signals into groups... " << std::endl;
+	std::vector<std::vector<struct psig>> groups;
+	uint32_t max_group_id = 0;
+	for(auto &sig : signals){
+		if(sig.group_id > max_group_id) max_group_id = sig.group_id;
+	}
+	groups.resize(max_group_id + 1);
+	for(auto &sig : signals){
+		groups[sig.group_id].emplace_back(sig);
+	}
+	std::cout << "\tMax group id: " << max_group_id << std::endl;
+
+	// --------------------------------
+	// sort signals in each group by subgroup_id for making SubTCT in order of subgroup_id
+	// --------------------------------
+	std::cout << "\n[LogicFilter::InitTask] Sorting signals in each group by subgroup_id... " << std::endl;
+	for(auto &group : groups){
+		if(group.size() == 0) continue; // skip empty group
+		std::sort(group.begin(), group.end(),
+			[](const struct psig &left, const struct psig &right)
+			{
+				if(left.subgroup_id == right.subgroup_id){
+					return left.femId < right.femId;
+				}
+				else{
+					return left.subgroup_id < right.subgroup_id;
+				}
+			});
+	}
+	std::cout << "\tDone." << std::endl;
+
+
+	// --------------------------------
+	// check and print group information
+	// --------------------------------
+	std::cout << "\n[LogicFilter::InitTask] Check group information: " << std::endl;
+	for(size_t i = 0; i < max_group_id + 1; i++){
+		if(groups[i].size() > 0){
+			std::cout << "\tgroup " << i << " has " << groups[i].size() << std::endl;
+			std::cout << "\t\tSignals: ";
+			for(const auto &sig : groups[i]){
+				if(sig.subgroup_id != SignalParser::NO_SUBGROUP){
+					std::cout << sig.group_id << "-" << sig.subgroup_id << " ";
+				}
+				else{
+					std::cout << sig.group_id << " ";
+				}
+			}
+			std::cout << std::endl;
+		} // endif(groups[i].size() > 0)
+		else{
+			std::cout << "\tgroup " << i << " is empty" << std::endl;
+		}
+	} // for(size_t i = 0; i < max_group_id + 1; i++)
+	std::cout << "\tDone." << std::endl;
+
+	// --------------------------------
+	// register signals to Trigger
+	// --------------------------------
+	std::cout << "\n[LogicFilter::InitTask] Registering signals to Trigger... " << std::endl;
+	int iSubTCT = -1; // subgroupが見つかれば、0から順番に割り当てる
+	std::pair<uint32_t, uint32_t> last_subgroup = std::make_pair(UINT32_MAX, UINT32_MAX); // 最初にsubgroupが見つかれば必ず、このペアとは異なる
+	for(const auto &group : groups){
+		if(group.size() == 0) continue; // skip empty group
+		for(const auto &sig : group){
+			if(sig.subgroup_id != SignalParser::NO_SUBGROUP){
+				if(last_subgroup != std::make_pair(sig.group_id, sig.subgroup_id)){
+					iSubTCT++;
+					fNEntryInSubTCT_LogicFilter[iSubTCT] = 1;
+					last_subgroup = std::make_pair(sig.group_id, sig.subgroup_id);
+				}
+				else{
+					fNEntryInSubTCT_LogicFilter[iSubTCT]++;
+				}
+			}
+			fTrig->EntryTo(sig.group_id, sig.subgroup_id, iSubTCT, sig.femId, sig.channel, static_cast<int>(sig.offset));
+		}
+	}
+	fTrig->SetfnEntryInSubTCT(fNEntryInSubTCT_LogicFilter);
+	std::cout << "\tDone." << std::endl;
+
+	// --------------------------------
+	// SetTimeRegion for SubTCT
+	// --------------------------------
+	std::cout << "\n[LogicFilter::InitTask] Setting time region for SubTCT... " << std::endl;
+	fTrig->SetTimeRegion_SubTCT(1024 * 128, fNEntryInSubTCT_LogicFilter); // (int, map<uint32_t, uint32_t>) -> (subTCTSize, nEntryInSubTCT)
+	std::cout << "\tDone." << std::endl;
+
+	std::cout << "\n[LogicFilter::InitTask] Trigger expression: " << tx << std::endl;
+	LOG(info) << "Trigger Expression: " << tx;
+	fTrig->MakeTable(tx);
+	std::cout << "\tMaking table Done." << std::endl;
+
+	#if DUMP // fileout with file name with timestamp
 	std::time_t t = std::time(nullptr);
 	std::tm tm = *std::localtime(&t);
 	std::ostringstream oss;
 	oss << "LogicFilter_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << ".log";
-	fOut.open(oss.str(), std::ios::out);
-	if (!fOut.is_open()) {
-		LOG(error) << "Failed to open output file: " << oss.str();
-	} else {
-		LOG(info) << "Output file opened: " << oss.str();
-	}
+	fOutFile.open(oss.str());
+	std::cout << "\n[LogicFilter::InitTask] Output file: " << oss.str() << std::endl;
 
-}
+	#endif
+
+
+} // void LogicFilter::InitTask()
 
 bool LogicFilter::CheckData(fair::mq::MessagePtr &msg)
 {
@@ -1095,6 +1175,8 @@ bool LogicFilter::ConditionalRun()
 			BuildHBF(hbf_list, block_map, inParts, i);
 
 			//Trigger process
+			fTrig->CleanUpTimeRegion();
+			fTrig->CleanUpSubTCT(fNEntryInSubTCT_LogicFilter);
 			std::vector<uint32_t> *hits = fTrig->Exec(hbf_list);
 			fltdata.emplace_back(*hits);
 			int nhits = hits->size();
@@ -1119,11 +1201,11 @@ bool LogicFilter::ConditionalRun()
 			totalhits += nhits;
 		}
 
-		#if 1
-		fOut << "ConditionalRun Iterations: " << fIteration << std::endl;
-		for(size_t i=0; i<fltdata.size(); i++){
-			for(size_t ii=0; ii<fltdata[i].size(); ii++){
-				fOut << fltdata[i][ii] << std::endl;
+		#if DUMP // FLT data check
+		fOutFile << "ConditionalRun Iterations: " << fIteration << std::endl;
+		for(size_t i=0; i < fltdata.size(); i++){
+			for(size_t ii=0; ii < fltdata[i].size(); ii++){
+				fOutFile << fltdata[i][ii] << std::endl;
 			}
 		}
 		fIteration++;
@@ -1491,11 +1573,11 @@ void addCustomOptions(bpo::options_description& options)
 
 		(opt::TriggerSignals.data(),
 			bpo::value<std::string>()->default_value(
-			"(0xc0a802a9 0 0) (0xc0a802a9 1 0)"),
+			"(0 0xc0a802a9 0 0) (1 0xc0a802a9 1 0)"),
 			"Triger signals (module_IP Channel_number Offset)")
-		(opt::TriggerFormula.data(),
+		(opt::TriggerExpression.data(),
 			bpo::value<std::string>()->default_value("RPN 0 1 &"),
-			"Trigger formula")
+			"Trigger expression")
 		(opt::TriggerWidth.data(),
 			bpo::value<std::string>()->default_value("10"),
 			"Trigger window width (4 ns unit)")
