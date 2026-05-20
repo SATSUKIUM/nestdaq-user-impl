@@ -518,13 +518,13 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 
 std::vector<uint32_t> *Trigger::Scan()
 {
-	#if 1
+	#if DEBUG_MORE32
 	std::cout << "[Trigger::Scan] Start scanning SubTCT and marking MainTCT..." << std::endl;
 	Trigger::ScanSubTCTandMarkMainTCT();
 	std::cout << "\tDone." << std::endl;
 	#endif
 
-	#if 1
+	#if DEBUG_MORE32
 	std::cout << "[Trigger::Scan] Start scanning MainTCT..." << std::endl;
 	#endif
 	//std::cout << "#D Scan fMarkMask: " << std::hex << fMarkMask << std::endl;
