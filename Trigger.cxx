@@ -334,7 +334,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 			#if DEBUG_MORE32
 			std::cout << "[Trigger::Mark] FEM: " << std::hex << fem
 				<< " Ch: " << std::setw(3) << std::setfill(' ') << ch
-				<< " Offset: " << std::setw(3) << std::setfill(' ') << static_cast<int>(delay)
+				<< " Offset: " << std::setw(8) << std::setfill(' ') << static_cast<int>(delay)
 				<< " LeftWidth: " << std::setw(3) << std::setfill(' ') << leftwidth
 				<< " RightWidth: " << std::setw(3) << std::setfill(' ') << rightwidth
 				<< " MarkBit: " << std::bitset<32>(markbit)
