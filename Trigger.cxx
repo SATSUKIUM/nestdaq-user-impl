@@ -338,7 +338,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 				<< " LeftWidth: " << std::setw(3) << std::setfill(' ') << leftwidth
 				<< " RightWidth: " << std::setw(3) << std::setfill(' ') << rightwidth
 				<< " MarkBit: " << std::bitset<32>(markbit)
-				<< " iSubTCT: " << std::dec << iSubTCT
+				<< " iSubTCT: " << std::dec << std::setw(8) << std::setfill(' ') << iSubTCT
 				<< " iMainTCT: " << std::bitset<32>(iMainTCT)
 				<< std::endl;
 			#endif
