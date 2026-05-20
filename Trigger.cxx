@@ -253,7 +253,7 @@ void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT,
 		fEntryChiSubTCT[fem].emplace_back(iSubTCT);
 	}
 
-	fiSubTCTMainTCT[iSubTCT] = group_id;
+	fiSubTCTMainTCT[iSubTCT] = 1u << group_id;
 
 	fEntryMask |= 0x00000001 << group_id; // this is not sure if this is correct or not. Should be checked later.
 	
