@@ -322,16 +322,18 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 			uint32_t rightwidth = fEntryChRightWidth[fem][i];
 			uint32_t markbit = fEntryChBit[fem][i];
 			uint32_t iSubTCT = fEntryChiSubTCT[fem][i];
+			uint32_t iMainTCT = fiSubTCTMainTCT[iSubTCT];
 			bool isMemberOfSubGroup = (iSubTCT != UINT32_MAX); // true for member of subgroup, false for not of subgroup
 
 			#if DEBUG_MORE32
 			std::cout << "[Trigger::Mark] FEM: " << std::hex << fem
 				<< " Ch: " << std::setw(3) << std::setfill(' ') << ch
-				<< " Offset: " << std::setw(3) << std::setfill(' ') << delay
+				<< " Offset: " << std::setw(3) << std::setfill(' ') << static_cast<int>(delay)
 				<< " LeftWidth: " << std::setw(3) << std::setfill(' ') << leftwidth
 				<< " RightWidth: " << std::setw(3) << std::setfill(' ') << rightwidth
 				<< " MarkBit: " << std::bitset<32>(markbit)
 				<< " iSubTCT: " << std::dec << iSubTCT
+				<< " iMainTCT: " << std::bitset<32>(iMainTCT)
 				<< std::endl;
 			#endif
 
