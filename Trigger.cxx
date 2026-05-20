@@ -581,8 +581,13 @@ void Trigger::ScanSubTCTandMarkMainTCT()
 		#if DEBUG_MORE32
 		std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] Start scanning SubTCT " << iSubTCT << " and marking MainTCT..." << std::endl;
 		#endif
-		for(uint32_t i = 0; i < fSubTCTSize - 1; ++i){
-			if((fSubTCT[iSubTCT][i] != 0u) && (fSubTCT[iSubTCT][i + 1] == 0u)){
+		// for(uint32_t i = 0; i < fSubTCTSize - 1; ++i){
+		// 	if((fSubTCT[iSubTCT][i] != 0u) && (fSubTCT[iSubTCT][i + 1] == 0u)){
+		// 		fTimeRegion[i] |= iMainTCT;
+		// 	}
+		// }
+		for(uint32_t i = 0; i < fSubTCTSize; ++i){
+			if(fSubTCT[iSubTCT][i] == 0u){
 				fTimeRegion[i] |= iMainTCT;
 			}
 		}
