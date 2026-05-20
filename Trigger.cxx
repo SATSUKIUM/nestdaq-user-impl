@@ -322,7 +322,13 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 			uint32_t rightwidth = fEntryChRightWidth[fem][i];
 			uint32_t markbit = fEntryChBit[fem][i];
 			uint32_t iSubTCT = fEntryChiSubTCT[fem][i];
-			uint32_t iMainTCT = fiSubTCTMainTCT[iSubTCT];
+			uintr32_t iMainTCT = 0;
+			if(iSubTCT == UINT32_MAX){
+				iMainTCT = markbit;
+			}
+			else{
+				iMainTCT = fiSubTCTMainTCT[iSubTCT];
+			}
 			bool isMemberOfSubGroup = (iSubTCT != UINT32_MAX); // true for member of subgroup, false for not of subgroup
 
 			#if DEBUG_MORE32
