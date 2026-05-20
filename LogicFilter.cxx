@@ -292,7 +292,7 @@ void LogicFilter::InitTask()
 	// --------------------------------
 	std::cout << "\n[LogicFilter::InitTask] Registering signals to Trigger... " << std::endl;
 	int iSubTCT = -1; // subgroupが見つかれば、0から順番に割り当てる
-	std::map<int, int> nEntryInSubTCT; // <iSubTCT to nEntryInSubTCT>
+	std::map<uint32_t, uint32_t> nEntryInSubTCT; // <iSubTCT to nEntryInSubTCT>
 	std::pair<uint32_t, uint32_t> last_subgroup = std::make_pair(UINT32_MAX, UINT32_MAX); // 最初にsubgroupが見つかれば必ず、このペアとは異なる
 	for(const auto &group : groups){
 		if(group.size() == 0) continue; // skip empty group
@@ -310,13 +310,14 @@ void LogicFilter::InitTask()
 			fTrig->EntryTo(sig.group_id, sig.subgroup_id, iSubTCT, sig.femId, sig.channel, static_cast<int>(sig.offset));
 		}
 	}
+	fTrig->SetfnEntryInSubTCT(nEntryInSubTCT);
 	std::cout << "\tDone." << std::endl;
 
 	// --------------------------------
 	// SetTimeRegion for SubTCT
 	// --------------------------------
 	std::cout << "\n[LogicFilter::InitTask] Setting time region for SubTCT... " << std::endl;
-	fTrig->SetTimeRegion_SubTCT(1024 * 128, nEntryInSubTCT); // (int, map<int, int>) -> (subTCTSize, nEntryInSubTCT)
+	fTrig->SetTimeRegion_SubTCT(1024 * 128, nEntryInSubTCT); // (int, map<uint32_t, uint32_t>) -> (subTCTSize, nEntryInSubTCT)
 	std::cout << "\tDone." << std::endl;
 
 	std::cout << "\n[LogicFilter::InitTask] Trigger expression: " << tx << std::endl;
@@ -1172,6 +1173,8 @@ bool LogicFilter::ConditionalRun()
 			BuildHBF(hbf_list, block_map, inParts, i);
 
 			//Trigger process
+			fTrig->CleanUpTimeRegion();
+			fTrig->CleanUpSubTCT(nEntryInSubTCT);
 			std::vector<uint32_t> *hits = fTrig->Exec(hbf_list);
 			fltdata.emplace_back(*hits);
 			int nhits = hits->size();

@@ -38,8 +38,9 @@ public:
 	virtual ~Trigger();
 	void InitParam();
 	bool SetTimeRegion(int);
-	bool SetTimeRegion_SubTCT(int, const std::map<int, int>&); // subTCTSize, nEntryInSubTCT
+	bool SetTimeRegion_SubTCT(int, const std::map<uint32_t, uint32_t>&); // subTCTSize, nEntryInSubTCT
 	void CleanUpTimeRegion();
+	void CleanUpSubTCT(const std::map<uint32_t, uint32_t>& nEntryInSubTCT);
 	uint32_t *GetTimeRegion();
 	uint32_t GetTimeRegionSize();
 	void Entry(uint32_t, int, int); // fem, ch, offset
@@ -56,6 +57,7 @@ public:
 	int GetMarkLen() {return fMarkLen;};
 	//void SetLogic(int);
 	void MakeTable(std::string &);
+	void SetfnEntryInSubTCT(const std::map<uint32_t, uint32_t>& nEntryInSubTCT);
 protected:
 private:
 	//std::vector<struct CoinCh> fEntry;
@@ -67,6 +69,8 @@ private:
 	std::map<std::pair<uint32_t, uint32_t>, int> fEntryCounts; // key: (gp_id, subgp_id), value: count of entry
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChiSubTCT; // key: fem, value: list of iSubTCT
 	std::map< uint32_t, uint32_t > fiSubTCTMainTCT; // key: iSubTCT, value: iMainTCT
+
+	std::map< uint32_t, uint32_t> fnEntryInSubTCT; // key: iSubTCT, value: nEntryInSubTCT
 
 	// int fEntryCounts = 0;
 	uint32_t fEntryMask = 0;
@@ -97,6 +101,10 @@ Trigger::~Trigger()
 	}
 
 	return;
+}
+
+void Trigger::SetfnEntryInSubTCT(const std::map<uint32_t, uint32_t>& nEntryInSubTCT){
+	fnEntryInSubTCT = nEntryInSubTCT;
 }
 
 //void Trigger::SetLogic(int nsignal, std::string formula)
@@ -131,7 +139,7 @@ bool Trigger::SetTimeRegion(int size)
 	return true;
 }
 
-bool Trigger::SetTimeRegion_SubTCT(int subTCTSize, const std::map<int, int>& nEntryInSubTCT){
+bool Trigger::SetTimeRegion_SubTCT(int subTCTSize, const std::map<uint32_t, uint32_t>& nEntryInSubTCT){
 	// 単純にはSubTCTのサイズはMainTCTのサイズと同じだが、MainTCTより粗い時間分解能で作るというのも面白い工夫だと思う。宿題だ。SubTCTごとに決めるのも悪くないかも。
 	assert(fSubTCT.empty()); // this function called only once
 
@@ -140,7 +148,7 @@ bool Trigger::SetTimeRegion_SubTCT(int subTCTSize, const std::map<int, int>& nEn
 	for(const auto &p : nEntryInSubTCT){
 		int iSubTCT = p.first;
 		int nEntryInSubTCT = p.second;
-		#if 1
+		#if 0
 		std::cout << "#D SubTCT " << iSubTCT << " has " << nEntryInSubTCT << " entries." << std::endl;
 		#endif
 		uint32_t initialValue = (0x00000001 << nEntryInSubTCT) - 1u; // nEntryInSubTCT個のビットが立っている値
@@ -159,6 +167,20 @@ bool Trigger::SetTimeRegion_SubTCT(int subTCTSize, const std::map<int, int>& nEn
 void Trigger::CleanUpTimeRegion()
 {
 	for (uint32_t i = 0 ; i < fTimeRegionSize ; i++) fTimeRegion[i] = 0;
+
+	return;
+}
+
+void Trigger::CleanUpSubTCT(const std::map<uint32_t, uint32_t>& nEntryInSubTCT)
+{
+	for(const auto &p : nEntryInSubTCT){
+		uint32_t iSubTCT = p.first;
+		uint32_t nEntryInSubTCT = p.second;
+		uint32_t initialValue = (0x00000001 << nEntryInSubTCT) - 1u; // nEntryInSubTCT個のビットが立っている値
+		for(uint32_t i=0; i < fSubTCTSize; i++){
+			fSubTCT[iSubTCT][i] = initialValue;
+		}
+	}
 	return;
 }
 
