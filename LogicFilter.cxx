@@ -1203,7 +1203,6 @@ bool LogicFilter::ConditionalRun()
 				fOutFile << fltdata[i][ii] << std::endl;
 			}
 		}
-		fOutFile << std::endl;
 		fIteration++;
 		#endif
 
