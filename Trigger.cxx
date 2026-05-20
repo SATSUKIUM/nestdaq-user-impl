@@ -11,6 +11,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include <bitset>
+
 #include "UnpackTdc.h"
 #include "SubTimeFrameHeader.h"
 #include "TriggerMap.cxx"
