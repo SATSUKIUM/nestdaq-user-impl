@@ -1120,13 +1120,13 @@ bool LogicFilter::ConditionalRun()
 		}
 
 		#if 1
-		fOut << "ConditionalRun Iterations: " << fIterations << std::endl;
+		fOut << "ConditionalRun Iterations: " << fIteration << std::endl;
 		for(size_t i=0; i<fltdata.size(); i++){
 			for(size_t ii=0; ii<fltdata[i].size(); ii++){
 				fOut << fltdata[i][ii] << std::endl;
 			}
 		}
-		fIterations++;
+		fIteration++;
 		#endif
 
 		#if 0
