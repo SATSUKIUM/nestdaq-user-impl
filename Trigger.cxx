@@ -439,9 +439,9 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 								<< std::endl;
 							#endif
 
-							if (hit < fTimeRegionSize - leftwidth) {
+							if (hit < fTimeRegionSize - rightwidth) {
 								#if DEBUG_MORE32
-								std::cout << "[Trigger::Mark] Passed 1st if check: hit < fTimeRegionSize - leftwidth: " << hit << " < " << fTimeRegionSize << " - " << leftwidth << std::endl;
+								std::cout << "[Trigger::Mark] Passed 1st if check: hit < fTimeRegionSize - rightwidth: " << hit << " < " << fTimeRegionSize << " - " << rightwidth << std::endl;
 								#endif
 								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
@@ -467,6 +467,12 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 											<< " Hit: " << hit
 											<< " Mark: " << static_cast<int>(hit) + k
 											<< std::endl;
+									} else
+									{
+										#if DEBUG_MORE32
+										std::cout << "[Trigger::Mark] Skipped because (hit + k) < fTimeRegionSize is not satisfied: "
+											<< "(" << hit << " + " << k << ")" << " < " << fTimeRegionSize << std::endl;
+										#endif
 									}
 								}
 							}
