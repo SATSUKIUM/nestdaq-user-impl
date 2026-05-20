@@ -136,6 +136,9 @@ bool Trigger::SetTimeRegion_SubTCT(int subTCTSize, const std::map<int, int>& nEn
 	for(const auto &p : nEntryInSubTCT){
 		int iSubTCT = p.first;
 		int nEntryInSubTCT = p.second;
+		#if 1
+		std::cout << "#D SubTCT " << iSubTCT << " has " << nEntryInSubTCT << " entries." << std::endl;
+		#endif
 		uint32_t initialValue = (0x00000001 << nEntryInSubTCT) - 1u; // nEntryInSubTCT個のビットが立っている値
 
 		uint32_t* subTCTRegion = new uint32_t[subTCTSize];
@@ -144,6 +147,8 @@ bool Trigger::SetTimeRegion_SubTCT(int subTCTSize, const std::map<int, int>& nEn
 		}
 		fSubTCT[iSubTCT] = subTCTRegion;
 	}
+
+	return true;
 
 } // bool Trigger::SetTimeRegion_SubTCT(int nSubTCT, int subTCTSize)
 
