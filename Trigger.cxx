@@ -593,6 +593,9 @@ void Trigger::ScanSubTCTandMarkMainTCT()
 		for(uint32_t i = 0; i < fSubTCTSize; ++i){
 			if(fSubTCT[iSubTCT][i] == 0u){
 				fTimeRegion[i] |= iMainTCT;
+				#if DEBUG_MORE32
+				std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] mark bit for MainTCT: " << std::bitset<32>(iMainTCT) << " to hit time " << i << std::endl;
+				#endif
 			}
 		}
 		#if DEBUG_MORE32
