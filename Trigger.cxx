@@ -70,7 +70,7 @@ private:
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChiSubTCT; // key: fem, value: list of iSubTCT
 	std::map< uint32_t, uint32_t > fiSubTCTMainTCT; // key: iSubTCT, value: iMainTCT
 
-	std::map< uint32_t, uint32_t> fnEntryInSubTCT; // key: iSubTCT, value: nEntryInSubTCT
+	std::map< uint32_t, uint32_t> fNEntryInSubTCT_Trigger; // key: iSubTCT, value: nEntryInSubTCT
 
 	// int fEntryCounts = 0;
 	uint32_t fEntryMask = 0;
@@ -103,8 +103,8 @@ Trigger::~Trigger()
 	return;
 }
 
-void Trigger::SetfnEntryInSubTCT(const std::map<uint32_t, uint32_t>& nEntryInSubTCT){
-	fnEntryInSubTCT = nEntryInSubTCT;
+void Trigger::SetfnEntryInSubTCT(const std::map<uint32_t, uint32_t>& fNEntryInSubTCT_LogicFilter){
+	fNEntryInSubTCT_Trigger = fNEntryInSubTCT_LogicFilter;
 }
 
 //void Trigger::SetLogic(int nsignal, std::string formula)
@@ -175,8 +175,8 @@ void Trigger::CleanUpSubTCT(const std::map<uint32_t, uint32_t>& nEntryInSubTCT)
 {
 	for(const auto &p : nEntryInSubTCT){
 		uint32_t iSubTCT = p.first;
-		uint32_t nEntryInSubTCT = p.second;
-		uint32_t initialValue = (0x00000001 << nEntryInSubTCT) - 1u; // nEntryInSubTCT個のビットが立っている値
+		uint32_t nInSubTCT = p.second;
+		uint32_t initialValue = (0x00000001 << nInSubTCT) - 1u; // nInSubTCT個のビットが立っている値
 		for(uint32_t i=0; i < fSubTCTSize; i++){
 			fSubTCT[iSubTCT][i] = initialValue;
 		}

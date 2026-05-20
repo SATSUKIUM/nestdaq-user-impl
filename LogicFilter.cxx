@@ -174,6 +174,8 @@ private:
 	std::ofstream fOutFile;
 	int fIteration = 0;
 	#endif
+
+	std::map<uint32_t, uint32_t> fNEntryInSubTCT_LogicFilter; // key: iSubTCT, value: nEntryInSubTCT
 };
 
 
@@ -292,7 +294,6 @@ void LogicFilter::InitTask()
 	// --------------------------------
 	std::cout << "\n[LogicFilter::InitTask] Registering signals to Trigger... " << std::endl;
 	int iSubTCT = -1; // subgroupが見つかれば、0から順番に割り当てる
-	std::map<uint32_t, uint32_t> nEntryInSubTCT; // <iSubTCT to nEntryInSubTCT>
 	std::pair<uint32_t, uint32_t> last_subgroup = std::make_pair(UINT32_MAX, UINT32_MAX); // 最初にsubgroupが見つかれば必ず、このペアとは異なる
 	for(const auto &group : groups){
 		if(group.size() == 0) continue; // skip empty group
@@ -300,24 +301,24 @@ void LogicFilter::InitTask()
 			if(sig.subgroup_id != SignalParser::NO_SUBGROUP){
 				if(last_subgroup != std::make_pair(sig.group_id, sig.subgroup_id)){
 					iSubTCT++;
-					nEntryInSubTCT[iSubTCT] = 1;
+					fNEntryInSubTCT_LogicFilter[iSubTCT] = 1;
 					last_subgroup = std::make_pair(sig.group_id, sig.subgroup_id);
 				}
 				else{
-					nEntryInSubTCT[iSubTCT]++;
+					fNEntryInSubTCT_LogicFilter[iSubTCT]++;
 				}
 			}
 			fTrig->EntryTo(sig.group_id, sig.subgroup_id, iSubTCT, sig.femId, sig.channel, static_cast<int>(sig.offset));
 		}
 	}
-	fTrig->SetfnEntryInSubTCT(nEntryInSubTCT);
+	fTrig->SetfnEntryInSubTCT(fNEntryInSubTCT_LogicFilter);
 	std::cout << "\tDone." << std::endl;
 
 	// --------------------------------
 	// SetTimeRegion for SubTCT
 	// --------------------------------
 	std::cout << "\n[LogicFilter::InitTask] Setting time region for SubTCT... " << std::endl;
-	fTrig->SetTimeRegion_SubTCT(1024 * 128, nEntryInSubTCT); // (int, map<uint32_t, uint32_t>) -> (subTCTSize, nEntryInSubTCT)
+	fTrig->SetTimeRegion_SubTCT(1024 * 128, fNEntryInSubTCT_LogicFilter); // (int, map<uint32_t, uint32_t>) -> (subTCTSize, nEntryInSubTCT)
 	std::cout << "\tDone." << std::endl;
 
 	std::cout << "\n[LogicFilter::InitTask] Trigger expression: " << tx << std::endl;
