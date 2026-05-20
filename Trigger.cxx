@@ -563,6 +563,9 @@ std::vector<uint32_t> *Trigger::Scan()
 
 void Trigger::ScanSubTCTandMarkMainTCT()
 {
+	#if DEBUG_MORE32
+	std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] size of fiSubTCTMainTCT: " << fiSubTCTMainTCT.size() << std::endl;
+	#endif
 	for(const auto &p : fiSubTCTMainTCT){
 		#if DEBUG_MORE32
 		std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] fetch iSubTCT, iMainTCT" << std::endl;
