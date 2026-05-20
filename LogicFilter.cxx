@@ -35,7 +35,7 @@
 #include "KTimer.cxx"
 #include "Trigger.cxx"
 
-#define DUMP 0
+#define DUMP 1
 
 
 //std::atomic<int> gQdepth = 0;
