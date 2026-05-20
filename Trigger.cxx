@@ -322,7 +322,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 			uint32_t rightwidth = fEntryChRightWidth[fem][i];
 			uint32_t markbit = fEntryChBit[fem][i];
 			uint32_t iSubTCT = fEntryChiSubTCT[fem][i];
-			uintr32_t iMainTCT = 0;
+			uint32_t iMainTCT = 0;
 			if(iSubTCT == UINT32_MAX){
 				iMainTCT = markbit;
 			}
