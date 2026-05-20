@@ -220,6 +220,7 @@ void LogicFilter::InitTask()
 	// --------------------------------
 	// distribute signals into groups, and scan max group id
 	// --------------------------------
+	std::cout << "\n[LogicFilter::InitTask] Distributing signals into groups... " << std::endl;
 	std::vector<std::vector<struct psig>> groups;
 	uint32_t max_group_id = 0;
 	for(auto &sig : signals){
@@ -229,10 +230,12 @@ void LogicFilter::InitTask()
 	for(auto &sig : signals){
 		groups[sig.group_id].emplace_back(sig);
 	}
+	std::cout << "\tMax group id: " << max_group_id << std::endl;
 
 	// --------------------------------
 	// sort signals in each group by subgroup_id for making SubTCT in order of subgroup_id
 	// --------------------------------
+	std::cout << "\n[LogicFilter::InitTask] Sorting signals in each group by subgroup_id... " << std::endl;
 	for(auto &group : groups){
 		if(group.size() == 0) continue; // skip empty group
 		std::sort(group.begin(), group.end(),
@@ -246,6 +249,7 @@ void LogicFilter::InitTask()
 				}
 			});
 	}
+	std::cout << "\tDone." << std::endl;
 
 
 	// --------------------------------
@@ -270,10 +274,12 @@ void LogicFilter::InitTask()
 			std::cout << "\tgroup " << i << " is empty" << std::endl;
 		}
 	} // for(size_t i = 0; i < max_group_id + 1; i++)
+	std::cout << "\tDone." << std::endl;
 
 	// --------------------------------
 	// register signals to Trigger
 	// --------------------------------
+	std::cout << "\n[LogicFilter::InitTask] Registering signals to Trigger... " << std::endl;
 	int iSubTCT = -1; // subgroupが見つかれば、0から順番に割り当てる
 	std::map<int, int> nEntryInSubTCT; // <iSubTCT to nEntryInSubTCT>
 	std::pair<uint32_t, uint32_t> last_subgroup = std::make_pair(UINT32_MAX, UINT32_MAX); // 最初にsubgroupが見つかれば必ず、このペアとは異なる
@@ -293,14 +299,19 @@ void LogicFilter::InitTask()
 			fTrig->EntryTo(sig.group_id, sig.subgroup_id, iSubTCT, sig.femId, sig.channel, static_cast<int>(sig.offset));
 		}
 	}
+	std::cout << "\tDone." << std::endl;
 
 	// --------------------------------
 	// SetTimeRegion for SubTCT
 	// --------------------------------
+	std::cout << "\n[LogicFilter::InitTask] Setting time region for SubTCT... " << std::endl;
 	fTrig->SetTimeRegion_SubTCT(1024 * 128, nEntryInSubTCT); // (int, map<int, int>) -> (subTCTSize, nEntryInSubTCT)
+	std::cout << "\tDone." << std::endl;
 
+	std::cout << "\n[LogicFilter::InitTask] Trigger expression: " << tx << std::endl;
 	LOG(info) << "Trigger Expression: " << tx;
 	fTrig->MakeTable(tx);
+	std::cout << "\tMaking table Done." << std::endl;
 
 
 
