@@ -398,13 +398,13 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 									if ((hit + k) < fTimeRegionSize) {
 										if(isMemberOfSubGroup){
 											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットを降ろす
-											#if DEBUG_MORE32
+											#if DEBUG_MORE32 & 0
 											std::cout << "[Trigger::Mark] inv mark bit for SubTCT" << iSubTCT << ": " << std::bitset<32>(~markbit) << " to hit time " << (hit + k) << std::endl;
 											#endif
 										}
 										else{
 											fTimeRegion[hit + k] |= markbit;
-											#if DEBUG_MORE32
+											#if DEBUG_MORE32 & 0
 											std::cout << "[Trigger::Mark] mark bit for MainTCT: " << std::bitset<32>(markbit) << " to hit time " << (hit + k) << std::endl;
 											#endif
 										}
@@ -587,7 +587,7 @@ std::vector<uint32_t> *Trigger::Scan()
 		}
 		#endif
 	}
-	#if DEBUG_MORE32
+	#if DEBUG_MORE32 & 0
 	std::cout << "\tDone." << std::endl;
 	#endif
 
@@ -596,14 +596,14 @@ std::vector<uint32_t> *Trigger::Scan()
 
 void Trigger::ScanSubTCTandMarkMainTCT()
 {
-	#if DEBUG_MORE32
+	#if DEBUG_MORE32 & 0
 	std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] size of fiSubTCTMainTCT: " << fiSubTCTMainTCT.size() << std::endl;
 	#endif
 	for(const auto &p : fiSubTCTMainTCT){
 		uint32_t iSubTCT = p.first;
 		uint32_t iMainTCT = p.second;
 
-		#if DEBUG_MORE32
+		#if DEBUG_MORE32 & 0
 		std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] Start scanning SubTCT: iSubTCT: " << iSubTCT << " iMainTCT: " << std::bitset<32>(iMainTCT) << std::endl;
 		#endif
 
@@ -620,7 +620,7 @@ void Trigger::ScanSubTCTandMarkMainTCT()
 				#endif
 			}
 		}
-		#if DEBUG_MORE32
+		#if DEBUG_MORE32 & 0
 		std::cout << "\tDone." << std::endl;
 		#endif
 	}
