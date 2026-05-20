@@ -446,13 +446,13 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 									if ((hit + k) < fTimeRegionSize) {
 										if(isMemberOfSubGroup){
 											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットを降ろす
-											#if DEBUG_MORE32 & 0
+											#if DEBUG_MORE32
 											std::cout << "[Trigger::Mark] inv mark bit for SubTCT" << iSubTCT << ": " << std::bitset<32>(~markbit) << " to hit time " << (hit + k) << std::endl;
 											#endif
 										} // if(isMemberOfSubGroup)
 										else{
 											fTimeRegion[hit + k] |= markbit;
-											#if DEBUG_MORE32 & 0
+											#if DEBUG_MORE32
 											std::cout << "[Trigger::Mark] mark bit for MainTCT: " << std::bitset<32>(markbit) << " to hit time " << (hit + k) << std::endl;
 											#endif
 										} // if(isMemberOfSubGroup) else
