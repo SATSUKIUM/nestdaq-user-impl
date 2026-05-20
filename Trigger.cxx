@@ -263,10 +263,6 @@ void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT,
 
 	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(group_id, fem, ch, offset) with 4 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
 	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(group_id, fem, ch, offset) with 4 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
-
-	#if DEBUG_MORE32
-	std::cout << "\n[Trigger::EntryTo] width: " << fMarkLen << std::endl;
-	#endif
 	
 	if(subgroup_id == SignalParser::NO_SUBGROUP){
 		fEntryChiSubTCT[fem].emplace_back(UINT32_MAX); // なにか入れておかないと他のエントリーとずれてしまうので、とりあえず。
@@ -344,28 +340,28 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 			uint32_t rightwidth = fEntryChRightWidth[fem][i];
 			uint32_t markbit = fEntryChBit[fem][i];
 			uint32_t iSubTCT = fEntryChiSubTCT[fem][i];
-			#if DEBUG_MORE32
-			uint32_t iMainTCT = 0;
-			if(iSubTCT == UINT32_MAX){
-				iMainTCT = markbit;
-			}
-			else{
-				iMainTCT = fiSubTCTMainTCT[iSubTCT];
-			}
-			#endif
+			// #if DEBUG_MORE32
+			// uint32_t iMainTCT = 0;
+			// if(iSubTCT == UINT32_MAX){
+			// 	iMainTCT = markbit;
+			// }
+			// else{
+			// 	iMainTCT = fiSubTCTMainTCT[iSubTCT];
+			// }
+			// #endif
 			bool isMemberOfSubGroup = (iSubTCT != UINT32_MAX); // true for member of subgroup, false for not of subgroup
 
-			#if DEBUG_MORE32
-			std::cout << "[Trigger::Mark] FEM: " << std::hex << fem
-				<< " Ch: " << std::setw(3) << std::setfill(' ') << ch
-				<< " Offset: " << std::setw(8) << std::setfill(' ') << static_cast<int>(delay)
-				<< " LeftWidth: " << std::setw(3) << std::setfill(' ') << leftwidth
-				<< " RightWidth: " << std::setw(3) << std::setfill(' ') << rightwidth
-				<< " MarkBit: " << std::bitset<32>(markbit)
-				<< " iSubTCT: " << std::dec << std::setw(10) << std::setfill(' ') << iSubTCT
-				<< " iMainTCT: " << std::bitset<32>(iMainTCT)
-				<< std::endl;
-			#endif
+			// #if DEBUG_MORE32
+			// std::cout << "[Trigger::Mark] FEM: " << std::hex << fem
+			// 	<< " Ch: " << std::setw(3) << std::setfill(' ') << ch
+			// 	<< " Offset: " << std::setw(8) << std::setfill(' ') << static_cast<int>(delay)
+			// 	<< " LeftWidth: " << std::setw(3) << std::setfill(' ') << leftwidth
+			// 	<< " RightWidth: " << std::setw(3) << std::setfill(' ') << rightwidth
+			// 	<< " MarkBit: " << std::bitset<32>(markbit)
+			// 	<< " iSubTCT: " << std::dec << std::setw(10) << std::setfill(' ') << iSubTCT
+			// 	<< " iMainTCT: " << std::bitset<32>(iMainTCT)
+			// 	<< std::endl;
+			// #endif
 
 			#if 0
 			std::cout << "#DD Trigger::Mark " 
