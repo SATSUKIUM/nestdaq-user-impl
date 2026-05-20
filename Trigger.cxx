@@ -443,6 +443,9 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 								#if DEBUG_MORE32
 								std::cout << "[Trigger::Mark] Passed 1st if check: hit < fTimeRegionSize - rightwidth: " << hit << " < " << fTimeRegionSize << " - " << rightwidth << std::endl;
 								#endif
+								#if DEBUG_MORE32
+								std::cout << "[Trigger::Mark] Looping k from " << -1 * leftwidth << " to " << rightwidth << std::endl;
+								#endif
 								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									#if DEBUG_MORE32
 									std::cout << "[Trigger::Mark] for(int k...): k = " << k << std::endl;
