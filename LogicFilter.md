@@ -40,3 +40,17 @@ When user gives trigger-signals with 3 parameters(, which are <module id>, <chan
 When user gives trigger-signals with 5 parameters(, which are <module id>, <channel id>, <offset>, <left width>, and <right width>), the TDC coincidence window is defined as $$[t - leftwidth, t+ rightwidth]$$
 The time unit for $T$ is four times the time unit of the input TDC data.
 - Default: 10
+
+# Still in Experimental
+## LogicFilterアップデート
+- 32ch以上のトリガーロジックへの対応( https://github.com/SATSUKIUM/nestdaq-user-impl/tree/dev_lf_more32_debug )
+- クローンしてdev_lf_more32_debugのブランチをプルすると使える
+- TriggerLogic.shの記法が変更された
+- いままで: signalの組み合わせがtrigger-expressionと呼ばれていた
+- これから: signalを1つ以上持つgroupの組み合わせをtrigger-expressionと呼ぶ。
+- つまり、シグナルをグループでラップすることで実質的にLUTに32ch以上を詰め込むことがこのアップデートである
+### 新しい記法
+- "trigger-signals"は(group IP CH Offset left_width right_width)もしくは、(“Group-Subgroup” IP CH Offset left_width right_width)を列挙することになります
+- 同じグループに属するチャンネル/サブグループはORのロジックが自動で組まれます
+- 同じサブグループに属するチャンネルはANDのロジックが自動で組まれます
+- "trigger-expression"はこれまでどおりの記法だが、グループ同士のロジックを記述する
