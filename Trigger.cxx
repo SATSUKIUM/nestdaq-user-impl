@@ -324,7 +324,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 			uint32_t iSubTCT = fEntryChiSubTCT[fem][i];
 			bool isMemberOfSubGroup = (iSubTCT != UINT32_MAX); // true for member of subgroup, false for not of subgroup
 
-			#if DEBUG_MORE32 & 0
+			#if DEBUG_MORE32
 			std::cout << "[Trigger::Mark] FEM: " << std::hex << fem
 				<< " Ch: " << std::setw(3) << std::setfill(' ') << ch
 				<< " Offset: " << std::setw(3) << std::setfill(' ') << delay
@@ -567,20 +567,13 @@ void Trigger::ScanSubTCTandMarkMainTCT()
 	std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] size of fiSubTCTMainTCT: " << fiSubTCTMainTCT.size() << std::endl;
 	#endif
 	for(const auto &p : fiSubTCTMainTCT){
-		#if DEBUG_MORE32
-		std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] fetch iSubTCT, iMainTCT" << std::endl;
-		#endif
-
 		uint32_t iSubTCT = p.first;
 		uint32_t iMainTCT = p.second;
 
 		#if DEBUG_MORE32
-		std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] fetch success: iSubTCT: " << iSubTCT << " iMainTCT: " << std::bitset<32>(iMainTCT) << std::endl;
+		std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] Start scanning SubTCT: iSubTCT: " << iSubTCT << " iMainTCT: " << std::bitset<32>(iMainTCT) << std::endl;
 		#endif
 
-		#if DEBUG_MORE32
-		std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] Start scanning SubTCT " << iSubTCT << " and marking MainTCT..." << std::endl;
-		#endif
 		// for(uint32_t i = 0; i < fSubTCTSize - 1; ++i){
 		// 	if((fSubTCT[iSubTCT][i] != 0u) && (fSubTCT[iSubTCT][i + 1] == 0u)){
 		// 		fTimeRegion[i] |= iMainTCT;
