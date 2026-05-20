@@ -355,7 +355,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 			#endif
 			bool isMemberOfSubGroup = (iSubTCT != UINT32_MAX); // true for member of subgroup, false for not of subgroup
 
-			#if DEBUG_MORE32
+			#if DEBUG_MORE32 & 0
 			std::cout << "[Trigger::Mark] FEM: " << std::hex << fem
 				<< " Ch: " << std::setw(3) << std::setfill(' ') << ch
 				<< " Offset: " << std::setw(8) << std::setfill(' ') << static_cast<int>(delay)
@@ -551,13 +551,13 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 
 std::vector<uint32_t> *Trigger::Scan()
 {
-	#if DEBUG_MORE32
+	#if DEBUG_MORE32 & 0
 	std::cout << "[Trigger::Scan] Start scanning SubTCT and marking MainTCT..." << std::endl;
 	Trigger::ScanSubTCTandMarkMainTCT();
 	std::cout << "\tDone." << std::endl;
 	#endif
 
-	#if DEBUG_MORE32
+	#if DEBUG_MORE32 & 0
 	std::cout << "[Trigger::Scan] Start scanning MainTCT..." << std::endl;
 	#endif
 	//std::cout << "#D Scan fMarkMask: " << std::hex << fMarkMask << std::endl;
