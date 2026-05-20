@@ -19,6 +19,10 @@
 
 #include <cstring>
 
+#include <fstream>
+#include <sstream>
+#include <ctime>
+
 #include "utility/MessageUtil.h"
 
 //#include "HulStrTdcData.h"
@@ -162,6 +166,10 @@ private:
 	KTimer *fKt2;
 	KTimer *fKt3;
 	KTimer *fKt4;
+
+	// fileout
+	std::ofstream fOut;
+	int fIteration = 0;
 };
 
 
@@ -237,6 +245,18 @@ void LogicFilter::InitTask()
 
 	LOG(info) << "Trigger windows width: " << window_width;
 	fTrig->SetMarkLen(window_width);
+
+	// fileout with file name with timestamp
+	std::time_t t = std::time(nullptr);
+	std::tm tm = *std::localtime(&t);
+	std::ostringstream oss;
+	oss << "LogicFilter_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << ".log";
+	fOut.open(oss.str(), std::ios::out);
+	if (!fOut.is_open()) {
+		LOG(error) << "Failed to open output file: " << oss.str();
+	} else {
+		LOG(info) << "Output file opened: " << oss.str();
+	}
 
 }
 
@@ -1098,6 +1118,16 @@ bool LogicFilter::ConditionalRun()
 
 			totalhits += nhits;
 		}
+
+		#if 1
+		fOut << "ConditionalRun Iterations: " << fIterations << std::endl;
+		for(size_t i=0; i<fltdata.size(); i++){
+			for(size_t ii=0; ii<fltdata[i].size(); ii++){
+				fOut << fltdata[i][ii] << std::endl;
+			}
+		}
+		fIterations++;
+		#endif
 
 		#if 0
 		if (fKt2->Check()) {
