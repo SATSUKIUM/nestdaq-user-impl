@@ -18,7 +18,7 @@
 #include "TriggerMap.cxx"
 #include "SignalParser.h"
 
-#define DEBUG_MORE32 1
+#define DEBUG_MORE32 0
 
 
 struct HBFIndex {
@@ -512,7 +512,9 @@ std::vector<uint32_t> *Trigger::Scan()
 {
 	#if DEBUG_MORE32
 	std::cout << "[Trigger::Scan] Start scanning SubTCT and marking MainTCT..." << std::endl;
+	#endif
 	Trigger::ScanSubTCTandMarkMainTCT();
+	#if DEBUG_MORE32
 	std::cout << "\tDone." << std::endl;
 	#endif
 
