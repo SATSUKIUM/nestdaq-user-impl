@@ -1175,7 +1175,7 @@ bool LogicFilter::ConditionalRun()
 
 			//Trigger process
 			fTrig->CleanUpTimeRegion();
-			fTrig->CleanUpSubTCT(nEntryInSubTCT);
+			fTrig->CleanUpSubTCT(fNEntryInSubTCT_LogicFilter);
 			std::vector<uint32_t> *hits = fTrig->Exec(hbf_list);
 			fltdata.emplace_back(*hits);
 			int nhits = hits->size();
