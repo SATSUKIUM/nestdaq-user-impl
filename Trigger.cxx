@@ -16,6 +16,8 @@
 #include "TriggerMap.cxx"
 #include "SignalParser.h"
 
+#define DEBUG_MORE32 1
+
 
 struct HBFIndex {
 	int msg_index;
@@ -237,6 +239,10 @@ void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT,
 
 	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(group_id, fem, ch, offset) with 4 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
 	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(group_id, fem, ch, offset) with 4 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
+
+	#if DEBUG_MORE32
+	std::cout << "\n[Trigger::EntryTo] width: " << fMarkLen << std::endl;
+	#endif
 	
 	if(subgroup_id == SignalParser::NO_SUBGROUP){
 		fEntryChiSubTCT[fem].emplace_back(UINT32_MAX); // なにか入れておかないと他のエントリーとずれてしまうので、とりあえず。
@@ -315,6 +321,17 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 			uint32_t markbit = fEntryChBit[fem][i];
 			uint32_t iSubTCT = fEntryChiSubTCT[fem][i];
 			bool isMemberOfSubGroup = (iSubTCT != UINT32_MAX); // true for member of subgroup, false for not of subgroup
+
+			#if DEBUG_MORE32
+			std::cout << "[Trigger::Mark] FEM: " << std::hex << fem
+				<< " Ch: " << std::dec << ch
+				<< " Offset: " << delay
+				<< " LeftWidth: " << leftwidth
+				<< " RightWidth: " << rightwidth
+				<< " MarkBit: " << std::hex << markbit
+				<< " iSubTCT: " << std::dec << iSubTCT
+				<< std::endl;
+			#endif
 
 			#if 0
 			std::cout << "#DD Trigger::Mark " 
