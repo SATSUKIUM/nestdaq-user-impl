@@ -35,6 +35,8 @@
 #include "KTimer.cxx"
 #include "Trigger.cxx"
 
+#define DUMP 0
+
 
 //std::atomic<int> gQdepth = 0;
 
@@ -167,9 +169,11 @@ private:
 	KTimer *fKt3;
 	KTimer *fKt4;
 
+	#if DUMP
 	// ofstream
 	std::ofstream fOutFile;
 	int fIteration = 0;
+	#endif
 };
 
 
@@ -320,7 +324,7 @@ void LogicFilter::InitTask()
 	fTrig->MakeTable(tx);
 	std::cout << "\tMaking table Done." << std::endl;
 
-	#if 1 // fileout with file name with timestamp
+	#if DUMP // fileout with file name with timestamp
 	std::time_t t = std::time(nullptr);
 	std::tm tm = *std::localtime(&t);
 	std::ostringstream oss;
@@ -1192,7 +1196,7 @@ bool LogicFilter::ConditionalRun()
 			totalhits += nhits;
 		}
 
-		#if 1 // FLT data check
+		#if DUMP // FLT data check
 		fOutFile << "ConditionalRun Iterations: " << fIteration << std::endl;
 		for(size_t i=0; i < fltdata.size(); i++){
 			for(size_t ii=0; ii < fltdata[i].size(); ii++){

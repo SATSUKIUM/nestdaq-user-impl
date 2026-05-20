@@ -440,8 +440,14 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 							#endif
 
 							if (hit < fTimeRegionSize - leftwidth) {
+								#if DEBUG_MORE32
+								std::cout << "[Trigger::Mark] Passed 1st if check: hit < fTimeRegionSize - leftwidth" << std::endl;
+								#endif
 								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
+										#if DEBUG_MORE32
+										std::cout << "[Trigger::Mark] Passed 2nd if check: (hit + k) < fTimeRegionSize" << std::endl;
+										#endif
 										if(isMemberOfSubGroup){
 											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットをクリア
 											#if DEBUG_MORE32
