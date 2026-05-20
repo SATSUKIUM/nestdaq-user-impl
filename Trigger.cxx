@@ -554,7 +554,7 @@ std::vector<uint32_t> *Trigger::Scan()
 		}
 		#endif
 	}
-	#if 1
+	#if DEBUG_MORE32
 	std::cout << "\tDone." << std::endl;
 	#endif
 
