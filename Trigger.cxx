@@ -348,7 +348,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 					struct TDC64H::tdc64 tdc;
 					if (TDC64H::Unpack(tdcval[j], &tdc) == TDC64H::T_TDC) {
 						if (tdc.ch == ch) {
-							#if DEBUG_MORE32
+							#if DEBUG_MORE32 & 0
 							std::cout << "\n[Trigger::Mark] TDC64H hit found" << std::endl;
 							#endif
 							uint32_t hit = tdc.tdc4n + delay;
@@ -392,7 +392,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 					struct TDC64L::tdc64 tdc;
 					if (TDC64L::Unpack(tdcval[j], &tdc) == TDC64L::T_TDC) {
 						if (tdc.ch == ch) {
-							#if DEBUG_MORE32
+							#if DEBUG_MORE32 & 0
 							std::cout << "\n[Trigger::Mark] TDC64L hit found" << std::endl;
 							#endif
 							uint32_t hit = tdc.tdc4n + delay;
@@ -426,7 +426,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 					struct TDC64H_V3::tdc64 tdc;
 					if (TDC64H_V3::Unpack(tdcval[j], &tdc) == TDC64H_V3::T_TDC) {
 						if (tdc.ch == ch) {
-							#if DEBUG_MORE32
+							#if DEBUG_MORE32 & 0
 							std::cout << "\n[Trigger::Mark] TDC64H_V3 hit found" << std::endl;
 							#endif
 							uint32_t hit = tdc.tdc4n + delay;
@@ -471,7 +471,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 					struct TDC64L_V3::tdc64 tdc;
 					if (TDC64L_V3::Unpack(tdcval[j], &tdc) == TDC64L_V3::T_TDC) {
 						if (tdc.ch == ch) {
-							#if DEBUG_MORE32
+							#if DEBUG_MORE32 & 0
 							std::cout << "\n[Trigger::Mark] TDC64L_V3 hit found" << std::endl;
 							#endif
 							uint32_t hit = tdc.tdc4n + delay;
@@ -483,10 +483,16 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
 										if(isMemberOfSubGroup){
-											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットをクリア
+											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットを降ろす
+											#if DEBUG_MORE32
+											std::cout << "[Trigger::Mark] inv mark bit for SubTCT" << iSubTCT << ": " << std::bitset<32>(~markbit) << std::endl;
+											#endif
 										}
 										else{
 											fTimeRegion[hit + k] |= markbit;
+											#if DEBUG_MORE32
+											std::cout << "[Trigger::Mark] mark bit for MainTCT: " << std::bitset<32>(markbit) << std::endl;
+											#endif
 										}
 									} else if ((static_cast<int>(hit) + k) >= 0) {
 										std::cout << "#E Over range hit!"
