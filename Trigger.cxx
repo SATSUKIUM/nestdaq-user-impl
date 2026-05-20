@@ -18,7 +18,7 @@
 #include "TriggerMap.cxx"
 #include "SignalParser.h"
 
-#define DEBUG_MORE32 1
+#define DEBUG_MORE32 0
 
 
 struct HBFIndex {
