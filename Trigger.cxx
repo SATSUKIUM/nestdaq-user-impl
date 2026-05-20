@@ -340,28 +340,9 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 			uint32_t rightwidth = fEntryChRightWidth[fem][i];
 			uint32_t markbit = fEntryChBit[fem][i];
 			uint32_t iSubTCT = fEntryChiSubTCT[fem][i];
-			// #if DEBUG_MORE32
-			// uint32_t iMainTCT = 0;
-			// if(iSubTCT == UINT32_MAX){
-			// 	iMainTCT = markbit;
-			// }
-			// else{
-			// 	iMainTCT = fiSubTCTMainTCT[iSubTCT];
-			// }
-			// #endif
+
 			bool isMemberOfSubGroup = (iSubTCT != UINT32_MAX); // true for member of subgroup, false for not of subgroup
 
-			// #if DEBUG_MORE32
-			// std::cout << "[Trigger::Mark] FEM: " << std::hex << fem
-			// 	<< " Ch: " << std::setw(3) << std::setfill(' ') << ch
-			// 	<< " Offset: " << std::setw(8) << std::setfill(' ') << static_cast<int>(delay)
-			// 	<< " LeftWidth: " << std::setw(3) << std::setfill(' ') << leftwidth
-			// 	<< " RightWidth: " << std::setw(3) << std::setfill(' ') << rightwidth
-			// 	<< " MarkBit: " << std::bitset<32>(markbit)
-			// 	<< " iSubTCT: " << std::dec << std::setw(10) << std::setfill(' ') << iSubTCT
-			// 	<< " iMainTCT: " << std::bitset<32>(iMainTCT)
-			// 	<< std::endl;
-			// #endif
 
 			#if 0
 			std::cout << "#DD Trigger::Mark " 
@@ -394,15 +375,9 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 									if ((hit + k) < fTimeRegionSize) {
 										if(isMemberOfSubGroup){
 											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットを降ろす
-											#if DEBUG_MORE32
-											std::cout << "[Trigger::Mark] inv mark bit for SubTCT" << iSubTCT << ": " << std::bitset<32>(~markbit) << " to hit time " << (hit + k) << std::endl;
-											#endif
 										}
 										else{
 											fTimeRegion[hit + k] |= markbit;
-											#if DEBUG_MORE32
-											std::cout << "[Trigger::Mark] mark bit for MainTCT: " << std::bitset<32>(markbit) << " to hit time " << (hit + k) << std::endl;
-											#endif
 										}
 									} else if ((static_cast<int>(hit) + k) >= 0) {
 										std::cout << "#E Over range hit!"
@@ -464,15 +439,9 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 									if ((hit + k) < fTimeRegionSize) {
 										if(isMemberOfSubGroup){
 											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットを降ろす
-											#if DEBUG_MORE32 & 0
-											std::cout << "[Trigger::Mark] inv mark bit for SubTCT" << iSubTCT << ": " << std::bitset<32>(~markbit) << " to hit time " << (hit + k) << std::endl;
-											#endif
 										} // if(isMemberOfSubGroup)
 										else{
 											fTimeRegion[hit + k] |= markbit;
-											#if DEBUG_MORE32 & 0
-											std::cout << "[Trigger::Mark] mark bit for MainTCT: " << std::bitset<32>(markbit) << " to hit time " << (hit + k) << std::endl;
-											#endif
 										} // if(isMemberOfSubGroup) else
 									} // if((hit + k) < fTimeRegionSize)
 									else if ((static_cast<int>(hit) + k) >= 0) {
@@ -505,15 +474,9 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 									if ((hit + k) < fTimeRegionSize) {
 										if(isMemberOfSubGroup){
 											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットを降ろす
-											#if DEBUG_MORE32 & 0
-											std::cout << "[Trigger::Mark] inv mark bit for SubTCT" << iSubTCT << ": " << std::bitset<32>(~markbit) << " to hit time " << (hit + k) << std::endl;
-											#endif
 										}
 										else{
 											fTimeRegion[hit + k] |= markbit;
-											#if DEBUG_MORE32 & 0
-											std::cout << "[Trigger::Mark] mark bit for MainTCT: " << std::bitset<32>(markbit) << " to hit time " << (hit + k) << std::endl;
-											#endif
 										}
 									} else if ((static_cast<int>(hit) + k) >= 0) {
 										std::cout << "#E Over range hit!"
