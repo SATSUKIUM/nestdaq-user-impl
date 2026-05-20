@@ -431,14 +431,6 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 							#endif
 							uint32_t hit = tdc.tdc4n + delay;
 
-							#if 0
-							std::cout << "#D Mark"
-								<< " FEM: " << std::hex << fem
-								<< " Ch: " << std::dec << ch
-								<< " Hit: " << hit
-								<< std::endl;
-							#endif
-
 							if (hit < fTimeRegionSize - rightwidth) {
 								#if DEBUG_MORE32
 								std::cout << "[Trigger::Mark] Passed 1st if check: hit < fTimeRegionSize - rightwidth: " << hit << " < " << fTimeRegionSize << " - " << rightwidth << std::endl;
@@ -446,7 +438,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 								#if DEBUG_MORE32
 								std::cout << "[Trigger::Mark] Looping k from " << -1 * static_cast<int>(leftwidth) << " to " << rightwidth << std::endl;
 								#endif
-								for (int k = -1 * static_cast<int>(leftwidth) ; k < (rightwidth + 1) ; k++) {
+								for (int k = -static_cast<int>(leftwidth) ; k < static_cast<int>(rightwidth) + 1 ; k++) {
 									#if DEBUG_MORE32
 									std::cout << "[Trigger::Mark] for(int k...): k = " << k << std::endl;
 									#endif
@@ -455,35 +447,37 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 										std::cout << "[Trigger::Mark] Passed 2nd if check: (hit + k) < fTimeRegionSize: " << "(" << hit << " + " << k << ")" << " < " << fTimeRegionSize << std::endl;
 										#endif
 										if(isMemberOfSubGroup){
-											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットをクリア
+											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットを降ろす
 											#if DEBUG_MORE32
 											std::cout << "[Trigger::Mark] inv mark bit for SubTCT" << iSubTCT << ": " << std::bitset<32>(~markbit) << std::endl;
 											#endif
-										}
+										} // if(isMemberOfSubGroup)
 										else{
 											fTimeRegion[hit + k] |= markbit;
 											#if DEBUG_MORE32
 											std::cout << "[Trigger::Mark] mark bit for MainTCT: " << std::bitset<32>(markbit) << std::endl;
 											#endif
-										}
-									} else if ((static_cast<int>(hit) + k) >= 0) {
+										} // if(isMemberOfSubGroup) else
+									} // if((hit + k) < fTimeRegionSize)
+									else if ((static_cast<int>(hit) + k) >= 0) {
 										std::cout << "#E Over range hit!"
 											<< " FEM: " << std::hex << fem
 											<< " Ch: " << std::dec << ch
 											<< " Hit: " << hit
 											<< " Mark: " << static_cast<int>(hit) + k
 											<< std::endl;
-									} else
+									}  // else if ((static_cast<int>(hit) + k) >= 0)
+									else
 									{
 										#if DEBUG_MORE32
 										std::cout << "[Trigger::Mark] Skipped because (hit + k) < fTimeRegionSize is not satisfied: "
 											<< "(" << hit << " + " << k << ")" << " < " << fTimeRegionSize << std::endl;
 										#endif
-									}
-								}
-							}
-						}
-					}
+									} // else of if((hit + k) < fTimeRegionSize)
+								} // for(int k = -1 * static_cast<int>(leftwidth) ; k < (rightwidth + 1) ; k++)
+							} // if(hit < fTimeRegionSize - rightwidth))
+						} // if (tdc.ch == ch)
+					} // if (TDC64H_V3::Unpack(tdcval[j], &tdc) == TDC64H_V3::T_TDC)
 				} else
 				if (type == SubTimeFrame::TDC64L_V3) {
 					struct TDC64L_V3::tdc64 tdc;
