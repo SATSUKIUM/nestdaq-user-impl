@@ -432,20 +432,8 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 							uint32_t hit = tdc.tdc4n + delay;
 
 							if (hit < fTimeRegionSize - rightwidth) {
-								#if DEBUG_MORE32
-								std::cout << "[Trigger::Mark] Passed 1st if check: hit < fTimeRegionSize - rightwidth: " << hit << " < " << fTimeRegionSize << " - " << rightwidth << std::endl;
-								#endif
-								#if DEBUG_MORE32
-								std::cout << "[Trigger::Mark] Looping k from " << -1 * static_cast<int>(leftwidth) << " to " << rightwidth << std::endl;
-								#endif
 								for (int k = -static_cast<int>(leftwidth) ; k < static_cast<int>(rightwidth) + 1 ; k++) {
-									#if DEBUG_MORE32
-									std::cout << "[Trigger::Mark] for(int k...): k = " << k << std::endl;
-									#endif
 									if ((hit + k) < fTimeRegionSize) {
-										#if DEBUG_MORE32
-										std::cout << "[Trigger::Mark] Passed 2nd if check: (hit + k) < fTimeRegionSize: " << "(" << hit << " + " << k << ")" << " < " << fTimeRegionSize << std::endl;
-										#endif
 										if(isMemberOfSubGroup){
 											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットを降ろす
 											#if DEBUG_MORE32
@@ -467,13 +455,6 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 											<< " Mark: " << static_cast<int>(hit) + k
 											<< std::endl;
 									}  // else if ((static_cast<int>(hit) + k) >= 0)
-									else
-									{
-										#if DEBUG_MORE32
-										std::cout << "[Trigger::Mark] Skipped because (hit + k) < fTimeRegionSize is not satisfied: "
-											<< "(" << hit << " + " << k << ")" << " < " << fTimeRegionSize << std::endl;
-										#endif
-									} // else of if((hit + k) < fTimeRegionSize)
 								} // for(int k = -1 * static_cast<int>(leftwidth) ; k < (rightwidth + 1) ; k++)
 							} // if(hit < fTimeRegionSize - rightwidth))
 						} // if (tdc.ch == ch)
