@@ -20,6 +20,9 @@
 
 #include <cstring>
 
+#include <ctime>
+#include <fstream>
+
 #include "utility/MessageUtil.h"
 
 //#include "HulStrTdcData.h"
@@ -163,6 +166,10 @@ private:
 	KTimer *fKt2;
 	KTimer *fKt3;
 	KTimer *fKt4;
+
+	// ofstream
+	std::ofstream fOutFile;
+	int fIteration = 0;
 };
 
 
@@ -313,6 +320,15 @@ void LogicFilter::InitTask()
 	fTrig->MakeTable(tx);
 	std::cout << "\tMaking table Done." << std::endl;
 
+	#if 1 // fileout with file name with timestamp
+	std::time_t t = std::time(nullptr);
+	std::tm tm = *std::localtime(&t);
+	std::ostringstream oss;
+	oss << "LogicFilter_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << ".log";
+	fOutFile.open(oss.str());
+	std::cout << "\n[LogicFilter::InitTask] Output file: " << oss.str() << std::endl;
+
+	#endif
 
 
 } // void LogicFilter::InitTask()
@@ -1175,6 +1191,17 @@ bool LogicFilter::ConditionalRun()
 
 			totalhits += nhits;
 		}
+
+		#if 1 // FLT data check
+		fOutFile << "ConditionalRun Iterations: " << fIteration << std::endl;
+		for(size_t i=0; i < fltdata.size(); i++){
+			for(size_t ii=0; ii < fltdata[i].size(); ii++){
+				fOutFile << fltdata[i][ii] << std::endl;
+			}
+		}
+		fOutFile << std::endl;
+		fIteration++;
+		#endif
 
 		#if 0
 		if (fKt2->Check()) {
