@@ -340,7 +340,7 @@ void LogicFilter::InitTask()
 	std::time_t t = std::time(nullptr);
 	std::tm tm = *std::localtime(&t);
 	std::ostringstream oss;
-	oss << "LogicFilter_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << ".log";
+	oss << "./fileout/LogicFilter_log/LogicFilter_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << ".log";
 	fOutFile.open(oss.str());
 	std::cout << "\n[LogicFilter::InitTask] Output file: " << oss.str() << std::endl;
 
@@ -350,7 +350,7 @@ void LogicFilter::InitTask()
 	std::time_t t_speedtest = std::time(nullptr);
 	std::tm tm_speedtest = *std::localtime(&t_speedtest);
 	std::ostringstream oss_speedtest;
-	oss_speedtest << "LogicFilter_SpeedTest_" << std::put_time(&tm_speedtest, "%Y%m%d_%H%M%S") << ".log";
+	oss_speedtest << "./fileout/LogicFilter_log/LogicFilter_SpeedTest_" << std::put_time(&tm_speedtest, "%Y%m%d_%H%M%S") << ".log";
 	fSpeedTestOutFile.open(oss_speedtest.str());
 	std::cout << "\n[LogicFilter::InitTask] Speed test output file: " << oss_speedtest.str() << std::endl;
 	#endif
