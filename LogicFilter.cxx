@@ -309,18 +309,18 @@ void LogicFilter::InitTask()
 					iSubTCT++;
 					fNEntryInSubTCT_LogicFilter[iSubTCT] = 1;
 					last_subgroup = std::make_pair(sig.group_id, sig.subgroup_id);
-					std::cout << "\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTCT " << iSubTCT << std::endl;
+					std::cout << "\t\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTCT " << iSubTCT << std::endl;
 				}
 				else{
 					fNEntryInSubTCT_LogicFilter[iSubTCT]++;
-					std::cout << "\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTCT " << iSubTCT << " (entry count in this SubTCT: " << fNEntryInSubTCT_LogicFilter[iSubTCT] << ")" << std::endl;
+					std::cout << "\t\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTCT " << iSubTCT << " (entry count in this SubTCT: " << fNEntryInSubTCT_LogicFilter[iSubTCT] << "th)" << std::endl;
 				}
 			}
 			std::cout << "\t\tRegistering signal: group_id=" << sig.group_id
 				<< " subgroup_id=" << sig.subgroup_id
 				<< " iSubTCT=" << (sig.subgroup_id != SignalParser::NO_SUBGROUP ? iSubTCT : UINT32_MAX)
-				<< " femId=" << sig.femId
-				<< " channel=" << sig.channel
+				<< " femId=" << std::hex << sig.femId
+				<< " channel=" << std::dec <<sig.channel
 				<< " offset=" << sig.offset
 				<< std::endl;
 			fTrig->EntryTo(sig.group_id, sig.subgroup_id, iSubTCT, sig.femId, sig.channel, static_cast<int>(sig.offset));
