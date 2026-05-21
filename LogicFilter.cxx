@@ -179,8 +179,8 @@ private:
 
 	#if SPEEDTEST_MORE32
 	std::ofstream fSpeedTestOutFile;
-	std::chrono::high_resolution_clock fT0, fT1, fT2, fT3, fT4, fT5;
-	std::chrono::high_resolution_clock fT_buf1, fT_buf2, fT_buf3, fT_buf4, fT_buf5;
+	std::chrono::high_resolution_clock::time_point fT0, fT1, fT2, fT3, fT4, fT5;
+	std::chrono::high_resolution_clock::time_point fT_buf1, fT_buf2, fT_buf3, fT_buf4, fT_buf5;
 	double fElapsed_CleanUpMainTCT, fElapsed_CleanUpSubTCT, fElapsed_Exec;
 	double fElapsed_ConditionalRun, fElapsed_BeforeTriggerProcess, fElapsed_TriggerProcess, fElapsed_AfterTriggerProcess;
 	#endif
