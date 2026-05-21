@@ -256,11 +256,9 @@ void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT,
 	fEntryChDelay[fem].emplace_back(offset);
 	if(subgroup_id == SignalParser::NO_SUBGROUP){
 		fEntryChBit[fem].emplace_back(uint32_t(1u) << group_id);
-		std::cout << "[Trigger::EntryTo] This signal (group_id=" << group_id << ", subgroup_id=NO_SUBGROUP) is assigned to MainTCT bit " << std::setw(32) << std::setfill('0') << group_id << std::endl;
 	}
 	else{
 		fEntryChBit[fem].emplace_back(uint32_t(1u) << fEntryCounts[std::make_pair(group_id, subgroup_id)]++);
-		std::cout << "[Trigger::EntryTo] This signal (group_id=" << group_id << ", subgroup_id=" << subgroup_id << ") is assigned to SubTCT " << iSubTCT << " and its bit " << std::setw(32) << std::setfill('0') << group_id << std::endl;
 	}
 
 	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2);
@@ -275,10 +273,10 @@ void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT,
 
 	if(iSubTCT != UINT32_MAX) fiSubTCTMainTCT[iSubTCT] = uint32_t(1u) << group_id;
 	if(subgroup_id == SignalParser::NO_SUBGROUP){
-		std::cout << "[Trigger::EntryTo] This signal (group_id=" << group_id << ", subgroup_id=NO_SUBGROUP) is assigned to MainTCT bit " << group_id << std::endl;
+		std::cout << "[Trigger::EntryTo] This signal (group_id=" << group_id << ", subgroup_id=NO_SUBGROUP) is assigned to MainTCT bit " << std::bitset<32>(fEntryChBit[fem].back()) << std::endl;
 	}
 	else{
-		std::cout << "[Trigger::EntryTo] This signal (group_id=" << group_id << ", subgroup_id=" << subgroup_id << ") is assigned to SubTCT " << iSubTCT << " and MainTCT bit " << group_id << std::endl;
+		std::cout << "[Trigger::EntryTo] This signal (group_id=" << group_id << ", subgroup_id=" << subgroup_id << ") is assigned to SubTCT " << iSubTCT << " and MainTCT bit " << std::bitset<32>(fEntryChBit[fem].back()) << ". And to be assigned to MainTCT bit " << std::bitset<32>(fiSubTCTMainTCT[iSubTCT]) << std::endl;
 	}
 
 	fEntryMask |= uint32_t(1u) << group_id;
