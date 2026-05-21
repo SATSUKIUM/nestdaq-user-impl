@@ -346,6 +346,15 @@ void LogicFilter::InitTask()
 
 	#endif
 
+	#if SPEEDTEST_MORE32
+	std::time_t t_speedtest = std::time(nullptr);
+	std::tm tm_speedtest = *std::localtime(&t_speedtest);
+	std::ostringstream oss_speedtest;
+	oss_speedtest << "LogicFilter_SpeedTest_" << std::put_time(&tm_speedtest, "%Y%m%d_%H%M%S") << ".log";
+	fSpeedTestOutFile.open(oss_speedtest.str());
+	std::cout << "\n[LogicFilter::InitTask] Speed test output file: " << oss_speedtest.str() << std::endl;
+	#endif
+
 
 } // void LogicFilter::InitTask()
 
