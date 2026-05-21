@@ -297,29 +297,43 @@ void LogicFilter::InitTask()
 	std::cout << "\n[LogicFilter::InitTask] Registering signals to Trigger... " << std::endl;
 	int iSubTCT = -1; // subgroupが見つかれば、0から順番に割り当てる
 	std::pair<uint32_t, uint32_t> last_subgroup = std::make_pair(UINT32_MAX, UINT32_MAX); // 最初にsubgroupが見つかれば必ず、このペアとは異なる
-	for(const auto &group : groups){
-		if(group.size() == 0) continue; // skip empty group
+	for(size_t i = 0; i < max_group_id + 1; i++){
+		auto &group = groups[i];
+		if(group.size() == 0){
+			std::cout << "\tgroup " << i << " is empty, skip." << std::endl;
+			continue; // skip empty group
+		}
 		for(const auto &sig : group){
 			if(sig.subgroup_id != SignalParser::NO_SUBGROUP){
 				if(last_subgroup != std::make_pair(sig.group_id, sig.subgroup_id)){
 					iSubTCT++;
 					fNEntryInSubTCT_LogicFilter[iSubTCT] = 1;
 					last_subgroup = std::make_pair(sig.group_id, sig.subgroup_id);
+					std::cout << "\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTCT " << iSubTCT << std::endl;
 				}
 				else{
 					fNEntryInSubTCT_LogicFilter[iSubTCT]++;
+					std::cout << "\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTCT " << iSubTCT << " (entry count in this SubTCT: " << fNEntryInSubTCT_LogicFilter[iSubTCT] << ")" << std::endl;
 				}
 			}
+			std::cout << "\t\tRegistering signal: group_id=" << sig.group_id
+				<< " subgroup_id=" << sig.subgroup_id
+				<< " iSubTCT=" << (sig.subgroup_id != SignalParser::NO_SUBGROUP ? iSubTCT : UINT32_MAX)
+				<< " femId=" << sig.femId
+				<< " channel=" << sig.channel
+				<< " offset=" << sig.offset
+				<< std::endl;
 			fTrig->EntryTo(sig.group_id, sig.subgroup_id, iSubTCT, sig.femId, sig.channel, static_cast<int>(sig.offset));
 		}
 	}
+	std::cout << "\tNumber of SubTCT: " << iSubTCT + 1 << std::endl;
 	fTrig->SetfnEntryInSubTCT(fNEntryInSubTCT_LogicFilter);
 	std::cout << "\tDone." << std::endl;
 
 	// --------------------------------
 	// Initialize SubTCTs
 	// --------------------------------
-	std::cout << "\n[LogicFilter::InitTask] Setting time region for SubTCT... " << std::endl;
+	std::cout << "\n[LogicFilter::InitTask] Setting SubTCT... " << std::endl;
 	fTrig->SetSubTCT(1024 * 128, fNEntryInSubTCT_LogicFilter); // (int, map<uint32_t, uint32_t>) -> (subTCTSize, nEntryInSubTCT)
 	std::cout << "\tDone." << std::endl;
 
