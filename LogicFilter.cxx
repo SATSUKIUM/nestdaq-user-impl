@@ -37,6 +37,7 @@
 #include "Trigger.cxx"
 
 #define DUMP 1
+#define SPEEDTEST_MORE32 1
 
 
 //std::atomic<int> gQdepth = 0;
@@ -174,6 +175,14 @@ private:
 	// ofstream
 	std::ofstream fOutFile;
 	int fIteration = 0;
+	#endif
+
+	#if SPEEDTEST_MORE32
+	std::ofstream fSpeedTestOutFile;
+	std::chrono::high_resolution_clock fT0, fT1, fT2, fT3, fT4, fT5;
+	std::chrono::high_resolution_clock fT_buf1, fT_buf2, fT_buf3, fT_buf4, fT_buf5;
+	double fElapsed_CleanUpMainTCT, fElapsed_CleanUpSubTCT, fElapsed_Exec;
+	double fElapsed_ConditionalRun, fElapsed_BeforeTriggerProcess, fElapsed_TriggerProcess, fElapsed_AfterTriggerProcess;
 	#endif
 
 	std::map<uint32_t, uint32_t> fNEntryInSubTCT_LogicFilter; // key: iSubTCT, value: nEntryInSubTCT
@@ -1109,6 +1118,16 @@ int LogicFilter::MarkFlagSending(
 
 bool LogicFilter::ConditionalRun()
 {
+	fElapsed_ConditionalRun = 0;
+	fElapsed_BeforeTriggerProcess = 0;
+	fElapsed_TriggerProcess = 0;
+	fElapsed_AfterTriggerProcess = 0;
+	fElapsed_CleanUpMainTCT = 0;
+	fElapsed_CleanUpSubTCT = 0;
+	fElapsed_Exec = 0;
+	#if SPEEDTEST_MORE32
+	fT0 = std::chrono::system_clock::now();
+	#endif
 	//Receive
 	FairMQParts inParts;
 
@@ -1119,7 +1138,17 @@ bool LogicFilter::ConditionalRun()
 	uint32_t tf_tf_id = 0;
 	std::chrono::system_clock::time_point sw_start, sw_end;
 
-	if (Receive(inParts, fInputChannelName, 0, 1000) > 0) {
+
+	#if SPEEDTEST_MORE32
+	fT1 = std::chrono::system_clock::now();
+	bool successRecv = Receive(inParts, fInputChannelName, 0, 1000);
+	fT2 = std::chrono::system_clock::now();
+	if (successRecv) {
+	#endif
+	#if !SPEEDTEST_MORE32
+	if (Receive(inParts, fInputChannelName, 0, 1000)) {
+	#endif
+	
 		assert(inParts.Size() >= 2);
 		sw_start = std::chrono::system_clock::now();
 
@@ -1165,6 +1194,9 @@ bool LogicFilter::ConditionalRun()
 			}
 		}
 
+		#if SPEEDTEST_MORE32
+		fT3 = std::chrono::system_clock::now();
+		#endif
 		// Trigger processing in unit of HBF
 		std::vector< std::vector<uint32_t> > fltdata;
 		int totalhits = 0;
@@ -1175,9 +1207,24 @@ bool LogicFilter::ConditionalRun()
 			BuildHBF(hbf_list, block_map, inParts, i);
 
 			//Trigger process
+			#if SPEEDTEST_MORE32
+			fT_buf1 = std::chrono::system_clock::now();
+			#endif
 			fTrig->CleanUpTimeRegion();
+			#if SPEEDTEST_MORE32
+			fT_buf2 = std::chrono::system_clock::now();
+			#endif
 			fTrig->CleanUpSubTCT(fNEntryInSubTCT_LogicFilter);
+			#if SPEEDTEST_MORE32
+			fT_buf3 = std::chrono::system_clock::now();
+			#endif
 			std::vector<uint32_t> *hits = fTrig->Exec(hbf_list);
+			#if SPEEDTEST_MORE32
+			fT_buf4 = std::chrono::system_clock::now();
+			fElapsed_CleanUpMainTCT += std::chrono::duration_cast<std::chrono::microseconds>(fT_buf2 - fT_buf1).count();
+			fElapsed_CleanUpSubTCT += std::chrono::duration_cast<std::chrono::microseconds>(fT_buf3 - fT_buf2).count();
+			fElapsed_Exec += std::chrono::duration_cast<std::chrono::microseconds>(fT_buf4 - fT_buf3).count();
+			#endif
 			fltdata.emplace_back(*hits);
 			int nhits = hits->size();
 
@@ -1200,6 +1247,9 @@ bool LogicFilter::ConditionalRun()
 
 			totalhits += nhits;
 		}
+		#if SPEEDTEST_MORE32
+		fT4 = std::chrono::system_clock::now();
+		#endif
 
 		#if DUMP // FLT data check
 		fOutFile << "ConditionalRun Iterations: " << fIteration << std::endl;
@@ -1501,6 +1551,17 @@ bool LogicFilter::ConditionalRun()
 		}
 
 	}
+
+	#if SPEEDTEST_MORE32
+	fT5 = std::chrono::system_clock::now();
+	fElapsed_ConditionalRun = std::chrono::duration_cast<std::chrono::microseconds>(fT5 - fT0 - (fT2 - fT1)).count();
+	fElapsed_BeforeTriggerProcess = std::chrono::duration_cast<std::chrono::microseconds>(fT3 - fT2).count();
+	fElapsed_TriggerProcess = std::chrono::duration_cast<std::chrono::microseconds>(fT4 - fT3).count();
+	fElapsed_AfterTriggerProcess = std::chrono::duration_cast<std::chrono::microseconds>(fT5 - fT4).count();
+
+	fSpeedTestOutFile << fElapsed_ConditionalRun << " " << fElapsed_BeforeTriggerProcess << " " << fElapsed_TriggerProcess << " " << fElapsed_AfterTriggerProcess << std::endl;
+	fSpeedTestOutFile << fElapsed_CleanUpMainTCT << " " << fElapsed_CleanUpSubTCT << " " << fElapsed_Exec << std::endl;
+	#endif
 
 	return true;
 }
