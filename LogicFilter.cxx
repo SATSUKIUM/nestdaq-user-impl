@@ -1554,10 +1554,14 @@ bool LogicFilter::ConditionalRun()
 
 	#if SPEEDTEST_MORE32
 	fT5 = std::chrono::system_clock::now();
-	fElapsed_ConditionalRun = std::chrono::duration_cast<std::chrono::microseconds>(fT5 - fT0 - (fT2 - fT1)).count();
-	fElapsed_BeforeTriggerProcess = std::chrono::duration_cast<std::chrono::microseconds>(fT3 - fT2).count();
-	fElapsed_TriggerProcess = std::chrono::duration_cast<std::chrono::microseconds>(fT4 - fT3).count();
-	fElapsed_AfterTriggerProcess = std::chrono::duration_cast<std::chrono::microseconds>(fT5 - fT4).count();
+	// fElapsed_ConditionalRun = std::chrono::duration_cast<std::chrono::microseconds>(fT5 - fT0 - (fT2 - fT1)).count();
+	// fElapsed_BeforeTriggerProcess = std::chrono::duration_cast<std::chrono::microseconds>(fT3 - fT2).count();
+	// fElapsed_TriggerProcess = std::chrono::duration_cast<std::chrono::microseconds>(fT4 - fT3).count();
+	// fElapsed_AfterTriggerProcess = std::chrono::duration_cast<std::chrono::microseconds>(fT5 - fT4).count();
+	fElapsed_ConditionalRun = std::chrono::duration<double, std::micro>(fT5 - fT0 - (fT2 - fT1)).count();
+	fElapsed_BeforeTriggerProcess = std::chrono::duration<double, std::micro>(fT3 - fT2).count();
+	fElapsed_TriggerProcess = std::chrono::duration<double, std::micro>(fT4 - fT3).count();
+	fElapsed_AfterTriggerProcess = std::chrono::duration<double, std::micro>(fT5 - fT4).count();
 
 	fSpeedTestOutFile << fElapsed_ConditionalRun << " " << fElapsed_BeforeTriggerProcess << " " << fElapsed_TriggerProcess << " " << fElapsed_AfterTriggerProcess << std::endl;
 	fSpeedTestOutFile << fElapsed_CleanUpMainTCT << " " << fElapsed_CleanUpSubTCT << " " << fElapsed_Exec << std::endl;
