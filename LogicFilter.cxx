@@ -36,7 +36,7 @@
 #include "KTimer.cxx"
 #include "Trigger.cxx"
 
-#define DUMP 1
+#define DUMP_FLTDATA 0
 
 
 //std::atomic<int> gQdepth = 0;
@@ -170,13 +170,13 @@ private:
 	KTimer *fKt3;
 	KTimer *fKt4;
 
-	#if DUMP
+	#if DUMP_FLTDATA
 	// ofstream
 	std::ofstream fOutFile;
 	int fIteration = 0;
 	#endif
 
-	std::map<uint32_t, uint32_t> fNEntryInSubTCT_LogicFilter; // key: iSubTCT, value: nEntryInSubTCT
+	std::map<uint32_t, uint32_t> fNEntryInSubTCT_LogicFilter; // key: iSubTCT, value: # of signals in iSubTCT
 };
 
 
@@ -289,6 +289,7 @@ void LogicFilter::InitTask()
 		}
 	} // for(size_t i = 0; i < max_group_id + 1; i++)
 	std::cout << "\tDone." << std::endl;
+	std::cout << "\n[LogicFilter::InitTask] Trigger expression: " << tx << std::endl;
 
 	// --------------------------------
 	// register signals to Trigger
@@ -316,22 +317,24 @@ void LogicFilter::InitTask()
 	std::cout << "\tDone." << std::endl;
 
 	// --------------------------------
-	// SetTimeRegion for SubTCT
+	// Initialize SubTCTs
 	// --------------------------------
 	std::cout << "\n[LogicFilter::InitTask] Setting time region for SubTCT... " << std::endl;
-	fTrig->SetTimeRegion_SubTCT(1024 * 128, fNEntryInSubTCT_LogicFilter); // (int, map<uint32_t, uint32_t>) -> (subTCTSize, nEntryInSubTCT)
+	fTrig->SetSubTCT(1024 * 128, fNEntryInSubTCT_LogicFilter); // (int, map<uint32_t, uint32_t>) -> (subTCTSize, nEntryInSubTCT)
 	std::cout << "\tDone." << std::endl;
 
-	std::cout << "\n[LogicFilter::InitTask] Trigger expression: " << tx << std::endl;
+	// --------------------------------
+	// Make LUT
+	// --------------------------------
 	LOG(info) << "Trigger Expression: " << tx;
 	fTrig->MakeTable(tx);
 	std::cout << "\tMaking table Done." << std::endl;
 
-	#if DUMP // fileout with file name with timestamp
+	#if DUMP_FLTDATA // fileout with file name with timestamp
 	std::time_t t = std::time(nullptr);
 	std::tm tm = *std::localtime(&t);
 	std::ostringstream oss;
-	oss << "LogicFilter_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << ".log";
+	oss << "./fileout/LogicFilter_log/LogicFilter_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << ".log";
 	fOutFile.open(oss.str());
 	std::cout << "\n[LogicFilter::InitTask] Output file: " << oss.str() << std::endl;
 
@@ -1201,7 +1204,7 @@ bool LogicFilter::ConditionalRun()
 			totalhits += nhits;
 		}
 
-		#if DUMP // FLT data check
+		#if DUMP_FLTDATA // FLT data check
 		fOutFile << "ConditionalRun Iterations: " << fIteration << std::endl;
 		for(size_t i=0; i < fltdata.size(); i++){
 			for(size_t ii=0; ii < fltdata[i].size(); ii++){

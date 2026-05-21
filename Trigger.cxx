@@ -38,7 +38,7 @@ public:
 	virtual ~Trigger();
 	void InitParam();
 	bool SetTimeRegion(int);
-	bool SetTimeRegion_SubTCT(int, const std::map<uint32_t, uint32_t>&); // subTCTSize, nEntryInSubTCT
+	bool SetSubTCT(int, const std::map<uint32_t, uint32_t>&); // subTCTSize, nEntryInSubTCT
 	void CleanUpTimeRegion();
 	void CleanUpSubTCT(const std::map<uint32_t, uint32_t>& nEntryInSubTCT);
 	uint32_t *GetTimeRegion();
@@ -76,10 +76,10 @@ private:
 	uint32_t fEntryMask = 0;
 
 	int fNentry = 0;
-	uint32_t fTimeRegionSize;
-	uint32_t *fTimeRegion = nullptr;
-	uint32_t fSubTCTSize;
-	std::vector<uint32_t*> fSubTCT;
+	uint32_t fTimeRegionSize; // size of main TCT
+	uint32_t *fTimeRegion = nullptr; // main TCT
+	uint32_t fSubTCTSize; // size of each SubTCT
+	std::vector<uint32_t*> fSubTCT; // vector of SubTCTs. dope-vectorで実装したほうが速いかも。
 	//int fMarkCount = 0;
 	//uint32_t fMarkMask = 0;
 	std::vector<uint32_t> fHits;
@@ -139,30 +139,30 @@ bool Trigger::SetTimeRegion(int size)
 	return true;
 }
 
-bool Trigger::SetTimeRegion_SubTCT(int subTCTSize, const std::map<uint32_t, uint32_t>& nEntryInSubTCT){
+bool Trigger::SetSubTCT(int subTCTSize, const std::map<uint32_t, uint32_t>& nEntryInSubTCT){
 	// 単純にはSubTCTのサイズはMainTCTのサイズと同じだが、MainTCTより粗い時間分解能で作るというのも面白い工夫だと思う。宿題だ。SubTCTごとに決めるのも悪くないかも。
 	assert(fSubTCT.empty()); // this function called only once
 
 	fSubTCTSize = subTCTSize;
 	fSubTCT.resize(nEntryInSubTCT.size());
 	for(const auto &p : nEntryInSubTCT){
-		int iSubTCT = p.first;
-		int nEntryInSubTCT = p.second;
+		uint32_t iSubTCT = p.first;
+		uint32_t nEntryInSubTCT = p.second;
 		#if 0
 		std::cout << "#D SubTCT " << iSubTCT << " has " << nEntryInSubTCT << " entries." << std::endl;
 		#endif
-		uint32_t initialValue = (0x00000001 << nEntryInSubTCT) - 1u; // nEntryInSubTCT個のビットが立っている値
+		uint32_t initialValue = (uint32_t(1u) << nEntryInSubTCT) - uint32_t(1u); // nEntryInSubTCT個の下位ビットが立っている値
 
-		uint32_t* subTCTRegion = new uint32_t[subTCTSize];
+		uint32_t* subTCT = new uint32_t[subTCTSize];
 		for( uint32_t i = 0 ; i < subTCTSize ; i++) {
-			subTCTRegion[i] = initialValue;
+			subTCT[i] = initialValue;
 		}
-		fSubTCT[iSubTCT] = subTCTRegion;
+		fSubTCT[iSubTCT] = subTCT;
 	}
 
 	return true;
 
-} // bool Trigger::SetTimeRegion_SubTCT(int nSubTCT, int subTCTSize)
+} // bool Trigger::SetSubTCT(int subTCTSize, const std::map<uint32_t, uint32_t>& nEntryInSubTCT)
 
 void Trigger::CleanUpTimeRegion()
 {
@@ -176,7 +176,7 @@ void Trigger::CleanUpSubTCT(const std::map<uint32_t, uint32_t>& nEntryInSubTCT)
 	for(const auto &p : nEntryInSubTCT){
 		uint32_t iSubTCT = p.first;
 		uint32_t nInSubTCT = p.second;
-		uint32_t initialValue = (0x00000001 << nInSubTCT) - 1u; // nInSubTCT個のビットが立っている値
+		uint32_t initialValue = (uint32_t(1u) << nInSubTCT) - uint32_t(1u); // nInSubTCT個の下位ビットが立っている値
 		for(uint32_t i=0; i < fSubTCTSize; i++){
 			fSubTCT[iSubTCT][i] = initialValue;
 		}
@@ -255,14 +255,14 @@ void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT,
 	fEntryCh[fem].emplace_back(ch);
 	fEntryChDelay[fem].emplace_back(offset);
 	if(subgroup_id == SignalParser::NO_SUBGROUP){
-		fEntryChBit[fem].emplace_back(0x00000001 << group_id);
+		fEntryChBit[fem].emplace_back(uint32_t(1u) << group_id);
 	}
 	else{
-		fEntryChBit[fem].emplace_back(0x00000001 << fEntryCounts[std::make_pair(group_id, subgroup_id)]++); // ひとりごと、後置インクリメントでテクいことをしてかっこいい。
+		fEntryChBit[fem].emplace_back(uint32_t(1u) << fEntryCounts[std::make_pair(group_id, subgroup_id)]++);
 	}
 
-	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(group_id, fem, ch, offset) with 4 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
-	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(group_id, fem, ch, offset) with 4 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
+	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2);
+	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2);
 	
 	if(subgroup_id == SignalParser::NO_SUBGROUP){
 		fEntryChiSubTCT[fem].emplace_back(UINT32_MAX); // なにか入れておかないと他のエントリーとずれてしまうので、とりあえず。
@@ -271,9 +271,9 @@ void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT,
 		fEntryChiSubTCT[fem].emplace_back(iSubTCT);
 	}
 
-	if(iSubTCT != UINT32_MAX) fiSubTCTMainTCT[iSubTCT] = 1u << group_id;
+	if(iSubTCT != UINT32_MAX) fiSubTCTMainTCT[iSubTCT] = uint32_t(1u) << group_id;
 
-	fEntryMask |= 0x00000001 << group_id; // this is not sure if this is correct or not. Should be checked later.
+	fEntryMask |= uint32_t(1u) << group_id;
 	
 	return;
 }
@@ -407,7 +407,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
 										if(isMemberOfSubGroup){
-											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットをクリア
+											fSubTCT[iSubTCT][hit + k] &= ~markbit; // サブTCTのビットを降ろす
 										}
 										else{
 											fTimeRegion[hit + k] |= markbit;
@@ -513,7 +513,13 @@ std::vector<uint32_t> *Trigger::Scan()
 	#if DEBUG_MORE32
 	std::cout << "[Trigger::Scan] Start scanning SubTCT and marking MainTCT..." << std::endl;
 	#endif
+	// --------------------------------
+	// Process AND logic
+	// --------------------------------
 	Trigger::ScanSubTCTandMarkMainTCT();
+	// --------------------------------
+	// Finish processing AND logic, and marking MainTCT
+	// --------------------------------
 	#if DEBUG_MORE32
 	std::cout << "\tDone." << std::endl;
 	#endif
@@ -561,8 +567,8 @@ void Trigger::ScanSubTCTandMarkMainTCT()
 	std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] size of fiSubTCTMainTCT: " << fiSubTCTMainTCT.size() << std::endl;
 	#endif
 	for(const auto &p : fiSubTCTMainTCT){
-		uint32_t iSubTCT = p.first;
-		uint32_t iMainTCT = p.second;
+		uint32_t iSubTCT = p.first; // index of SubTCT
+		uint32_t iMainTCT = p.second; // a bit in MainTCT reserved by this SubTCT
 
 		#if DEBUG_MORE32
 		std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] Start scanning SubTCT: iSubTCT: " << iSubTCT << " iMainTCT: " << std::bitset<32>(iMainTCT) << std::endl;
@@ -574,7 +580,7 @@ void Trigger::ScanSubTCTandMarkMainTCT()
 		// 	}
 		// }
 		for(uint32_t i = 0; i < fSubTCTSize; ++i){
-			if(fSubTCT[iSubTCT][i] == 0u){
+			if(fSubTCT[iSubTCT][i] == uint32_t(0u)){
 				fTimeRegion[i] |= iMainTCT;
 				#if DEBUG_MORE32 & 0
 				std::cout << "[Trigger::ScanSubTCTandMarkMainTCT] mark bit for MainTCT: " << std::bitset<32>(iMainTCT) << " to hit time " << i << std::endl;
@@ -590,8 +596,6 @@ void Trigger::ScanSubTCTandMarkMainTCT()
 
 std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 {
-	Trigger::CleanUpTimeRegion();
-
 	for (auto &seg : hbf) {
 		//fTrig->Mark(
 		//	reinterpret_cast<unsigned char *>(inParts[mindex].GetData()),
