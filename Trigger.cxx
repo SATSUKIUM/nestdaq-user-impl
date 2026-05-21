@@ -272,6 +272,12 @@ void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT,
 	}
 
 	if(iSubTCT != UINT32_MAX) fiSubTCTMainTCT[iSubTCT] = uint32_t(1u) << group_id;
+	if(subgroup_id == SignalParser::NO_SUBGROUP){
+		std::cout << "[Trigger::EntryTo] This signal (group_id=" << group_id << ", subgroup_id=NO_SUBGROUP) is assigned to MainTCT bit " << group_id << std::endl;
+	}
+	else{
+		std::cout << "[Trigger::EntryTo] This signal (group_id=" << group_id << ", subgroup_id=" << subgroup_id << ") is assigned to SubTCT " << iSubTCT << " and MainTCT bit " << group_id << std::endl;
+	}
 	std::cout << "[Trigger::EntryTo] This SubTCT (iSubTCT=" << iSubTCT << ") is assigned to MainTCT bit " << group_id << std::endl;
 
 	fEntryMask |= uint32_t(1u) << group_id;
