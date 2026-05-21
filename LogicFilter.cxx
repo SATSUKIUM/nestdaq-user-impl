@@ -36,7 +36,7 @@
 #include "KTimer.cxx"
 #include "Trigger.cxx"
 
-#define DUMP 1
+#define DUMP 0
 #define SPEEDTEST_MORE32 1
 
 
