@@ -276,7 +276,7 @@ void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT,
 		std::cout << "[Trigger::EntryTo] This signal (group_id=" << group_id << ", subgroup_id=NO_SUBGROUP) is assigned to MainTCT bit " << std::bitset<32>(fEntryChBit[fem].back()) << std::endl;
 	}
 	else{
-		std::cout << "[Trigger::EntryTo] This signal (group_id=" << group_id << ", subgroup_id=" << subgroup_id << ") is assigned to SubTCT " << iSubTCT << " and MainTCT bit " << std::bitset<32>(fEntryChBit[fem].back()) << ". And to be assigned to MainTCT bit " << std::bitset<32>(fiSubTCTMainTCT[iSubTCT]) << std::endl;
+		std::cout << "[Trigger::EntryTo] This signal (group_id=" << group_id << ", subgroup_id=" << subgroup_id << ") is assigned to SubTCT " << iSubTCT << " and its bit " << std::bitset<32>(fEntryChBit[fem].back()) << ". And to be assigned to MainTCT bit " << std::bitset<32>(fiSubTCTMainTCT[iSubTCT]) << std::endl;
 	}
 
 	fEntryMask |= uint32_t(1u) << group_id;
