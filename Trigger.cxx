@@ -72,7 +72,7 @@ private:
 
 	std::map< uint32_t, uint32_t> fNEntryInSubTCT_Trigger; // key: iSubTCT, value: nEntryInSubTCT
 
-	// int fEntryCounts = 0;
+	int fEntryCounts_old = 0;
 	uint32_t fEntryMask = 0;
 
 	int fNentry = 0;
@@ -228,27 +228,27 @@ bool Trigger::CheckEntryFEM(uint64_t fem)
 
 #endif
 
-// void Trigger::Entry(uint32_t fem, int ch, int offset)
-// {
+void Trigger::Entry(uint32_t fem, int ch, int offset)
+{
 
-// 	fEntryCh[fem].emplace_back(ch);
-// 	fEntryChDelay[fem].emplace_back(offset);
-// 	fEntryChBit[fem].emplace_back(0x0000001 << fEntryCounts);
-// 	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
-// 	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
-// 	fEntryMask |= 0x00000001 << fEntryCounts;
-// 	fEntryCounts++;
+	fEntryCh[fem].emplace_back(ch);
+	fEntryChDelay[fem].emplace_back(offset);
+	fEntryChBit[fem].emplace_back(0x0000001 << fEntryCounts_old);
+	fEntryChLeftWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
+	fEntryChRightWidth[fem].emplace_back(fMarkLen / 2); // if mq-param give a signal(fem, ch, offset) with 3 parameters, leftwidth and rightwidth are set to default value (MarkLen / 2)
+	fEntryMask |= 0x00000001 << fEntryCounts_old;
+	fEntryCounts_old++;
 
-// 	#if 0
-// 	std::cout << "#D Trig Entry : Module: " << fem << " Ch: " << ch << std::endl;
-// 	#endif
-// 	if (static_cast<unsigned int>(fEntryCounts) > (sizeof(uint32_t) * 8)) {
-// 		std::cerr << "Entry Ch. exceed " << sizeof(uint32_t) * 8<< std::endl;
-// 	}
-// 	assert(fEntryCounts <= static_cast<int>(sizeof(uint32_t) * 8));
+	#if 0
+	std::cout << "#D Trig Entry : Module: " << fem << " Ch: " << ch << std::endl;
+	#endif
+	if (static_cast<unsigned int>(fEntryCounts_old) > (sizeof(uint32_t) * 8)) {
+		std::cerr << "Entry Ch. exceed " << sizeof(uint32_t) * 8<< std::endl;
+	}
+	assert(fEntryCounts_old <= static_cast<int>(sizeof(uint32_t) * 8));
 
-// 	return;
-// }
+	return;
+}
 
 void Trigger::EntryTo(uint32_t group_id, uint32_t subgroup_id, uint32_t iSubTCT, uint32_t fem, uint32_t ch, int offset)
 {
