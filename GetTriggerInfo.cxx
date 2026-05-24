@@ -20,6 +20,7 @@ std::tuple< std::vector< std::vector<uint32_t> >, std::vector<struct ExprParser:
        	GetTriggerSignals(std::string key, std::string server_uri)
 {
 	std::vector< std::vector<uint32_t> > signals;
+    std::vector< psig > sigs;
 	std::vector<struct ExprParser::TrgExpression> exprs;
 
 	std::shared_ptr<sw::redis::Redis> redis;
@@ -44,7 +45,11 @@ std::tuple< std::vector< std::vector<uint32_t> >, std::vector<struct ExprParser:
 	}
 #endif
 
-	signals = SignalParser::Parsing(hash_data["trigger-signals"]);
+    sigs = SignalParser::Parsing(hash_data["trigger-signals"]);
+	// signals = SignalParser::Parsing(hash_data["trigger-signals"]);
+    for (const auto& sig : sigs) {
+        signals.push_back({sig.femId, sig.channel, sig.offset});
+    }
 	exprs = ExprParser::Parsing(hash_data["trigger-expression"]);
 
 #if 0
