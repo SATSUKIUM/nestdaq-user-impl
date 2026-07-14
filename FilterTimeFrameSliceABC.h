@@ -20,6 +20,9 @@
 #include "HeartbeatFrameHeader.h"
 #include "FrameContainer.h"
 
+#include <channel_map_dopeness.h>
+#include <channel_map_simple_item.h>
+
 namespace nestdaq {
    class FilterTimeFrameSliceABC;
 }
@@ -42,6 +45,7 @@ public:
       static constexpr std::string_view DQMChannelName {"out-chan-name"};
       static constexpr std::string_view PollTimeout        {"poll-timeout"};
       static constexpr std::string_view SplitMethod        {"split"};
+      static constexpr std::string_view ChannelMapDataFile {"chmap-data-file"};
    };
 
 protected:
@@ -63,7 +67,21 @@ protected:
    bool fDoCheck;
 
    std::vector<TTF> fTFs; // time frame
-//   std::vector<TLF> fLFs; // logic filter
+
+   // ================================
+   // for catching the Coincidence TDC from LogicFilter block
+   // ================================
+   TLF fLF;
+   std::vector<TLF> fLFs;
+   uint32_t fLFTDC4n; // 4ns-unit TDC of Coincidence
+
+   // ================================
+   // channel map
+   // ================================
+   chmap::ChannelMapDopeness fChMap{nullptr};
+   std::string fChMapDataFile;
+
+
 
 
 
