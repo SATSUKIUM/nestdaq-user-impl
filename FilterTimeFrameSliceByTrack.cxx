@@ -1,10 +1,11 @@
-/*
+/**
  * @file FilterTimeFrameSliceByTrack.cxx
  * @brief Slice Timeframe by Logic timing for NestDAQ
  * @date Created : 2026-07-14 13:41:20 JST
  *       Last Modified : 2026-07-14 13:41:20 JST
  *
  * @author Shinsuke OTA <ota@rcnp.osaka-u.ac.jp>
+ * @author Shunichi KASHIMA <kashima@rcnp.osaka-u.ac.jp>
  *
  */
 #include "FilterTimeFrameSliceByTrack.h"
@@ -28,6 +29,8 @@ FilterTimeFrameSliceByTrack::FilterTimeFrameSliceByTrack()
 
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
+   std::cout << "[FilterTimeFrameSliceByTrack::ProcessSlice] Function called" << std::endl;
+   
 #if 0
    int doKeep = false;
 
