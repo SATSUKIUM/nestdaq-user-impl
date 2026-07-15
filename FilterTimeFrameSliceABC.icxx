@@ -159,6 +159,7 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
    int hbfIdx = 0; // array index for hbf
    int fltIdx = 0; // array index for flt
    TTF *timeFrame = nullptr;
+   TLF *logicFilter = nullptr;
    Header<struct TimeFrame::Header> tfh;
    Header<struct Filter::Header> lfh;
    Header<struct Filter::TrgTimeHeader> tth;
@@ -186,10 +187,16 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
                }
             }
             dataptr += timeFrame->GetHeader()->hLength;
-         } else if (magic == Filter::MAGIC) {
-            // do nothing
+         } // if (magic == TimeFrame::MAGIC)
+         else if (magic == Filter::MAGIC) {
+            fltIdx = -1; // reset flt index
+            fLFs.resize(fLFs.size()+1);
+            logicFilter = &(fLFs[fLFs.size() -1]);
+            logicFilter->SetHeader(dataptr);
+
             lfh.SetHeader(dataptr);
-            dataptr += lfh.GetHeader()->hLength;
+
+            dataptr += logicFilter->GetHeader()->hLength;
 #if 0         
             fLF.SetHeader(part.GetData());
             auto nm = fLF.GetHeader()->numMessages - 1;
@@ -200,10 +207,18 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
                }
             }
 #endif            
-         } else if (magic == Filter::TDC_MAGIC) {
-            // to nothing
-            tth.SetHeader(dataptr);
-            dataptr += tth.GetHeader()->length;
+         } // else if (magic == Filter::MAGIC)
+         else if (magic == Filter::TDC_MAGIC) {
+            fltIdx++;
+            if(logicFilter != nullptr && logicFilter->size() < fltIdx + 1){
+               logicFilter->resize(fltIdx + 1);
+               if(logicFilter->at(fltIdx) == nullptr){
+                  logicFilter->at(fltIdx) = new TTT;
+               }
+            } // if(logicFilter != nullptr && logicFilter->size() < fltIdx + 1)
+
+            logicFilter->at(fltIdx)->SetHeader(dataptr);
+            dataptr += logicFilter->at(fltIdx)->GetHeader()->length;
 #if 0               
             auto& tdcf = *(fLF[fltIdx]);
             tdcf.Set(part.GetData());
@@ -215,7 +230,8 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
             auto& stf = *((*timeFrame)[stfIdx]);
             stf.SetHeader(dataptr);
             dataptr += stf.GetHeader()->hLength;
-         } else if (magic == HeartbeatFrame::MAGIC) {
+         } // else if (magic == SubTimeFrame::MAGIC)
+         else if (magic == HeartbeatFrame::MAGIC) {
             auto& stf = *((*timeFrame)[stfIdx]);
             if (stf.size() < hbfIdx+1) {
                stf.push_back(new THBF);
@@ -224,13 +240,14 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
             hbf.Set(dataptr);
             hbfIdx++;
             dataptr += hbf.GetHeader()->length;
-         } else {
+         }
+         else {
             //LOG(info) << "Error with magic" << std::hex << magic;
             return false;
-         }
-      }
-   }
+         } // else
+      } // while (dataptr < dataend)
+   } // for (uint32_t i = 0, n = inParts.Size(); i < n; ++i)
    return true;
-}
+} // bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
    
 
