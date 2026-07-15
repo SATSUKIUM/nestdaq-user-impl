@@ -1,0 +1,11 @@
+#ifndef NESTDAQ_TIMEFRAMESLICERBYTRACKDEBUGGER_H
+#define NESTDAQ_TIMEFRAMESLICERBYTRACKDEBUGGER_H
+
+// ================================
+#define DEBUG_SOMETHING 0
+#define DEBUG_SOMETHING2 0
+#define CHECK_COUT_CHMAP 1
+// ================================
+
+
+#endif  // NESTDAQ_TIMEFRAMESLICERBYTRACKDEBUGGER_H
