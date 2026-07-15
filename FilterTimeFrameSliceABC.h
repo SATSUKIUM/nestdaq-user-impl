@@ -78,7 +78,8 @@ protected:
    // ================================
    // channel map
    // ================================
-   chmap::ChannelMapDopeness fChMap{nullptr};
+   bool isCreateInvMap{false};
+   chmap::ChannelMapDopeness* fChMap{nullptr};
    std::string fChMapDataFile;
 
 

@@ -46,9 +46,10 @@ void FilterTimeFrameSliceABC::InitTask()
    // ================================
    fChMapDataFile = fConfig->GetProperty<std::string>(opt::ChannelMapDataFile.data());
    chmap::ChannelMapDopeness& chmap = chmap::ChannelMapDopeness::get_instance();
-   chmap.initialize(fChMapDataFile);
+   chmap.initialize(fChMapDataFile, isCreateInvMap);
 
    fChMap = &chmap;
+
    #if CHECK_COUT_CHMAP
    std::cout << "[FilterTimeFrameSliceABC::InitTask] ChannelMapDopeness initialized with " << fChMapDataFile << std::endl;
    std::cout << "\t# of channels: " << fChMap->getNumberOfChannels() << std::endl;
