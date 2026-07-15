@@ -76,18 +76,22 @@ void FilterTimeFrameSliceABC::PreRun()
 bool FilterTimeFrameSliceABC::ConditionalRun()
 {
    fDoCheck = fKTimer[0].Check();
+   
+   // clear the time frame of previous cycle
    for (auto& tf : fTFs) {
       tf.Clear();
    }                
    fTFs.clear();
+
+   // clear the logic filter of previous cycle
+   for (auto& lf : fLFs) {
+      lf.Clear();
+   }
+   fLFs.clear();
    
    FairMQParts inParts;
    FairMQParts outParts;
    if (Receive(inParts, fInputChannelName,0,1) <= 0) return true;
-
-   if (fDoCheck) {
-      LOG(info) << "ConditionalRun";
-   }
 
    ParseMessages(inParts);
 
@@ -95,22 +99,37 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
 
    auto outdataptr = std::make_unique<std::vector<copyUnit>>();
    auto outdata = outdataptr.get();
-   //if (fDoCheck) {
-   // LOG(info) << "num tf = " << fTFs.size();
-//   }
+
+   int idxTFMETA = 0; // for synchronization of TF and LF
+   int idxTFSLICE = 0; // for synchronization of TF and LF
+   TLF* lf = &fLFs[idxTFMETA]; // TLF (ref: FrameContainer.h, LF header and LF TDC blocks)
+   auto nTrig = lf->GetHeader()->numTrigs;
+   TTT* lfTdcBlock = nullptr;
+
    for (uint64_t ifrm = 0, nfrm = fTFs.size(); ifrm < nfrm; ++ifrm) {
       auto& tf = fTFs[ifrm];
       bool doKeep = false;
+
       if (tf.GetHeader()->type == TimeFrame::META) {
-         LOG(info) << " META information";
+         lf = &fLFs[idxTFMETA];
+         idxTFMETA++;
+         idxTFSLICE = 0;
+
+         lfTdcBlock = lf->at(0); // ContainerFrame TLFにはLF TDC block(DataFrame TTT)が一つだけ入っている(じゃあなんで入れ子にしてるん?)
+
          doKeep = true;
-      } else {
+      } // if (tf.GetHeader()->type == TimeFrame::META)
+      else {
+         fLFTDC4n = lfTdcBlock->UncheckedAt(idxTFSLICE).time;
+         idxTFSLICE++;
+         /*↓へ持って入る*/
          doKeep = ProcessSlice(tf);
-      }
+      } // else
+      
       if (!doKeep) continue;
       tf.GetHeader()->length = tf.GetRealLength();
       tf.CopyAllTo<copyUnit>(outdata);
-   }
+   } // for (uint64_t ifrm = 0, nfrm = fTFs.size(); ifrm < nfrm; ++ifrm)
    // LOG(info) << outdata->size() ;
    
    FairMQMessagePtr msgall(MessageUtil::NewMessage(*this,std::move(outdataptr)));
