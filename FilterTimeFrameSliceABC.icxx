@@ -11,7 +11,11 @@
 #include "utility/MessageUtil.h"
 #include "UnpackTdc.h"
 
+#include <channel_map_dopeness.h>
+#include <channel_map_simple_item.h>
+
 #define DEBUG 0
+#include "FilterTimeFrameSliceByTrackDebugger.h"
 
 using nestdaq::FilterTimeFrameSliceABC;
 namespace bpo = boost::program_options;
@@ -25,18 +29,43 @@ FilterTimeFrameSliceABC::FilterTimeFrameSliceABC()
 
 void FilterTimeFrameSliceABC::InitTask()
 {
-    using opt = OptionKey;
+   using opt = OptionKey;
 
-    fInputChannelName  = fConfig->GetValue<std::string>(opt::InputChannelName.data());
-    fOutputChannelName = fConfig->GetValue<std::string>(opt::OutputChannelName.data());
-    fName = fConfig->GetProperty<std::string>("id");
-    std::istringstream ss(fName.substr(fName.rfind("-") + 1));
-    ss >> fId;
+   fInputChannelName  = fConfig->GetValue<std::string>(opt::InputChannelName.data());
+   fOutputChannelName = fConfig->GetValue<std::string>(opt::OutputChannelName.data());
+   fName = fConfig->GetProperty<std::string>("id");
+   std::istringstream ss(fName.substr(fName.rfind("-") + 1));
+   ss >> fId;
 
 
-    fNumDestination = GetNumSubChannels(fOutputChannelName);
-    fPollTimeoutMS  = std::stoi(fConfig->GetProperty<std::string>(opt::PollTimeout.data()));
-    
+   fNumDestination = GetNumSubChannels(fOutputChannelName);
+   fPollTimeoutMS  = std::stoi(fConfig->GetProperty<std::string>(opt::PollTimeout.data()));
+
+   // ================================
+   // channel map initialization
+   // ================================
+   fChMapDataFile = fConfig->GetProperty<std::string>(opt::ChannelMapDataFile.data());
+   chmap::ChannelMapDopeness& chmap = chmap::ChannelMapDopeness::get_instance();
+   chmap.initialize(fChMapDataFile);
+
+   fChMap = &chmap;
+   #if CHECK_COUT_CHMAP
+   std::cout << "[FilterTimeFrameSliceABC::InitTask] ChannelMapDopeness initialized with " << fChMapDataFile << std::endl;
+   std::cout << "\t# of channels: " << fChMap->getNumberOfChannels() << std::endl;
+
+   // test t1 right channel
+   uint8_t test_ip3rd_T1right = 0x02;
+   uint8_t test_ip4th_T1right = 0xAA;
+   uint8_t test_ch_T1right = 12;
+
+   uint32_t dope_key;
+   chmap::ChannelMapSimpleItem_DET detitem;
+   bool found = fChMap->getDopeKey_FEtoDET(test_ip3rd_T1right, test_ip4th_T1right, test_ch_T1right, dope_key);
+   if(found == true){
+      detitem = fChMap->getDETItem(dope_key);
+      detitem.decode();
+   }
+   #endif
 }
 
 void FilterTimeFrameSliceABC::PreRun()
