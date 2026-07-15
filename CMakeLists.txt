@@ -168,6 +168,15 @@ find_path(UHBOOK_HEADER uhbook.cxx ../uhbook/)
 message(STATUS "UHBOOK_HEADER:    ${UHBOOK_HEADER}")
 #message(STATUS "UHBOOK_LIB:       ${UHBOOK_LIB}")
 
+# ---------- add channel-map dependency ---------
+find_package(ChannelMap CONFIG REQUIRED)
+if(TARGET ChannelMap::channel-map)
+  message(STATUS "ChannelMap target exists")
+else()
+  message(STATUS "ChannelMap target does NOT exist")
+endif()
+
+
 #==============================================================================
 # Sampler(for Emulator), Sink, FileSink, STFBuilder, TimeFrameBuilder
 #==============================================================================
@@ -221,6 +230,7 @@ foreach(lvar IN ITEMS
       stdc++fs;
       AmQTdcModule;
       sqlite3;
+      ChannelMap::ChannelMap;
     )
   elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
     AND (FairMQ_VERSION VERSION_LESS_EQUAL 1.4.56))
@@ -237,6 +247,7 @@ foreach(lvar IN ITEMS
       stdc++fs;
       AmQTdcModule;
       sqlite3;
+      ChannelMap::ChannelMap;
     )
   else()
     message(FATAL_ERROR "Unsupported FairMQ version ${FairMQ_VERSION}")
@@ -277,6 +288,7 @@ if ((FairMQ_VERSION VERSION_GREATER_EQUAL 1.8.0)
     ${Boost_LIBRARIES};
     Utility;
     sqlite3;
+    ChannelMap::ChannelMap;
   )
 elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
   AND (FairMQ_VERSION VERSION_LESS_EQUAL 1.4.56))
@@ -288,6 +300,7 @@ elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
     ${Boost_LIBRARIES};
     Utility;
     sqlite3;
+    ChannelMap::ChannelMap;
   )
 else()
     message(FATAL_ERROR "Unsupported FairMQ version ${FairMQ_VERSION}")
