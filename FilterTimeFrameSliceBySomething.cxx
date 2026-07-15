@@ -14,7 +14,7 @@
 #include "utility/MessageUtil.h"
 #include "UnpackTdc.h"
 
-#define DEBUG 0
+#include "FilterTimeFrameSliceByTrackDebugger.h"
 
 using nestdaq::FilterTimeFrameSliceBySomething;
 namespace bpo = boost::program_options;
