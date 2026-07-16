@@ -286,9 +286,9 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
             fltIdx++;
 #endif         
          } else if (magic == SubTimeFrame::MAGIC) {
-            #if CHECK_COUT_PARSEMESSAGES
-            std::cout << "\t\tmagic = SubTimeFrame::MAGIC" << std::hex << magic << std::dec << std::endl;
-            #endif
+            // #if CHECK_COUT_PARSEMESSAGES
+            // std::cout << "\t\tmagic = SubTimeFrame::MAGIC" << std::hex << magic << std::dec << std::endl;
+            // #endif
             hbfIdx = 0; // reset hbf index
             stfIdx ++;
             auto& stf = *((*timeFrame)[stfIdx]);
@@ -296,9 +296,9 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
             dataptr += stf.GetHeader()->hLength;
          } // else if (magic == SubTimeFrame::MAGIC)
          else if (magic == HeartbeatFrame::MAGIC) {
-            #if CHECK_COUT_PARSEMESSAGES
-            std::cout << "\t\tmagic = HeartbeatFrame::MAGIC" << std::hex << magic << std::dec << std::endl;
-            #endif
+            // #if CHECK_COUT_PARSEMESSAGES
+            // std::cout << "\t\tmagic = HeartbeatFrame::MAGIC" << std::hex << magic << std::dec << std::endl;
+            // #endif
             auto& stf = *((*timeFrame)[stfIdx]);
             if (stf.size() < hbfIdx+1) {
                stf.push_back(new THBF);
