@@ -231,6 +231,7 @@ foreach(lvar IN ITEMS
       stdc++fs;
       AmQTdcModule;
       sqlite3;
+      # custmized by user
       ChannelMap::ChannelMap;
     )
   elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
@@ -248,6 +249,22 @@ foreach(lvar IN ITEMS
       stdc++fs;
       AmQTdcModule;
       sqlite3;
+      # custmized by user
+      ChannelMap::ChannelMap;
+    )
+  elseif ((FairMQ_VERSION VERSION_EQUAL 1.10.0))
+    target_link_libraries(${EXEC} PUBLIC 
+      ${Boost_LIBRARIES};  
+      ${HIREDIS_LIB};
+      ${REDIS_PLUS_PLUS_LIB};
+      ${UHBOOK_LIB};
+      fairmq;
+      FairLogger;
+      Utility;
+      stdc++fs;
+      AmQTdcModule;
+      sqlite3;
+      # custmized by user
       ChannelMap::ChannelMap;
     )
   else()
@@ -289,6 +306,7 @@ if ((FairMQ_VERSION VERSION_GREATER_EQUAL 1.8.0)
     ${Boost_LIBRARIES};
     Utility;
     sqlite3;
+    # custmized by user
     ChannelMap::ChannelMap;
   )
 elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
@@ -301,6 +319,17 @@ elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
     ${Boost_LIBRARIES};
     Utility;
     sqlite3;
+    # custmized by user
+    ChannelMap::ChannelMap;
+  )
+elseif((FairMQ_VERSION VERSION_EQUAL 1.10.0))
+  target_link_libraries(AmQStrTdcSampler  PUBLIC
+    fairmq;
+    FairLogger;
+    ${Boost_LIBRARIES};
+    Utility;
+    sqlite3;
+    # custmized by user
     ChannelMap::ChannelMap;
   )
 else()
