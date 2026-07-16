@@ -96,7 +96,13 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    FairMQParts outParts;
    if (Receive(inParts, fInputChannelName,0,1) <= 0) return true;
 
+   #if CHECK_COUT_CONDITIONALRUN
+   std::cout << "\tReveived " << inParts.Size() << std::endl;
+   #endif
    ParseMessages(inParts);
+   #if CHECK_COUT_CONDITIONALRUN
+   std::cout << "\tParsed " << fTFs.size() << " time frames" << std::endl;
+   #endif
 
    using copyUnit = uint32_t;
 
@@ -124,6 +130,9 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
       } // if (tf.GetHeader()->type == TimeFrame::META)
       else {
          fLFTDC4n = lfTdcBlock->UncheckedAt(idxTFSLICE).time;
+         #if CHECK_COUT_CONDITIONALRUN
+         std::cout << "\t\tLF TDC4n: " << fLFTDC4n << std::endl;
+         #endif
          idxTFSLICE++;
          /*↓へ持って入る*/
          doKeep = ProcessSlice(tf);
