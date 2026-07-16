@@ -134,7 +134,13 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          idxTFMETA++;
          idxTFSLICE = 0;
 
+         #if CHECK_COUT_CONDITIONALRUN
+         std::cout << "\t\tcheck point: idxTFMETA = " << idxTFMETA << std::endl;
+         #endif
          lfTdcBlock = lf->at(0); // ContainerFrame TLFにはLF TDC block(DataFrame TTT)が一つだけ入っている(じゃあなんで入れ子にしてるん?)
+         #if CHECK_COUT_CONDITIONALRUN
+         std::cout << "\t\tcheck point, catched LFTDC Block" << std::endl;
+         #endif
 
          doKeep = true;
       } // if (tf.GetHeader()->type == TimeFrame::META)
@@ -287,9 +293,9 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
 
             logicFilter->at(fltIdx)->SetHeader(dataptr);
             dataptr += logicFilter->at(fltIdx)->GetHeader()->length;
-            #if CHECK_COUT_PARSEMESSAGES
-            std::cout << "\t\tlftdc4n: " << logicFilter->at(fltIdx)->GetHeader()->time << std::endl;
-            #endif
+            // #if CHECK_COUT_PARSEMESSAGES
+            // std::cout << "\t\tlftdc4n: " << logicFilter->at(fltIdx)->GetHeader()->time << std::endl;
+            // #endif
 #if 0               
             auto& tdcf = *(fLF[fltIdx]);
             tdcf.Set(part.GetData());
