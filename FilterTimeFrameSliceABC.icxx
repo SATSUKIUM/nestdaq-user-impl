@@ -278,7 +278,7 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
             std::cout << "\t\tmagic = Filter::TDC_MAGIC" << std::hex << magic << std::dec << std::endl;
             #endif
             fltIdx++;
-            if(logicFilter != nullptr && logicFilter->size() < fltIdx + 1){
+            if(logicFilter->size() < fltIdx + 1){
                logicFilter->resize(fltIdx + 1);
                if(logicFilter->at(fltIdx) == nullptr){
                   logicFilter->at(fltIdx) = new TTT;
