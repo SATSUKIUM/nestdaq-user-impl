@@ -221,7 +221,7 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
          auto magic = *reinterpret_cast<uint64_t*>(dataptr);
          if (magic == TimeFrame::MAGIC) {
             #if CHECK_COUT_PARSEMESSAGES
-            std::cout << "\t\tmagic = TimeFrame::MAGIC" << std::hex << magic << std::dec << std::endl;
+            std::cout << "\t\tmagic = TimeFrame::MAGIC";
             #endif
             // add new timeframe
             fTFs.resize(fTFs.size()+1);
@@ -238,6 +238,13 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
                }
             }
             dataptr += timeFrame->GetHeader()->hLength;
+            #if CHECK_COUT_PARSEMESSAGES
+            if(timeFrame->GetHeader()->type == TimeFrame::META) {
+               std::cout << " (META)" << std::endl;
+            } else if (timeFrame->GetHeader()->type == TimeFrame::SLICE) {
+               std::cout << " (SLICE)" << std::endl;
+            }
+            #endif
          } // if (magic == TimeFrame::MAGIC)
          else if (magic == Filter::MAGIC) {
             #if CHECK_COUT_PARSEMESSAGES
