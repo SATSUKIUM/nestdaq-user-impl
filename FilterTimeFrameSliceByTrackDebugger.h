@@ -5,6 +5,7 @@
 #define DEBUG_SOMETHING 0
 #define DEBUG_SOMETHING2 0
 #define CHECK_COUT_CHMAP 1
+#define CHECK_COUT_CONDITIONALRUN 1
 // ================================
 
 
