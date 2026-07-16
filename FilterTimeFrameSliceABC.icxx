@@ -115,11 +115,21 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    auto nTrig = lf->GetHeader()->numTrigs;
    TTT* lfTdcBlock = nullptr;
 
+   #if CHECK_COUT_CONDITIONALRUN
+   std::cout << "\tcheck point" << std::endl;
+   #endif
+
    for (uint64_t ifrm = 0, nfrm = fTFs.size(); ifrm < nfrm; ++ifrm) {
+      #if CHECK_COUT_CONDITIONALRUN
+      std::cout << "\t\tcheck point: ifrm = " << ifrm << std::endl;
+      #endif
       auto& tf = fTFs[ifrm];
       bool doKeep = false;
 
       if (tf.GetHeader()->type == TimeFrame::META) {
+         #if CHECK_COUT_CONDITIONALRUN
+         std::cout << "\t\tTF type: META" << std::endl;
+         #endif
          lf = &fLFs[idxTFMETA];
          idxTFMETA++;
          idxTFSLICE = 0;
@@ -129,6 +139,9 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          doKeep = true;
       } // if (tf.GetHeader()->type == TimeFrame::META)
       else {
+         #if CHECK_COUT_CONDITIONALRUN
+         std::cout << "\t\tTF type: SLICE" << std::endl;
+         #endif
          fLFTDC4n = lfTdcBlock->UncheckedAt(idxTFSLICE).time;
          #if CHECK_COUT_CONDITIONALRUN
          std::cout << "\t\tLF TDC4n: " << fLFTDC4n << std::endl;
