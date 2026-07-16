@@ -75,6 +75,9 @@ void FilterTimeFrameSliceABC::PreRun()
 
 bool FilterTimeFrameSliceABC::ConditionalRun()
 {
+   #if CHECK_COUT_CONDITIONALRUN
+   std::cout << "[FilterTimeFrameSliceABC::ConditionalRun] Function called" << std::endl;
+   #endif
    fDoCheck = fKTimer[0].Check();
    
    // clear the time frame of previous cycle
