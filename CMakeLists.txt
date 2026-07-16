@@ -383,6 +383,8 @@ if ((FairMQ_VERSION VERSION_GREATER_EQUAL 1.8.0)
     ${ROOT_LIBRARIES};
     ${HIREDIS_LIB};
     ${REDIS_PLUS_PLUS_LIB};
+    # custmized by user
+    ChannelMap::ChannelMap;
   )
 elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
   AND (FairMQ_VERSION VERSION_LESS_EQUAL 1.4.56))
@@ -395,6 +397,19 @@ elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
     ${ROOT_LIBRARIES};
     ${HIREDIS_LIB};
     ${REDIS_PLUS_PLUS_LIB};
+    # custmized by user
+    ChannelMap::ChannelMap;
+  )
+elseif ((FairMQ_VERSION VERSION_EQUAL 1.10.0)) 
+  target_link_libraries(${EXEC} PUBLIC 
+    ${Boost_LIBRARIES};  
+    fairmq;
+    FairLogger;
+    ${ROOT_LIBRARIES};
+    ${HIREDIS_LIB};
+    ${REDIS_PLUS_PLUS_LIB};
+    # custmized by user
+    ChannelMap::ChannelMap
   )
 else()
     message(FATAL_ERROR "Unsupported FairMQ version ${FairMQ_VERSION}")
