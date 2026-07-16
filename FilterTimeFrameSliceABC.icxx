@@ -11,8 +11,8 @@
 #include "utility/MessageUtil.h"
 #include "UnpackTdc.h"
 
-#include <channel_map_dopeness.h>
-#include <channel_map_simple_item.h>
+#include <channel_map_dopeness.hpp>
+#include <channel_map_simple_item.hpp>
 
 #define DEBUG 0
 #include "FilterTimeFrameSliceByTrackDebugger.h"
@@ -125,7 +125,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          /*↓へ持って入る*/
          doKeep = ProcessSlice(tf);
       } // else
-      
+
       if (!doKeep) continue;
       tf.GetHeader()->length = tf.GetRealLength();
       tf.CopyAllTo<copyUnit>(outdata);
