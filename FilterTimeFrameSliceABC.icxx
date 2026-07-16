@@ -287,6 +287,9 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
 
             logicFilter->at(fltIdx)->SetHeader(dataptr);
             dataptr += logicFilter->at(fltIdx)->GetHeader()->length;
+            #if CHECK_COUT_PARSEMESSAGES
+            std::cout << "\t\tlftdc4n: " << logicFilter->at(fltIdx)->GetHeader()->time << std::endl;
+            #endif
 #if 0               
             auto& tdcf = *(fLF[fltIdx]);
             tdcf.Set(part.GetData());
