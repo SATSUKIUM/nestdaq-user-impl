@@ -140,7 +140,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
       } // if (tf.GetHeader()->type == TimeFrame::META)
       else {
          #if CHECK_COUT_CONDITIONALRUN
-         std::cout << "\t\tTF type: SLICE" << std::endl;
+         std::cout << "\t\tTF type: SLICE, idxTFSLICE = " << idxTFSLICE << std::endl;
          #endif
          fLFTDC4n = lfTdcBlock->UncheckedAt(idxTFSLICE).time;
          #if CHECK_COUT_CONDITIONALRUN
