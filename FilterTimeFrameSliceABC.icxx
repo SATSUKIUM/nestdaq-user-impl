@@ -207,6 +207,10 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
    Header<struct TimeFrame::Header> tfh;
    Header<struct Filter::Header> lfh;
    Header<struct Filter::TrgTimeHeader> tth;
+   #if CHECK_COUT_PARSEMESSAGES
+   std::cout << "[FilterTimeFrameSliceABC::ParseMessages] Function called" << std::endl;
+   std::cout << "\tinParts.Size() = " << inParts.Size() << std::endl;
+   #endif
    for (uint32_t i = 0, n = inParts.Size(); i < n; ++i) {
       auto& part = inParts[i];
       char* dataptr = reinterpret_cast<char*>(part.GetData());
@@ -216,6 +220,9 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
       while (dataptr < dataend) {
          auto magic = *reinterpret_cast<uint64_t*>(dataptr);
          if (magic == TimeFrame::MAGIC) {
+            #if CHECK_COUT_PARSEMESSAGES
+            std::cout << "\t\tmagic = TimeFrame::MAGIC" << std::hex << magic << std::dec << std::endl;
+            #endif
             // add new timeframe
             fTFs.resize(fTFs.size()+1);
             timeFrame = &(fTFs[fTFs.size() -1]);
@@ -233,14 +240,21 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
             dataptr += timeFrame->GetHeader()->hLength;
          } // if (magic == TimeFrame::MAGIC)
          else if (magic == Filter::MAGIC) {
+            #if CHECK_COUT_PARSEMESSAGES
+            std::cout << "\t\tmagic = Filter::MAGIC" << std::hex << magic << std::dec << std::endl;
+            #endif
             fltIdx = -1; // reset flt index
             fLFs.resize(fLFs.size()+1);
             logicFilter = &(fLFs[fLFs.size() -1]);
             logicFilter->SetHeader(dataptr);
 
-            lfh.SetHeader(dataptr);
-
             dataptr += logicFilter->GetHeader()->hLength;
+            #if CHECK_COUT_PARSEMESSAGES
+            std::cout << "\t\tlength: " << logicFilter->GetHeader()->length << std::endl;
+            std::cout << "\t\thLength: " << logicFilter->GetHeader()->hLength << std::endl;
+            std::cout << "\t\tnumTrigs: " << logicFilter->GetHeader()->numTrigs << std::endl;
+            std::cout << "\t\tnumMessages: " << logicFilter->GetHeader()->numMessages << std::endl;
+            #endif
 #if 0         
             fLF.SetHeader(part.GetData());
             auto nm = fLF.GetHeader()->numMessages - 1;
@@ -253,6 +267,9 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
 #endif            
          } // else if (magic == Filter::MAGIC)
          else if (magic == Filter::TDC_MAGIC) {
+            #if CHECK_COUT_PARSEMESSAGES
+            std::cout << "\t\tmagic = Filter::TDC_MAGIC" << std::hex << magic << std::dec << std::endl;
+            #endif
             fltIdx++;
             if(logicFilter != nullptr && logicFilter->size() < fltIdx + 1){
                logicFilter->resize(fltIdx + 1);
@@ -269,6 +286,9 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
             fltIdx++;
 #endif         
          } else if (magic == SubTimeFrame::MAGIC) {
+            #if CHECK_COUT_PARSEMESSAGES
+            std::cout << "\t\tmagic = SubTimeFrame::MAGIC" << std::hex << magic << std::dec << std::endl;
+            #endif
             hbfIdx = 0; // reset hbf index
             stfIdx ++;
             auto& stf = *((*timeFrame)[stfIdx]);
@@ -276,6 +296,9 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
             dataptr += stf.GetHeader()->hLength;
          } // else if (magic == SubTimeFrame::MAGIC)
          else if (magic == HeartbeatFrame::MAGIC) {
+            #if CHECK_COUT_PARSEMESSAGES
+            std::cout << "\t\tmagic = HeartbeatFrame::MAGIC" << std::hex << magic << std::dec << std::endl;
+            #endif
             auto& stf = *((*timeFrame)[stfIdx]);
             if (stf.size() < hbfIdx+1) {
                stf.push_back(new THBF);
