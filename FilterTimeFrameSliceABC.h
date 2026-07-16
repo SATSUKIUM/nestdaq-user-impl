@@ -20,8 +20,8 @@
 #include "HeartbeatFrameHeader.h"
 #include "FrameContainer.h"
 
-#include <channel_map_dopeness.h>
-#include <channel_map_simple_item.h>
+#include <channel_map_dopeness.hpp>
+#include <channel_map_simple_item.hpp>
 
 namespace nestdaq {
    class FilterTimeFrameSliceABC;
