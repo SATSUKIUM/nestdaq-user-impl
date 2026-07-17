@@ -231,6 +231,9 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
             #endif
             // add new timeframe
             fTFs.resize(fTFs.size()+1);
+            #if CHECK_COUT_PARSEMESSAGES
+            std::cout << "\t\t\tfTFs.size() = " << fTFs.size() << std::endl;
+            #endif
             timeFrame = &(fTFs[fTFs.size() -1]);
             timeFrame->SetHeader(dataptr);
             stfIdx = -1; // reset stf index
