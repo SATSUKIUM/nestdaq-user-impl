@@ -150,7 +150,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
       else {
          #if CHECK_COUT_CONDITIONALRUN
          std::cout << "\t\tTF type: SLICE, idxTFSLICE = " << idxTFSLICE << std::endl;
-         std::cout << "\t\tcheck point: lfTdcBlock->GetHeader()->numTrigs = " << lfTdcBlock->GetHeader()->numTrigs << std::endl;
+         std::cout << "\t\tcheck point: lfTdcBlock->GetHeader()->length = " << lfTdcBlock->GetHeader()->length << std::endl;
          #endif
          fLFTDC4n = lfTdcBlock->UncheckedAt(idxTFSLICE).time;
          #if CHECK_COUT_CONDITIONALRUN
