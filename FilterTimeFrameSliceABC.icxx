@@ -134,6 +134,9 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          std::cout << "\t\tTF type: META" << std::endl;
          #endif
          lf = &fLFs[idxTFMETA];
+         #if CHECK_COUT_CONDITIONALRUN
+         std::cout << "\t\tlf = &fLFs[" << idxTFMETA << "]" << std::endl;
+         #endif
          idxTFMETA++;
          idxTFSLICE = 0;
 
@@ -142,7 +145,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          #endif
          lfTdcBlock = lf->at(0); // ContainerFrame TLFにはLF TDC block(DataFrame TTT)が一つだけ入っている(じゃあなんで入れ子にしてるん?)
          #if CHECK_COUT_CONDITIONALRUN
-         std::cout << "\t\tcheck point, catched LFTDC Block" << std::endl;
+         std::cout << "\t\tlfTdcBlock = lf->at(0)" << std::endl;
          #endif
 
          doKeep = true;
@@ -151,6 +154,19 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          #if CHECK_COUT_CONDITIONALRUN
          std::cout << "\t\tTF type: SLICE, idxTFSLICE = " << idxTFSLICE << std::endl;
          std::cout << "\t\tcheck point: lfTdcBlock->GetHeader()->length = " << lfTdcBlock->GetHeader()->length << std::endl;
+// constexpr unsigned char FLT_TDC_TYPE {0xaa};
+// struct TrgTime {
+//     union {
+//         struct {
+//             uint32_t time;
+//             uint32_t type;
+//         };
+//         unsigned char cdata[8]  {0, 0, 0, 0, 0, 0, 0, FLT_TDC_TYPE};
+//     };
+// };
+         std::cout << "\t\tcatching LF TDC from LogicFilter block" << std::endl;
+         unsingned char* tdcData = lfTdcBlock->UncheckedAt(idxTFSLICE);
+         std::cout << "\t\t\tcatched" << std::endl;
          #endif
          fLFTDC4n = lfTdcBlock->UncheckedAt(idxTFSLICE).time;
          #if CHECK_COUT_CONDITIONALRUN
