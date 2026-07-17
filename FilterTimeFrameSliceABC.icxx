@@ -179,7 +179,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          std::cout << "\t\t\tcatched" << std::endl;
          // std::cout << "\t\t\tlfTdc.time = " << lfTdc.time << std::endl;
          #endif
-         // fLFTDC4n = lfTdcBlock->UncheckedAt(idxTFSLICE).time;
+         fLFTDC4n = lfTdcBlock->UncheckedAt(idxTFSLICE).time;
          #if CHECK_COUT_CONDITIONALRUN
          std::cout << "\t\tLF TDC4n: " << fLFTDC4n << std::endl;
          #endif
