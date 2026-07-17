@@ -124,6 +124,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    std::cout << "\t\tttt->GetHeader()->length: " << ttt->GetHeader()->length << std::endl;
    std::cout << "\t\tttt->GetHeader()->hLength: " << ttt->GetHeader()->hLength << std::endl;
    std::cout << "\t\tttt->GetNumData(): " << ttt->GetNumData() << std::endl;
+   std::cout << "\t\tttt->GetData()[0]: " << ttt->GetData()[0] << std::endl;
    #endif
    TTT* lfTdcBlock = nullptr;
 
