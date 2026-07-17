@@ -326,7 +326,8 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
                }
             } // if(logicFilter != nullptr && logicFilter->size() < fltIdx + 1)
 
-            logicFilter->at(fltIdx)->SetHeader(dataptr);
+            logicFilter->at(fltIdx)->Set(dataptr);
+            // logicFilter->at(fltIdx)->SetHeader(dataptr);
             dataptr += logicFilter->at(fltIdx)->GetHeader()->length;
             // #if CHECK_COUT_PARSEMESSAGES
             // std::cout << "\t\tlftdc4n: " << logicFilter->at(fltIdx)->GetHeader()->time << std::endl;
