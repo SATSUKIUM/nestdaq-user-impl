@@ -117,6 +117,8 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    std::cout << "\tfLFs.size() = " << fLFs.size() << std::endl;
    std::cout << "\tTLF* lf = &fLFs[" << idxTFMETA << "]" << std::endl;
    std::cout << "\tlf->GetHeader()->numTrigs: " << nTrig << std::endl;
+   std::cout << "\tlf->GetHeader()->length: " << lf->GetHeader()->length << std::endl;
+   std::cout << "\tlf->GetHeader()->hLength: " << lf->GetHeader()->hLength << std::endl;
    TTT* ttt = lf->at(0);
    std::cout << "\tTTT* ttt = lf->at(0)" << std::endl;
    std::cout << "\t\tttt->GetNumData(): " << ttt->GetNumData() << std::endl;
