@@ -165,7 +165,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
 //     };
 // };
          std::cout << "\t\tcatching LF TDC from LogicFilter block" << std::endl;
-         unsingned char* tdcData = lfTdcBlock->UncheckedAt(idxTFSLICE);
+         unsigned char* tdcData = lfTdcBlock->UncheckedAt(idxTFSLICE);
          std::cout << "\t\t\tcatched" << std::endl;
          #endif
          fLFTDC4n = lfTdcBlock->UncheckedAt(idxTFSLICE).time;
