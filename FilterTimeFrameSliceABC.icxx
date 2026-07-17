@@ -114,6 +114,8 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    TLF* lf = &fLFs[idxTFMETA]; // TLF (ref: FrameContainer.h, LF header and LF TDC blocks)
    auto nTrig = lf->GetHeader()->numTrigs;
    #if CHECK_COUT_CONDITIONALRUN
+   std::cout << "\tfLFs.size() = " << fLFs.size() << std::endl;
+   std::cout << "\tTLF* lf = &fLFs[" << idxTFMETA << "]" << std::endl;
    std::cout << "\tlf->GetHeader()->numTrigs: " << nTrig << std::endl;
    #endif
    TTT* lfTdcBlock = nullptr;
