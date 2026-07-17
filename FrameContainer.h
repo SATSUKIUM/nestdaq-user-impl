@@ -16,6 +16,8 @@
 #include "HeartbeatFrameHeader.h"
 #include <iostream>
 
+#define COUT_N_DATA 0
+
 namespace nestdaq {
    template <typename frametype> class Header {
    public:
@@ -67,7 +69,9 @@ namespace nestdaq {
 
       template <typename unit>
       void CopyAllTo(std::vector<unit>* output) {
+#if COUT_N_DATA
          std::cout << std::hex << this->GetHeader()->magic << " n data = " << this->GetNumData() <<  std::endl;
+#endif
          this->template CopyHeaderTo<unit>(output);
          this->template CopyDataTo<unit>(output);
       }
