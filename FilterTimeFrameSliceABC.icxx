@@ -231,9 +231,6 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
             #endif
             // add new timeframe
             fTFs.resize(fTFs.size()+1);
-            #if CHECK_COUT_PARSEMESSAGES
-            std::cout << "\t\t\tfTFs.size() = " << fTFs.size() << std::endl;
-            #endif
             timeFrame = &(fTFs[fTFs.size() -1]);
             timeFrame->SetHeader(dataptr);
             stfIdx = -1; // reset stf index
@@ -253,6 +250,7 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
             } else if (timeFrame->GetHeader()->type == TimeFrame::SLICE) {
                std::cout << " (SLICE)" << std::endl;
             }
+            std::cout << "\t\t\tfTFs.size() = " << fTFs.size() << std::endl;
             #endif
          } // if (magic == TimeFrame::MAGIC)
          else if (magic == Filter::MAGIC) {
@@ -261,6 +259,9 @@ bool FilterTimeFrameSliceABC::ParseMessages(FairMQParts& inParts)
             #endif
             fltIdx = -1; // reset flt index
             fLFs.resize(fLFs.size()+1);
+            #if CHECK_COUT_PARSEMESSAGES
+            std::cout << "\t\t\tfLFs.size() = " << fLFs.size() << std::endl;
+            #endif
             logicFilter = &(fLFs[fLFs.size() -1]);
             logicFilter->SetHeader(dataptr);
 
