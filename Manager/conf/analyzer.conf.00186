@@ -1,0 +1,29 @@
+###
+# Default conf.file for 2010/10/12
+###
+#Conf
+UNPACKER: conf/unpacker.xml
+#
+DIGIT:    conf/digit_data_20101012.xml
+CMAP:     conf/channel_map_20101012.xml
+#Param
+HDPHC:    param/HodoPHCParam_0
+HDPRM:    param/HodoParam.00185
+#
+DCGEO:    param/DCgeom.param_201010
+DCTDC:    param/DCTdcCalib.param.00186
+DCDRFT:   param/DCDrift.param.00186
+K18TM:    param/K18Matrix12636FFpFocus.param
+PK18:     1.2636
+#
+FLDMAP:   fieldmap/SksQM02S300ANoICMod.dat
+FLDNMR:   2.16225
+FLDCALC:  2.1883
+#FLDMAP:   fieldmap/SksQM07S300ANoICMod.dat
+#FLDNMR:   2.16225
+#FLDCALC:  2.18643
+#
+#
+EVDISP: 0
+MHTDC:  1
+#

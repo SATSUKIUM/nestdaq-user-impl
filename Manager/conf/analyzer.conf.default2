@@ -1,0 +1,58 @@
+###
+# Conf.file
+###
+#------------------------------------
+####Counter Map
+#CMAP:  param/param_CounterMap
+#
+#------------------------------------
+####Geometry File
+GEO: param/param_DetGeom001
+#
+#------------------------------------
+####DC Parameters
+DCTDC: param/param_DCTdcCalib_run1745
+DCDRFT: param/param_DCDrift_run1745
+#
+#BDC TDC cut
+BDCTRANGELOW:   800
+BDCTRANGEHIGH: 1500
+BDCTRANGETOT:    50
+#
+##BDC Tracking mode
+# 0 -> Use Pair Plane
+# 1 -> Not Use Pair Plane
+BDCTRMODE: 0
+#
+#KLDC TDC cut
+KLDCTRANGELOW:   800
+KLDCTRANGEHIGH: 1100
+KLDCTRANGETOT:    55
+#
+#BFT TDC cut
+KLDCTRANGELOW:   800
+KLDCTRANGEHIGH: 1100
+KLDCTRANGETOT:    55
+#
+##KLDC Tracking mode
+# 0 -> Use Pair Plane
+# 1 -> Not Use Pair Plane
+KLDCTRMODE: 0
+#------------------------------------
+####Tr Parameters
+TRTDC: param/param_TrTdcCalib_run1230
+#
+#BFT TDC cut
+BFTTRANGELOW:   880
+BFTTRANGEHIGH:  920
+BFTTRANGETOT:    10
+#
+#
+#------------------------------------
+####Hosocope Parameters
+HDPRM: param/HodoParam_run1745
+HDPHC: param/HodoPHCParam_run1745
+#
+#------------------------------------
+#
+# End of File

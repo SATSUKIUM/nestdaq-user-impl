@@ -1,0 +1,68 @@
+###
+# Conf.file
+###
+#------------------------------------
+####Counter Map
+CMAP:  param/param_CounterMap_1
+#
+####Settings
+#TDC data setting (always:1)
+HASTDC: 1
+#
+#------------------------------------
+####Geometry File
+TRGEO: param/param_DetGeom004
+#
+####DC Parameters
+DCTDC: param/param_DCTdcCalib_run140
+DCDRFT: param/param_DCDrift_run140
+#
+#------------------------------------
+####T0 analysis settings
+#Simple analysis (on = 1)
+T0SIMPLEANA: 1
+#
+#TDC cut for trigger (in UserMonitor)
+T0RANGELOW:   300
+T0RANGEHIGH:  900
+#
+#------------------------------------
+####DRS4 analysis settings
+#Peak search
+PEAKSTART:  50
+PEAKEND:   800
+#Base line
+BASEPARAM: 50
+#Integral for QDC
+RANGELOW:  100
+RANGEHIGH: 500
+#Pileup Study
+PILELOW:  -55
+PILEHIGH:  -5
+#
+#------------------------------------
+####DC analysis settings
+#DC tree (on = 1)
+DCTREE: 1
+#
+#TDC cut (in UserMonitor)
+DCTRANGELOW:     0
+DCTRANGEHIGH: 1000
+#
+#Width
+DCWIDTHCUTL:    0
+DCWIDTHCUTH: 1000
+#
+#Drift Time cut
+DTCut1: 400.0
+DTCut2: 400.0
+DTCut3: 500.0
+#
+#Drift Length cut
+DLCut1: 9.6234
+DLCut2: 10.147
+DLCut3: 10.679
+#
+#------------------------------------
+#
+# End of File
