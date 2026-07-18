@@ -52,7 +52,7 @@ void FilterTimeFrameSliceABC::InitTask()
 
    #if CHECK_COUT_CHMAP
    std::cout << "[FilterTimeFrameSliceABC::InitTask] ChannelMapDopeness initialized with " << fChMapDataFile << std::endl;
-   std::cout << "\t# of channels: " << fChMap->getNumberOfChannels() << std::endl;
+   std::cout << "\t# of channels: " << std::dec << fChMap->getNumberOfChannels() << std::endl;
 
    // test t1 right channel
    uint8_t test_ip3rd_T1right = 0x02;
@@ -61,8 +61,10 @@ void FilterTimeFrameSliceABC::InitTask()
 
    uint32_t dope_key;
    chmap::ChannelMapSimpleItem_DET detitem;
+   std::cout << "\tchecking T1 right search" << std::endl;
    bool found = fChMap->getDopeKey_FEtoDET(test_ip3rd_T1right, test_ip4th_T1right, test_ch_T1right, dope_key);
    if(found == true){
+      std::cout << "\t\tfound." << std::endl;
       detitem = fChMap->getDETItem(dope_key);
       detitem.decode();
    }
