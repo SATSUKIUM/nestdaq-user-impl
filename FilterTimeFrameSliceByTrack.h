@@ -50,13 +50,13 @@ struct nestdaq::temporary_dctdccalib {
    int detectoridentifier;
    int wireidentifier;
    double offset, scale;
-};
+}; // struct nestdaq::temporary_dctdccalib
 
 struct nestdaq::temporary_dcdriftparam {
    int detectoridentifier;
    int approxOrder;
    std::vector<double> coefficients;
-};
+}; // struct nestdaq::temporary_dcdriftparam
 
 
 class nestdaq::FilterTimeFrameSliceByTrack : public nestdaq::FilterTimeFrameSliceABC {
@@ -82,19 +82,18 @@ protected:
    chmap::ChannelMapDopeness* fChMap{nullptr};
    std::string fChMapDataFile;
 
-public:
    // ================================
    // detector configuration
    // ================================
-   virtual bool ParseDetectorConfig_Geometry(std::string_view filename) override;
-   virtual bool ParseDetectorConfig_DCTdcCalib(std::string_view filename) override;
-   virtual bool ParseDetectorConfig_DCDriftParam(std::string_view filename) override;
+   bool ParseDetectorConfig_Geometry(std::string_view filename);
+   bool ParseDetectorConfig_DCTdcCalib(std::string_view filename);
+   bool ParseDetectorConfig_DCDriftParam(std::string_view filename);
 
    std::vector<temporary_geometry> fTemporaryGeometries;
    std::vector<temporary_dctdccalib> fTemporaryDCTdcCalibs;
    std::vector<temporary_dcdriftparam> fTemporaryDCDriftParams;
 
-};
+}; // class nestdaq::FilterTimeFrameSliceByTrack
 
 
 
