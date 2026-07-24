@@ -18,7 +18,6 @@
 // for the Parser of detector configurations
 #include <fstream>
 #include <sstream>
-#include <stdexcept>
 
 #define DEBUG 0
 
@@ -76,19 +75,19 @@ void FilterTimeFrameSliceByTrack::InitTask()
 
    if (!geometryFile.empty()) {
       if (!ParseDetectorConfig_Geometry(geometryFile)) {
-         throw std::runtime_error("Failed to parse geometry configuration");
+         std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to parse geometry configuration file: " << geometryFile << std::endl;
       }
    }
 
    if (!dctdcCalibFile.empty()) {
       if (!ParseDetectorConfig_DCTdcCalib(dctdcCalibFile)) {
-         throw std::runtime_error("Failed to parse DC TDC calibration configuration");
+         std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to parse DC TDC calibration configuration file: " << dctdcCalibFile << std::endl;
       }
    }
 
    if (!dcDriftParamFile.empty()) {
       if (!ParseDetectorConfig_DCDriftParam(dcDriftParamFile)) {
-         throw std::runtime_error("Failed to parse DC drift parameter configuration");
+         std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to parse DC drift parameter configuration file: " << dcDriftParamFile << std::endl;
       }
    }
 }
