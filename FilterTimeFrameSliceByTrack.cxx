@@ -78,19 +78,17 @@ void FilterTimeFrameSliceByTrack::InitTask()
          std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to parse geometry configuration file: " << geometryFile << std::endl;
       }
    }
-
    if (!dctdcCalibFile.empty()) {
       if (!ParseDetectorConfig_DCTdcCalib(dctdcCalibFile)) {
          std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to parse DC TDC calibration configuration file: " << dctdcCalibFile << std::endl;
       }
    }
-
    if (!dcDriftParamFile.empty()) {
       if (!ParseDetectorConfig_DCDriftParam(dcDriftParamFile)) {
          std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to parse DC drift parameter configuration file: " << dcDriftParamFile << std::endl;
       }
    }
-}
+} // void FilterTimeFrameSliceByTrack::InitTask()
 
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
@@ -129,15 +127,6 @@ bool FilterTimeFrameSliceByTrack::ParseDetectorConfig_Geometry(std::string_view 
       return false;
    }
 
-   struct temporary_geometry {
-      int detectoridentifier;
-      std::string detectorname;
-      double x, y, z;
-      double tiltangle, rotationangle1, rotationangle2;
-      double length, resolution, wirecenternumber, wirepitch, offset;
-   };
-   std::vector<temporary_geometry> temp_geometries;
-
    std::string line;
    while(std::getline(ifs, line)){
       if(line.empty() || line.front() == '#'){
@@ -156,10 +145,10 @@ bool FilterTimeFrameSliceByTrack::ParseDetectorConfig_Geometry(std::string_view 
          std::cerr << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_Geometry] Failed to parse line: " << line << std::endl;
          continue;
       }
-      temp_geometries.push_back({detectoridentifier, detectorname, x, y, z, tiltangle, rotationangle1, rotationangle2, length, resolution, wirecenternumber, wirepitch, offset});
+      fTemporaryGeometries.push_back({detectoridentifier, detectorname, x, y, z, tiltangle, rotationangle1, rotationangle2, length, resolution, wirecenternumber, wirepitch, offset});
    } // while(std::getline(ifs, line))
 
-   std::cout << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_Geometry] Parsed " << temp_geometries.size() << " geometry entries from file: " << filename << std::endl;
+   std::cout << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_Geometry] Parsed " << fTemporaryGeometries.size() << " geometry entries from file: " << filename << std::endl;
 
    // to be implemented
    return true;
@@ -172,13 +161,6 @@ bool FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCTdcCalib(std::string_vie
       std::cerr << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCTdcCalib] Failed to open file: " << filename << std::endl;
       return false;
    }
-
-   struct temporary_dctdccalib {
-      int detectoridentifier;
-      int wireidentifier;
-      double offset, scale;
-   };
-   std::vector<temporary_dctdccalib> temp_dctdccalibs;
 
    std::string line;
    while(std::getline(ifs, line)){
@@ -196,10 +178,10 @@ bool FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCTdcCalib(std::string_vie
          std::cerr << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCTdcCalib] Failed to parse line: " << line << std::endl;
          continue;
       }
-      temp_dctdccalibs.push_back({detectoridentifier, wireidentifier, offset, scale});
+      fTemporaryDCTdcCalibs.push_back({detectoridentifier, wireidentifier, offset, scale});
    } // while(std::getline(ifs, line))
 
-   std::cout << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCTdcCalib] Parsed " << temp_dctdccalibs.size() << " TDC calibration entries from file: " << filename << std::endl;
+   std::cout << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCTdcCalib] Parsed " << fTemporaryDCTdcCalibs.size() << " TDC calibration entries from file: " << filename << std::endl;
 
    // to be implemented
    return true;
@@ -212,13 +194,6 @@ bool FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCDriftParam(std::string_v
       std::cerr << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCDriftParam] Failed to open file: " << filename << std::endl;
       return false;
    }
-
-   struct temporary_dcdriftparam {
-      int detectoridentifier;
-      int approxOrder;
-      std::vector<double> coefficients;
-   };
-   std::vector<temporary_dcdriftparam> temp_dcdriftparams;
 
    std::string line;
    while(std::getline(ifs, line)){
@@ -246,10 +221,10 @@ bool FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCDriftParam(std::string_v
             continue;
          }
       }
-      temp_dcdriftparams.push_back({detectoridentifier, approxOrder, coefficients});
+      fTemporaryDCDriftParams.push_back({detectoridentifier, approxOrder, coefficients});
    } // while(std::getline(ifs, line))
 
-   std::cout << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCDriftParam] Parsed " << temp_dcdriftparams.size() << " drift parameter entries from file: " << filename << std::endl;
+   std::cout << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCDriftParam] Parsed " << fTemporaryDCDriftParams.size() << " drift parameter entries from file: " << filename << std::endl;
 
    // to be implemented
    return true;

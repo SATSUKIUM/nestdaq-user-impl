@@ -22,17 +22,41 @@
 #include "FrameContainer.h"
 #include "FilterTimeFrameSliceABC.h"
 
+#include <chmap/channel_map_dopeness.hpp>
 #include <chmap/item.hpp>
 
 namespace nestdaq {
    class FilterTimeFrameSliceByTrack;
    struct DCRawHit;
+   struct temporary_geometry;
+   struct temporary_dctdccalib;
+   struct temporary_dcdriftparam;
 }
 
 struct nestdaq::DCRawHit {
    const chmap::DETIdItem* detid;
    uint32_t tdc;
 }; // struct nestdaq::DCRawHit
+
+struct nestdaq::temporary_geometry {
+   int detectoridentifier;
+   std::string detectorname;
+   double x, y, z;
+   double tiltangle, rotationangle1, rotationangle2;
+   double length, resolution, wirecenternumber, wirepitch, offset;
+}; // struct nestdaq::temporary_geometry
+
+struct nestdaq::temporary_dctdccalib {
+   int detectoridentifier;
+   int wireidentifier;
+   double offset, scale;
+};
+
+struct nestdaq::temporary_dcdriftparam {
+   int detectoridentifier;
+   int approxOrder;
+   std::vector<double> coefficients;
+};
 
 
 class nestdaq::FilterTimeFrameSliceByTrack : public nestdaq::FilterTimeFrameSliceABC {
@@ -50,12 +74,25 @@ public:
    void InitTask() override;
    virtual bool ProcessSlice(TTF& ) override;
 
+protected:
    // ================================
    // channel map
+   // ================================
+   bool isCreateInvMap{false};
+   chmap::ChannelMapDopeness* fChMap{nullptr};
+   std::string fChMapDataFile;
+
+public:
+   // ================================
+   // detector configuration
    // ================================
    virtual bool ParseDetectorConfig_Geometry(std::string_view filename) override;
    virtual bool ParseDetectorConfig_DCTdcCalib(std::string_view filename) override;
    virtual bool ParseDetectorConfig_DCDriftParam(std::string_view filename) override;
+
+   std::vector<temporary_geometry> fTemporaryGeometries;
+   std::vector<temporary_dctdccalib> fTemporaryDCTdcCalibs;
+   std::vector<temporary_dcdriftparam> fTemporaryDCDriftParams;
 
 };
 

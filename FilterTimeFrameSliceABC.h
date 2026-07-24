@@ -20,7 +20,6 @@
 #include "HeartbeatFrameHeader.h"
 #include "FrameContainer.h"
 
-#include <chmap/channel_map_dopeness.hpp>
 #include <chmap/item.hpp>
 
 namespace nestdaq {
@@ -73,22 +72,6 @@ protected:
    TLF fLF;
    std::vector<TLF> fLFs;
    uint32_t fLFTDC4n; // 4ns-unit TDC of Coincidence
-
-   // ================================
-   // channel map
-   // ================================
-   bool isCreateInvMap{false};
-   chmap::ChannelMapDopeness* fChMap{nullptr};
-   std::string fChMapDataFile;
-   // ================================
-   // detector configuration
-   // ================================
-   virtual bool ParseDetectorConfig_Geometry(std::string_view /*filename*/) { return true; };
-   virtual bool ParseDetectorConfig_DCTdcCalib(std::string_view /*filename*/) { return true; };
-   virtual bool ParseDetectorConfig_DCDriftParam(std::string_view /*filename*/) { return true; };
-
-
-
 
    // output
    int fNumDestination {0};
