@@ -20,8 +20,8 @@
 #include "HeartbeatFrameHeader.h"
 #include "FrameContainer.h"
 
-#include <channel_map_dopeness.hpp>
-#include <channel_map_simple_item.hpp>
+#include <chmap/channel_map_dopeness.hpp>
+#include <chmap/item.hpp>
 
 namespace nestdaq {
    class FilterTimeFrameSliceABC;
@@ -45,7 +45,6 @@ public:
       static constexpr std::string_view DQMChannelName {"out-chan-name"};
       static constexpr std::string_view PollTimeout        {"poll-timeout"};
       static constexpr std::string_view SplitMethod        {"split"};
-      static constexpr std::string_view ChannelMapDataFile {"chmap-data-file"};
    };
 
 protected:
@@ -81,7 +80,12 @@ protected:
    bool isCreateInvMap{false};
    chmap::ChannelMapDopeness* fChMap{nullptr};
    std::string fChMapDataFile;
-
+   // ================================
+   // detector configuration
+   // ================================
+   virtual bool ParseDetectorConfig_Geometry(std::string_view /*filename*/) { return true; };
+   virtual bool ParseDetectorConfig_DCTdcCalib(std::string_view /*filename*/) { return true; };
+   virtual bool ParseDetectorConfig_DCDriftParam(std::string_view /*filename*/) { return true; };
 
 
 

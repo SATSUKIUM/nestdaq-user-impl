@@ -34,11 +34,8 @@ void addCustomOptions(bpo::options_description& options)
        bpo::value<std::string>()->default_value("1"),
        "Timeout of polling (in msec)")
       (opt::SplitMethod.data(),
-       bpo::value<std::string>()->default_value("1"),
-       "STF split method"),
-        (opt::ChannelMapDataFile.data(),
-       bpo::value<std::string>()->default_value("channel_map.dat"),
-       "Path to the channel map data file")
+        bpo::value<std::string>()->default_value("1"),
+        "STF split method")
       ;
    
 }

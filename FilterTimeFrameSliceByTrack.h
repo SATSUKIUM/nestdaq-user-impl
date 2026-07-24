@@ -29,20 +29,37 @@ namespace nestdaq {
    struct DCRawHit;
 }
 
-
-class nestdaq::FilterTimeFrameSliceByTrack : public nestdaq::FilterTimeFrameSliceABC {
-public:
-   FilterTimeFrameSliceByTrack();
-   virtual ~FilterTimeFrameSliceByTrack() override = default;
-
-   virtual bool ProcessSlice(TTF& ) override;
-
-};
-
 struct nestdaq::DCRawHit {
    const chmap::DETIdItem* detid;
    uint32_t tdc;
 }; // struct nestdaq::DCRawHit
+
+
+class nestdaq::FilterTimeFrameSliceByTrack : public nestdaq::FilterTimeFrameSliceABC {
+public:
+   struct OptionKey : FilterTimeFrameSliceABC::OptionKey {
+      static constexpr std::string_view ChannelMapDataFile {"chmap-data-file"};
+      static constexpr std::string_view GeometryConfigFile {"geometry-file"};
+      static constexpr std::string_view DCTdcCalibConfigFile {"dctdc-calib-file"};
+      static constexpr std::string_view DCDriftParamConfigFile {"dc-drift-param-file"};
+   };
+
+   FilterTimeFrameSliceByTrack();
+   virtual ~FilterTimeFrameSliceByTrack() override = default;
+
+   void InitTask() override;
+   virtual bool ProcessSlice(TTF& ) override;
+
+   // ================================
+   // channel map
+   // ================================
+   virtual bool ParseDetectorConfig_Geometry(std::string_view filename) override;
+   virtual bool ParseDetectorConfig_DCTdcCalib(std::string_view filename) override;
+   virtual bool ParseDetectorConfig_DCDriftParam(std::string_view filename) override;
+
+};
+
+
 
 
 // channel-map provides (uint8_t DetectorNameIdx, uint8_t PlaneNameIdx, uint8_t SegmentNumber, uint16_t ChannelNumber, uint8_t ChannelNameIdx) or (std::string DetectorName, std::string PlaneName, uint8_t SegmentNumber, uint16_t ChannelNumber, std::string ChannelName)
