@@ -357,11 +357,11 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       #endif
 
       // Create GeomItemDC and set its properties
-      chmap::GeomItemDC geomitemdc;
-      geomitemdc.SetGlobalPosition(x, y, z);
-      geomitemdc.SetResolution(resolution, resolution, resolution);
-      geomitemdc.SetRotationAngles(tiltAngle, rotationAngle1, rotationAngle2);
-      geomitemdc.SetWireGeometry(wireCenterNumber, wirePitch, offset);
+      std::unique_ptr<chmap::GeomItemDC> geomitemdc = std::make_unique<chmap::GeomItemDC>();
+      geomitemdc->SetGlobalPosition(x, y, z);
+      geomitemdc->SetResolution(resolution, resolution, resolution);
+      geomitemdc->SetRotationAngles(tiltAngle, rotationAngle1, rotationAngle2);
+      geomitemdc->SetWireGeometry(wireCenterNumber, wirePitch, offset);
 
       // Register
       for(int i=0; i<128; ++i){
@@ -373,7 +373,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
             uint32_t dopeKeyFEtoDET;
             bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.channel, dopeKeyFEtoDET);
             if(found_FEtoDET){
-               fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKey_DETtoFE, geomitemdc);
+               fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKey_DETtoFE, std::move(geomitemdc), &chmap::DETConfItem::geom);
             } // if(found_FEtoDET)
          } // if(found_DETtoFE)
       } // for(int i=0; i<128; ++i)
