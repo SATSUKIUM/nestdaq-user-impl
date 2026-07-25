@@ -353,11 +353,13 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       std::string DetectorName = detectorNameMap[detectorId];
       std::string PlaneName = detectorPlaneMap[detectorId];
       int SegmentNumber = detectorSegmentMap[detectorId];
-      std::string ChannelName = "0";
+      std::string ChannelName;
+      fChMap->detname_dictionary.invIndex(0, ChannelName);
       #if CHECK_COUT_DETCONF_REGISTERING
       std::cout << "\tDetectorName: " << DetectorName << std::endl;
       std::cout << "\tPlaneName: " << PlaneName << std::endl;
       std::cout << "\tSegmentNumber: " << SegmentNumber << std::endl;
+      std::cout << "\tChannelName: " << ChannelName << std::endl;
       #endif
 
       // Create GeomItemDC and set its properties
@@ -371,7 +373,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       for(int i=0; i<128; ++i){
          int ChannelNumber = i;
          uint32_t dopeKey_DETtoFE;
-         bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, ChannelName, ChannelNumber, dopeKey_DETtoFE);
+         bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
          if(found_DETtoFE){
             chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
             uint32_t dopeKeyFEtoDET;
