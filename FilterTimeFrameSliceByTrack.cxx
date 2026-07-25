@@ -383,9 +383,12 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::geom);
             } // if(found_FEtoDET)
             else{
-               std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] no item found." << std::endl;
+               std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] no DETIdItem found" << std::endl;
             }
          } // if(found_DETtoFE)
+         else{
+            std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] no FEAddrItem found" << std::endl;
+         }
       } // for(int i=0; i<128; ++i)
    } // for(const auto& geom : fTemporaryGeometries)
 
