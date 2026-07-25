@@ -380,7 +380,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                #if 1
                fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
                #endif
-               fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKey_DETtoFE, std::move(geomitemdc), &chmap::DETConfItem::geom);
+               fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKey_FEtoDET, std::move(geomitemdc), &chmap::DETConfItem::geom);
             } // if(found_FEtoDET)
          } // if(found_DETtoFE)
       } // for(int i=0; i<128; ++i)
