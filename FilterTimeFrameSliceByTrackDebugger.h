@@ -7,6 +7,7 @@
 #define CHECK_COUT_CHMAP 1
 #define CHECK_COUT_CONDITIONALRUN 0
 #define CHECK_COUT_PARSEMESSAGES 0
+#define CHECK_COUT_DETCONF_REGISTERING 1
 // ================================
 
 
