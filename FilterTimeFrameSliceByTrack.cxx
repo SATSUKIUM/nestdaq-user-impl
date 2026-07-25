@@ -76,8 +76,11 @@ void FilterTimeFrameSliceByTrack::InitTask()
    // ================================
 
    const auto geometryFile = fConfig->GetProperty<std::string>(opt::GeometryConfigFile.data());
+   std::cout << "[FilterTimeFrameSliceByTrack::InitTask] Geometry configuration file: " << geometryFile << std::endl;
    const auto dctdcCalibFile = fConfig->GetProperty<std::string>(opt::DCTdcCalibConfigFile.data());
+   std::cout << "[FilterTimeFrameSliceByTrack::InitTask] DC TDC calibration configuration file: " << dctdcCalibFile << std::endl;
    const auto dcDriftParamFile = fConfig->GetProperty<std::string>(opt::DCDriftParamConfigFile.data());
+   std::cout << "[FilterTimeFrameSliceByTrack::InitTask] DC drift parameter configuration file: " << dcDriftParamFile << std::endl;
 
    if (!geometryFile.empty()) {
       if (!ParseDetectorConfig_Geometry(geometryFile)) {
