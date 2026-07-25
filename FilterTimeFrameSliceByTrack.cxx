@@ -98,6 +98,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
       }
    }
 
+   DefineDetectorIdMap(); // for reading detector configuration files from AnalyzerT103
    RegisterDetectorConfig_Geometry();
    RegisterDetectorConfig_DCTdcCalib();
    RegisterDetectorConfig_DCDriftParam();
