@@ -369,7 +369,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
          uint32_t dopeKey_DETtoFE;
          bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, ChannelNumber, ChannelName, dopeKey_DETtoFE);
          if(found_DETtoFE){
-            FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+            chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
             uint32_t dopeKeyFEtoDET;
             bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.channel, dopeKeyFEtoDET);
             if(found_FEtoDET){
