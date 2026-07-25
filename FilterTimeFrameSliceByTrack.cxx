@@ -19,6 +19,12 @@
 #include <fstream>
 #include <sstream>
 
+// for registering the detector configurations
+#include <map>
+
+// for debugging
+#include "FilterTimeFrameSliceByTrackDebugger.h"
+
 #define DEBUG 0
 
 using nestdaq::FilterTimeFrameSliceByTrack;
@@ -88,6 +94,10 @@ void FilterTimeFrameSliceByTrack::InitTask()
          std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to parse DC drift parameter configuration file: " << dcDriftParamFile << std::endl;
       }
    }
+
+   RegisterDetectorConfig_Geometry();
+   RegisterDetectorConfig_DCTdcCalib();
+   RegisterDetectorConfig_DCDriftParam();
 } // void FilterTimeFrameSliceByTrack::InitTask()
 
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
@@ -230,7 +240,189 @@ bool FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCDriftParam(std::string_v
    return true;
 }
 
+void FilterTimeFrameSliceByTrack::DefineDetectorIdMap()
+{
+   {
+      detectorNameMap[101] = "bdc";
+      detectorNameMap[102] = "bdc";
+      detectorNameMap[103] = "bdc";
+      detectorNameMap[104] = "bdc";
+      detectorNameMap[105] = "bdc";
+      detectorNameMap[106] = "bdc";
+      detectorNameMap[107] = "bdc";
+      detectorNameMap[108] = "bdc";
 
+      detectorNameMap[201] = "kldc";
+      detectorNameMap[202] = "kldc";
+      detectorNameMap[203] = "kldc";
+      detectorNameMap[204] = "kldc";
+      detectorNameMap[205] = "kldc";
+      detectorNameMap[206] = "kldc";
+      detectorNameMap[207] = "kldc";
+      detectorNameMap[208] = "kldc";
+
+      detectorNameMap[301] = "bft";
+      detectorNameMap[302] = "bft";
+      detectorNameMap[303] = "bft";
+      detectorNameMap[304] = "bft";
+      detectorNameMap[305] = "bft";
+      detectorNameMap[306] = "bft";
+   } // detectorNameMap
+
+   {
+      detectorPlaneMap[101] = "X";
+      detectorPlaneMap[102] = "Xp";
+      detectorPlaneMap[103] = "U";
+      detectorPlaneMap[104] = "V";
+      detectorPlaneMap[105] = "X";
+      detectorPlaneMap[106] = "Xp";
+      detectorPlaneMap[107] = "U";
+      detectorPlaneMap[108] = "V";
+
+      detectorPlaneMap[201] = "V";
+      detectorPlaneMap[202] = "Vp";
+      detectorPlaneMap[203] = "U";
+      detectorPlaneMap[204] = "Up";
+      detectorPlaneMap[205] = "Up";
+      detectorPlaneMap[206] = "U";
+      detectorPlaneMap[207] = "Vp";
+      detectorPlaneMap[208] = "V";
+
+      detectorPlaneMap[301] = "X";
+      detectorPlaneMap[302] = "U";
+      detectorPlaneMap[303] = "V";
+      detectorPlaneMap[304] = "X";
+      detectorPlaneMap[305] = "U";
+      detectorPlaneMap[306] = "V";
+   } // detectorPlaneMap
+
+   {
+      detectorSegmentMap[101] = 1;
+      detectorSegmentMap[102] = 1;
+      detectorSegmentMap[103] = 1;
+      detectorSegmentMap[104] = 1;
+      detectorSegmentMap[105] = 2;
+      detectorSegmentMap[106] = 2;
+      detectorSegmentMap[107] = 2;
+      detectorSegmentMap[108] = 2;
+
+      detectorSegmentMap[201] = 1;
+      detectorSegmentMap[202] = 1;
+      detectorSegmentMap[203] = 1;
+      detectorSegmentMap[204] = 1;
+      detectorSegmentMap[205] = 2;
+      detectorSegmentMap[206] = 2;
+      detectorSegmentMap[207] = 2;
+      detectorSegmentMap[208] = 2;
+
+      detectorSegmentMap[301] = 1;
+      detectorSegmentMap[302] = 1;
+      detectorSegmentMap[303] = 1;
+      detectorSegmentMap[304] = 2;
+      detectorSegmentMap[305] = 2;
+      detectorSegmentMap[306] = 2;
+   } // detectorSegmentMap
+} // void FilterTimeFrameSliceByTrack::DefineDetectorIdMap()
+
+bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
+{
+   std::cout << "\n[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] Registering geometry configurations..." << std::endl;
+   for(const auto& geom : fTemporaryGeometries){
+      #if CHECK_COUT_DETCONF_REGISTERING
+      std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] Registering geometry for detector ID: " << geom.detectoridentifier << std::endl;
+      #endif
+
+      int detectorId = geom.detectoridentifier;
+      std::string detectorName = geom.detectorname;
+      double x = geom.x;
+      double y = geom.y;
+      double z = geom.z;
+      double tiltAngle = geom.tiltangle;
+      double rotationAngle1 = geom.rotationangle1;
+      double rotationAngle2 = geom.rotationangle2;
+      double length = geom.length;
+      double resolution = geom.resolution;
+      double wireCenterNumber = geom.wirecenternumber;
+      double wirePitch = geom.wirepitch;
+      double offset = geom.offset;
+
+      std::string DetectorName = detectorNameMap[detectorId];
+      std::string PlaneName = detectorPlaneMap[detectorId];
+      int SegmentNumber = detectorSegmentMap[detectorId];
+      std::string ChannelName = "0";
+      #if CHECK_COUT_DETCONF_REGISTERING
+      std::cout << "\tDetectorName: " << DetectorName << std::endl;
+      std::cout << "\tPlaneName: " << PlaneName << std::endl;
+      std::cout << "\tSegmentNumber: " << SegmentNumber << std::endl;
+      #endif
+
+      // Create GeomItemDC and set its properties
+      chmap::GeomItemDC geomitemdc;
+      geomitemdc.SetGlobalPosition(x, y, z);
+      geomitemdc.SetResolution(resolution, resolution, resolution);
+      geomitemdc.SetRotationAngles(tiltAngle, rotationAngle1, rotationAngle2);
+      geomitemdc.SetWireGeometry(wireCenterNumber, wirePitch, offset);
+
+      // Register
+      for(int i=0; i<128; ++i){
+         int ChannelNumber = i;
+         uint32_t dopeKey_DETtoFE;
+         bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, ChannelNumber, ChannelName, dopeKey_DETtoFE);
+         if(found_DETtoFE){
+            FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+            uint32_t dopeKeyFEtoDET;
+            bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.channel, dopeKeyFEtoDET);
+            if(found_FEtoDET){
+               fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKey_DETtoFE, geomitemdc);
+            } // if(found_FEtoDET)
+         } // if(found_DETtoFE)
+      } // for(int i=0; i<128; ++i)
+   } // for(const auto& geom : fTemporaryGeometries)
+
+   std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] Registered " << fTemporaryGeometries.size() << " geometry entries." << std::endl;
+   return true;
+} // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
+
+bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
+{
+   std::cout << "\n[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib] Registering TDC calibration configurations..." << std::endl;
+   for(const auto& calib : fTemporaryDCTdcCalibs){
+      #if CHECK_COUT_DETCONF_REGISTERING
+      std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib] Registering TDC calibration for detector ID: " << calib.detectoridentifier << ", wire ID: " << calib.wireidentifier << std::endl;
+      #endif
+      int detectorId = calib.detectoridentifier;
+      int wireId = calib.wireidentifier;
+      double offset = calib.offset;
+      double scale = calib.scale;
+
+      std::string DetectorName = detectorNameMap[detectorId];
+      std::string PlaneName = detectorPlaneMap[detectorId];
+      int SegmentNumber = detectorSegmentMap[detectorId];
+   } // for(const auto& calib : fTemporaryDCTdcCalibs)
+
+   std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib] Registered " << fTemporaryDCTdcCalibs.size() << " TDC calibration entries." << std::endl;
+   return true;
+} // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
+
+bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
+{
+   std::cout << "\n[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam] Registering drift parameter configurations..." << std::endl;
+   for(const auto& drift : fTemporaryDCDriftParams){
+      #if CHECK_COUT_DETCONF_REGISTERING
+      std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam] Registering drift parameter for detector ID: " << drift.detectoridentifier << ", approx order: " << drift.approxOrder << std::endl;
+      #endif
+      int detectorId = drift.detectoridentifier;
+      int approxOrder = drift.approxOrder;
+      const std::vector<double>& coefficients = drift.coefficients;
+
+      std::string DetectorName = detectorNameMap[detectorId];
+      std::string PlaneName = detectorPlaneMap[detectorId];
+      int SegmentNumber = detectorSegmentMap[detectorId];
+   } // for(const auto& drift : fTemporaryDCDriftParams)
+
+   std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam] Registered " << fTemporaryDCDriftParams.size() << " drift parameter entries." << std::endl;
+   return true;
+} // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 
 ////////////////////////////////////////////////////
 // override runDevice

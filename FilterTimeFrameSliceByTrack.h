@@ -93,6 +93,15 @@ protected:
    std::vector<temporary_dctdccalib> fTemporaryDCTdcCalibs;
    std::vector<temporary_dcdriftparam> fTemporaryDCDriftParams;
 
+   std::map<int, std::string> detectorNameMap;
+   std::map<int, std::string> detectorPlaneMap;
+   std::map<int, int> detectorSegmentMap;
+   void DefineDetectorIdMap(); // for reading detector configuration files from AnalyzerT103
+
+   bool RegisterDetectorConfig_Geometry();
+   bool RegisterDetectorConfig_DCTdcCalib();
+   bool RegisterDetectorConfig_DCDriftParam();
+
 }; // class nestdaq::FilterTimeFrameSliceByTrack
 
 
