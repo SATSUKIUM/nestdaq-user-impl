@@ -354,7 +354,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       std::string PlaneName = detectorPlaneMap[detectorId];
       int SegmentNumber = detectorSegmentMap[detectorId];
       std::string ChannelName;
-      uint8_t ChannelNameIdx = fChMap->detname_dictionary.queryIndex_readout_channel("0");
+      uint8_t ChannelNameIdx = chmap::dictionary::queryIndex_readout_channel("0");
       fChMap->detname_dictionary.invIndex(ChannelNameIdx, ChannelName);
       #if CHECK_COUT_DETCONF_REGISTERING
       std::cout << "\tDetectorName: " << DetectorName << std::endl;
