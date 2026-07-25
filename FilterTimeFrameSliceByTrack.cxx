@@ -377,6 +377,9 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
             uint32_t dopeKeyFEtoDET;
             bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
             if(found_FEtoDET){
+               #if 1
+               fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
+               #endif
                fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKey_DETtoFE, std::move(geomitemdc), &chmap::DETConfItem::geom);
             } // if(found_FEtoDET)
          } // if(found_DETtoFE)
