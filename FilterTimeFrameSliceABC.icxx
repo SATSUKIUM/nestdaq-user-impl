@@ -11,8 +11,6 @@
 #include "utility/MessageUtil.h"
 #include "UnpackTdc.h"
 
-#include <channel_map_dopeness.hpp>
-#include <channel_map_simple_item.hpp>
 
 #define DEBUG 0
 #include "FilterTimeFrameSliceByTrackDebugger.h"
