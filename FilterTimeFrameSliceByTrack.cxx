@@ -330,10 +330,12 @@ void FilterTimeFrameSliceByTrack::DefineDetectorIdMap()
 
 bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
 {
-   std::cout << "\n[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] Registering geometry configurations..." << std::endl;
+   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] ";
+
+   std::cout << "\n" << funcname << "Registering geometry configurations..." << std::endl;
    for(const auto& geom : fTemporaryGeometries){
       #if CHECK_COUT_DETCONF_REGISTERING
-      std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] Registering geometry for detector ID: " << geom.detectoridentifier << std::endl;
+      std::cout << funcname << "Registering geometry for detector ID: " << geom.detectoridentifier << std::endl;
       #endif
 
       int detectorId = geom.detectoridentifier;
@@ -355,7 +357,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       int SegmentNumber = detectorSegmentMap[detectorId];
       std::string ChannelName;
       uint8_t ChannelNameIdx = chmap::dictionary::queryIndex_readout_channel("0");
-      std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] ChannelNameIdx: " << static_cast<int>(ChannelNameIdx) << std::endl;
+      std::cout << funcname << "ChannelNameIdx: " << static_cast<int>(ChannelNameIdx) << std::endl;
       fChMap->detname_dictionary.invIndex(ChannelNameIdx, ChannelName);
       #if CHECK_COUT_DETCONF_REGISTERING
       std::cout << "\tDetectorName: " << DetectorName << std::endl;
@@ -371,7 +373,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       geomitemdc->SetRotationAngles(tiltAngle, rotationAngle1, rotationAngle2);
       geomitemdc->SetWireGeometry(wireCenterNumber, wirePitch, offset);
 
-      // Register
+      // Register KLDC
       for(int i=0; i<128; ++i){
          int ChannelNumber = i;
          uint32_t dopeKey_DETtoFE;
@@ -387,25 +389,26 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::geom);
             } // if(found_FEtoDET)
             else{
-               std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] no DETIdItem found" << std::endl;
+               std::cout << funcname << "no DETIdItem found" << std::endl;
             }
          } // if(found_DETtoFE)
          else{
-            std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] no FEAddrItem found" << std::endl;
+            std::cout << funcname << "no FEAddrItem found" << std::endl;
          }
       } // for(int i=0; i<128; ++i)
    } // for(const auto& geom : fTemporaryGeometries)
 
-   std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] Registered " << fTemporaryGeometries.size() << " geometry entries." << std::endl;
+   std::cout << funcname << "Registered " << fTemporaryGeometries.size() << " geometry entries." << std::endl;
    return true;
 } // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
 
 bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
 {
-   std::cout << "\n[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib] Registering TDC calibration configurations..." << std::endl;
+   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib] ";
+   std::cout << "\n" << funcname << "Registering TDC calibration configurations..." << std::endl;
    for(const auto& calib : fTemporaryDCTdcCalibs){
       #if CHECK_COUT_DETCONF_REGISTERING
-      std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib] Registering TDC calibration for detector ID: " << calib.detectoridentifier << ", wire ID: " << calib.wireidentifier << std::endl;
+      std::cout << funcname << "Registering TDC calibration for detector ID: " << calib.detectoridentifier << ", wire ID: " << calib.wireidentifier << std::endl;
       #endif
       int detectorId = calib.detectoridentifier;
       int wireId = calib.wireidentifier;
@@ -417,16 +420,17 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
       int SegmentNumber = detectorSegmentMap[detectorId];
    } // for(const auto& calib : fTemporaryDCTdcCalibs)
 
-   std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib] Registered " << fTemporaryDCTdcCalibs.size() << " TDC calibration entries." << std::endl;
+   std::cout << funcname << "Registered " << fTemporaryDCTdcCalibs.size() << " TDC calibration entries." << std::endl;
    return true;
 } // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
 
 bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 {
-   std::cout << "\n[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam] Registering drift parameter configurations..." << std::endl;
+   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam] ";
+   std::cout << "\n" << funcname << "Registering drift parameter configurations..." << std::endl;
    for(const auto& drift : fTemporaryDCDriftParams){
       #if CHECK_COUT_DETCONF_REGISTERING
-      std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam] Registering drift parameter for detector ID: " << drift.detectoridentifier << ", approx order: " << drift.approxOrder << std::endl;
+      std::cout << funcname << "Registering drift parameter for detector ID: " << drift.detectoridentifier << ", approx order: " << drift.approxOrder << std::endl;
       #endif
       int detectorId = drift.detectoridentifier;
       int approxOrder = drift.approxOrder;
@@ -437,7 +441,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
       int SegmentNumber = detectorSegmentMap[detectorId];
    } // for(const auto& drift : fTemporaryDCDriftParams)
 
-   std::cout << "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam] Registered " << fTemporaryDCDriftParams.size() << " drift parameter entries." << std::endl;
+   std::cout << funcname << "Registered " << fTemporaryDCDriftParams.size() << " drift parameter entries." << std::endl;
    return true;
 } // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 
