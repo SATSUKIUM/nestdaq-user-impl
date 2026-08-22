@@ -409,7 +409,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                   #if 1
                   fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
                   #endif
-                  fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::geom);
+                  fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::membername_geom);
                } // if(found_FEtoDET)
                else{
                   std::cout << funcname << "no DETIdItem found" << std::endl;
@@ -488,7 +488,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
                   #if 1
                   fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
                   #endif
-                  fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::geom);
+                  fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
                } // if(found_FEtoDET)
                else{
                   std::cout << funcname << "no DETIdItem found" << std::endl;
@@ -569,7 +569,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
                   #if 1
                   fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
                   #endif
-                  fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCDriftLength>(dopeKeyFEtoDET, std::move(calibitem_dcdriftlength), &chmap::DETConfItem::geom);
+                  fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCDriftLength>(dopeKeyFEtoDET, std::move(calibitem_dcdriftlength), &chmap::DETConfItem::membername_calib_dcdriftlen);
                } // if(found_FEtoDET)
                else{
                   std::cout << funcname << "no DETIdItem found" << std::endl;
