@@ -437,6 +437,10 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib] ";
    std::cout << "\n" << funcname << "Registering TDC calibration configurations..." << std::endl;
 
+   int missing_count_FEAddrItem = 0;
+   int missing_count_DETIdItem = 0;
+   bool isFirstEntry = true;
+
    // Loop over loaded temporary DC TDC calibration entries
    for(const auto& calib : fTemporaryDCTdcCalibs){
       #if CHECK_COUT_DETCONF_REGISTERING
@@ -463,6 +467,11 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
       std::cout << "\tSegmentNumber: " << SegmentNumber << std::endl;
       std::cout << "\tChannelName: " << ChannelName << std::endl;
       #endif
+      if(isFirstEntry){
+         std::cout << funcname << "Registering tdccalib for KLDC detector ID: " << detectorId << std::endl;
+         std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << SegmentNumber << ",wire: " << wireId << std::endl;
+         isFirstEntry = false;
+      }
 
       // Create CalibrationItem_DCTdcCalib and set its properties
       std::unique_ptr<chmap::CalibrationItem_DCTdcCalib> calibitem_dctdccalib = std::make_unique<chmap::CalibrationItem_DCTdcCalib>();
@@ -480,12 +489,10 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
 */
       calibitem_dctdccalib->SetTdcCalibration(offset, scale);
 
-      int missing_count_FEAddrItem = 0;
-      int missing_count_DETIdItem = 0;
+
       // Register KLDC
       if(DetectorName == "kldc"){
-         std::cout << funcname << "Registering tdccalib for KLDC detector ID: " << detectorId << std::endl;
-         std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << SegmentNumber << ",wire: " << wireId << std::endl;
+
 
          int ChannelNumber = wireId - 1; // wireId is 1-indexed, ChannelNumber is 0-indexed
          uint32_t dopeKey_DETtoFE;
