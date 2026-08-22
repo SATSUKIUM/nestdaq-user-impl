@@ -99,6 +99,9 @@ void FilterTimeFrameSliceByTrack::InitTask()
    }
 
    DefineDetectorIdMap(); // for reading detector configuration files from AnalyzerT103
+   LoadConfigGeometry(geometryFile);
+   LoadConfigDCTdcCalib(dctdcCalibFile);
+   LoadConfigDCDriftParam(dcDriftParamFile);
    RegisterDetectorConfig_Geometry();
    RegisterDetectorConfig_DCTdcCalib();
    RegisterDetectorConfig_DCDriftParam();
@@ -133,12 +136,13 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    return true;
 }
 
-bool FilterTimeFrameSliceByTrack::ParseDetectorConfig_Geometry(std::string_view filename)
+int FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry(std::string_view filename)
 {
+   const string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry] ";
    std::ifstream ifs(filename.data());
    if(!ifs.is_open()){
-      std::cerr << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_Geometry] Failed to open file: " << filename << std::endl;
-      return false;
+      std::cerr << funcName << "Failed to open file: " << filename << std::endl;
+      return -1;
    }
 
    std::string line;
@@ -156,25 +160,29 @@ bool FilterTimeFrameSliceByTrack::ParseDetectorConfig_Geometry(std::string_view 
       double length{0.0}, resolution{0.0}, wirecenternumber{0.0}, wirepitch{0.0}, offset{0.0};
 
       if(!(iss >> detectoridentifier >> detectorname >> x >> y >> z >> tiltangle >> rotationangle1 >> rotationangle2 >> length >> resolution >> wirecenternumber >> wirepitch >> offset)){
-         std::cerr << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_Geometry] Failed to parse line: " << line << std::endl;
+         std::cerr << funcName << "Failed to parse line: " << line << std::endl;
          continue;
+      }
+      else{
+         lineNumber++;
       }
       fTemporaryGeometries.push_back({detectoridentifier, detectorname, x, y, z, tiltangle, rotationangle1, rotationangle2, length, resolution, wirecenternumber, wirepitch, offset});
    } // while(std::getline(ifs, line))
 
-   std::cout << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_Geometry] Parsed " << fTemporaryGeometries.size() << " geometry entries from file: " << filename << std::endl;
+   std::cout << funcName << "Parsed " << fTemporaryGeometries.size() << " geometry entries from file: " << filename << std::endl;
 
-   // to be implemented
-   return true;
-}
+   return fTemporaryGeometries.size();
+} // int FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry(std::string_view filename)
 
-bool FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCTdcCalib(std::string_view filename)
+int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCTdcCalib(std::string_view filename)
 {
+   const string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCTdcCalib] ";
    std::ifstream ifs(filename.data());
    if(!ifs.is_open()){
-      std::cerr << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCTdcCalib] Failed to open file: " << filename << std::endl;
-      return false;
+      std::cerr << funcName << "Failed to open file: " << filename << std::endl;
+      return -1;
    }
+
 
    std::string line;
    while(std::getline(ifs, line)){
@@ -189,24 +197,24 @@ bool FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCTdcCalib(std::string_vie
       double offset{0.0}, scale{0.0};
 
       if(!(iss >> detectoridentifier >> wireidentifier >> offset >> scale)){
-         std::cerr << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCTdcCalib] Failed to parse line: " << line << std::endl;
+         std::cerr << funcName << "Failed to parse line: " << line << std::endl;
          continue;
       }
       fTemporaryDCTdcCalibs.push_back({detectoridentifier, wireidentifier, offset, scale});
    } // while(std::getline(ifs, line))
 
-   std::cout << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCTdcCalib] Parsed " << fTemporaryDCTdcCalibs.size() << " TDC calibration entries from file: " << filename << std::endl;
+   std::cout << funcName << "Parsed " << fTemporaryDCTdcCalibs.size() << " TDC calibration entries from file: " << filename << std::endl;
 
-   // to be implemented
-   return true;
-}
+   return fTemporaryDCTdcCalibs.size();
+} // int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCTdcCalib(std::string_view filename)
 
-bool FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCDriftParam(std::string_view filename)
+int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCDriftParam(std::string_view filename)
 {
+   const string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCDriftParam] ";
    std::ifstream ifs(filename.data());
    if(!ifs.is_open()){
-      std::cerr << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCDriftParam] Failed to open file: " << filename << std::endl;
-      return false;
+      std::cerr << funcName << "Failed to open file: " << filename << std::endl;
+      return -1;
    }
 
    std::string line;
@@ -225,24 +233,23 @@ bool FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCDriftParam(std::string_v
       int buf;
 
       if(!(iss >> detectoridentifier >> buf >> approxOrder >> buf)){
-         std::cerr << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCDriftParam] Failed to parse line: " << line << std::endl;
+         std::cerr << funcName << "Failed to parse line: " << line << std::endl;
          continue;
       }
       coefficients.resize(approxOrder);
       for(int i = 0; i < approxOrder; ++i){
          if(!(iss >> coefficients[i])){
-            std::cerr << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCDriftParam] Failed to parse coefficient " << i << " in line: " << line << std::endl;
+            std::cerr << funcName << "Failed to parse coefficient " << i << " in line: " << line << std::endl;
             continue;
          }
       }
       fTemporaryDCDriftParams.push_back({detectoridentifier, approxOrder, coefficients});
    } // while(std::getline(ifs, line))
 
-   std::cout << "[FilterTimeFrameSliceByTrack::ParseDetectorConfig_DCDriftParam] Parsed " << fTemporaryDCDriftParams.size() << " drift parameter entries from file: " << filename << std::endl;
+   std::cout << funcName << "Parsed " << fTemporaryDCDriftParams.size() << " drift parameter entries from file: " << filename << std::endl;
 
-   // to be implemented
-   return true;
-}
+   return fTemporaryDCDriftParams.size();
+} // int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCDriftParam(std::string_view filename)
 
 void FilterTimeFrameSliceByTrack::DefineDetectorIdMap()
 {
@@ -374,28 +381,30 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       geomitemdc->SetWireGeometry(wireCenterNumber, wirePitch, offset);
 
       // Register KLDC
-      for(int i=0; i<128; ++i){
-         int ChannelNumber = i;
-         uint32_t dopeKey_DETtoFE;
-         bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
-         if(found_DETtoFE){
-            chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
-            uint32_t dopeKeyFEtoDET;
-            bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
-            if(found_FEtoDET){
-               #if 1
-               fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
-               #endif
-               fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::geom);
-            } // if(found_FEtoDET)
+      if(DetectorName == "kldc"){
+         for(int i=0+32; i<128-32; ++i){
+            int ChannelNumber = i;
+            uint32_t dopeKey_DETtoFE;
+            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
+            if(found_DETtoFE){
+               chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+               uint32_t dopeKeyFEtoDET;
+               bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
+               if(found_FEtoDET){
+                  #if 1
+                  fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
+                  #endif
+                  fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::geom);
+               } // if(found_FEtoDET)
+               else{
+                  std::cout << funcname << "no DETIdItem found" << std::endl;
+               }
+            } // if(found_DETtoFE)
             else{
-               std::cout << funcname << "no DETIdItem found" << std::endl;
+               std::cout << funcname << "no FEAddrItem found" << std::endl;
             }
-         } // if(found_DETtoFE)
-         else{
-            std::cout << funcname << "no FEAddrItem found" << std::endl;
-         }
-      } // for(int i=0; i<128; ++i)
+         } // for(int i=0+32; i<128-32; ++i)
+      } // if(DetectorName == "kldc")
    } // for(const auto& geom : fTemporaryGeometries)
 
    std::cout << funcname << "Registered " << fTemporaryGeometries.size() << " geometry entries." << std::endl;

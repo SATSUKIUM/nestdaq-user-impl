@@ -85,9 +85,9 @@ protected:
    // ================================
    // detector configuration
    // ================================
-   bool ParseDetectorConfig_Geometry(std::string_view filename);
-   bool ParseDetectorConfig_DCTdcCalib(std::string_view filename);
-   bool ParseDetectorConfig_DCDriftParam(std::string_view filename);
+   int LoadDetectorConfig_Geometry(std::string_view filename);
+   int LoadDetectorConfig_DCTdcCalib(std::string_view filename);
+   int LoadDetectorConfig_DCDriftParam(std::string_view filename);
 
    std::vector<temporary_geometry> fTemporaryGeometries;
    std::vector<temporary_dctdccalib> fTemporaryDCTdcCalibs;
