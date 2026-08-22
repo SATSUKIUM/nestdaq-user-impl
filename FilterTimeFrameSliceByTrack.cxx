@@ -407,7 +407,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
             uint32_t dopeKey_DETtoFE;
             #if 1
             std::cout << funcname << "channel map query: " << std::endl;
-            std::cout << "\tDetectorName(string): " << DetectorName << ", PlaneName(string): " << PlaneName << ", SegmentNumber: " << SegmentNumber << ", ChannelName(string): " << ChannelName << ", ChannelNumber: " << ChannelNumber << std::endl;
+            std::cout << "\tDetectorName(string): \"" << DetectorName << "\", PlaneName(string): \"" << PlaneName << "\", SegmentNumber: \"" << SegmentNumber << "\", ChannelName(string): \"" << ChannelName << "\", ChannelNumber: \"" << ChannelNumber << "\"" << std::endl;
             #endif
             bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
             if(found_DETtoFE){
