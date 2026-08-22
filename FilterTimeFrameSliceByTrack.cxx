@@ -468,7 +468,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
       std::cout << "\tChannelName: " << ChannelName << std::endl;
       #endif
       if(isFirstEntry){
-         std::cout << funcname << "Registering tdccalib for KLDC detector ID: " << detectorId << std::endl;
+         std::cout << funcname << "Registering first tdccalib for KLDC detector ID: " << detectorId << std::endl;
          std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << SegmentNumber << ",wire: " << wireId << std::endl;
          isFirstEntry = false;
       }
@@ -492,8 +492,6 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
 
       // Register KLDC
       if(DetectorName == "kldc"){
-
-
          int ChannelNumber = wireId - 1; // wireId is 1-indexed, ChannelNumber is 0-indexed
          uint32_t dopeKey_DETtoFE;
          bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
@@ -516,6 +514,9 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
          }
       } // if(DetectorName == "kldc")
    } // for(const auto& calib : fTemporaryDCTdcCalibs)
+
+   std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
+   std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
 
    std::cout << funcname << "Registered " << fTemporaryDCTdcCalibs.size() << " TDC calibration entries." << std::endl;
    return true;
@@ -575,7 +576,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
       int missing_count_DETIdItem = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
-         std::cout << funcname << "Registering driftlen for KLDC detector ID: " << detectorId << std::endl;
+         std::cout << funcname << "Registering first driftlen for KLDC detector ID: " << detectorId << std::endl;
          std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << SegmentNumber << std::endl;
          for(int i=0+32; i<128-32; ++i){
             int ChannelNumber = i;
