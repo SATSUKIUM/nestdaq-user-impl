@@ -335,8 +335,9 @@ void FilterTimeFrameSliceByTrack::DefineDetectorIdMap()
 bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] ";
-   std::cout << "\n" << funcname << "Registering geometry configurations..." << std::endl;
+   std::cout << "\n" << funcname << "Registering geometry configurations...(# of items: " << fTemporaryGeometries.size() << ")" << std::endl;
 
+   int registered_count = 0;
    // Loop over loaded temporary geometries
    for(const auto& geom : fTemporaryGeometries){
       #if CHECK_COUT_DETCONF_REGISTERING
@@ -414,6 +415,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                   fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
                   #endif
                   fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::membername_geom);
+                  registered_count++;
                } // if(found_FEtoDET)
                else{
                   ++missing_count_DETIdItem;
@@ -428,17 +430,18 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       } // if(DetectorName == "kldc")
    } // for(const auto& geom : fTemporaryGeometries)
 
-   std::cout << funcname << "Registered " << fTemporaryGeometries.size() << " geometry entries." << std::endl;
+   std::cout << funcname << "Registered " << registered_count << " geometry entries." << std::endl;
    return true;
 } // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
 
 bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib] ";
-   std::cout << "\n" << funcname << "Registering TDC calibration configurations..." << std::endl;
+   std::cout << "\n" << funcname << "Registering TDC calibration configurations...(# of items: " << fTemporaryDCTdcCalibs.size() << ")" << std::endl;
 
    int missing_count_FEAddrItem = 0;
    int missing_count_DETIdItem = 0;
+   int registered_count = 0;
    bool isFirstEntry = true;
 
    // Loop over loaded temporary DC TDC calibration entries
@@ -504,6 +507,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
                fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
                #endif
                fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
+               registered_count++;
             } // if(found_FEtoDET)
             else{
                ++missing_count_DETIdItem;
@@ -518,14 +522,14 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
    std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
    std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
 
-   std::cout << funcname << "Registered " << fTemporaryDCTdcCalibs.size() << " TDC calibration entries." << std::endl;
+   std::cout << funcname << "Registered " << registered_count << " TDC calibration entries." << std::endl;
    return true;
 } // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
 
 bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam] ";
-   std::cout << "\n" << funcname << "Registering drift parameter configurations..." << std::endl;
+   std::cout << "\n" << funcname << "Registering drift parameter configurations...(# of items: " << fTemporaryDCDriftParams.size() << ")" << std::endl;
 
    // Loop over loaded temporary DC drift length parameter entries
    for(const auto& drift : fTemporaryDCDriftParams){
@@ -574,6 +578,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 
       int missing_count_FEAddrItem = 0;
       int missing_count_DETIdItem = 0;
+      int registered_count = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
          std::cout << funcname << "Registering first driftlen for KLDC detector ID: " << detectorId << std::endl;
@@ -602,10 +607,10 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
          } // for(int i=0+32; i<128-32; ++i)
          std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
          std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
+         std::cout << funcname << "Registered " << registered_count << " drift parameter entries." << std::endl;
       } // if(DetectorName == "kldc")
    } // for(const auto& drift : fTemporaryDCDriftParams)
 
-   std::cout << funcname << "Registered " << fTemporaryDCDriftParams.size() << " drift parameter entries." << std::endl;
    return true;
 } // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 
