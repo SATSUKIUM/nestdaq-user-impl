@@ -445,7 +445,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
 
       // calib -> local variables
       int detectorId = calib.detectoridentifier;
-      int wireId = calib.wireidentifier;
+      int wireId = calib.wireidentifier; // 1-indexed
       double offset = calib.offset;
       double scale = calib.scale;
 
@@ -486,28 +486,28 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
       if(DetectorName == "kldc"){
          std::cout << funcname << "Registering tdccalib for KLDC detector ID: " << detectorId << std::endl;
          std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << SegmentNumber << std::endl;
-         for(int i=0+32; i<128-32; ++i){
-            int ChannelNumber = i;
-            uint32_t dopeKey_DETtoFE;
-            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
-            if(found_DETtoFE){
-               chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
-               uint32_t dopeKeyFEtoDET;
-               bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
-               if(found_FEtoDET){
-                  #if 1
-                  fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
-                  #endif
-                  fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
-               } // if(found_FEtoDET)
-               else{
-                  ++missing_count_DETIdItem;
-               }
-            } // if(found_DETtoFE)
+
+         int ChannelNumber = wireId - 1; // wireId is 1-indexed, ChannelNumber is 0-indexed
+         uint32_t dopeKey_DETtoFE;
+         bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
+         if(found_DETtoFE){
+            chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+            uint32_t dopeKeyFEtoDET;
+            bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
+            if(found_FEtoDET){
+               #if 1
+               fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
+               #endif
+               fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
+            } // if(found_FEtoDET)
             else{
-               ++missing_count_FEAddrItem;
+               ++missing_count_DETIdItem;
             }
-         } // for(int i=0+32; i<128-32; ++i)
+         } // if(found_DETtoFE)
+         else{
+            ++missing_count_FEAddrItem;
+         }
+
          std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
          std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
       } // if(DetectorName == "kldc")
