@@ -399,6 +399,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       int missing_count_DETIdItem = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
+         std::cout << funcname << "Registering geometry for KLDC detector ID: " << detectorId << std::endl;
+         std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << SegmentNumber << std::endl;
          for(int i=0+32; i<128-32; ++i){
             int ChannelNumber = i;
             uint32_t dopeKey_DETtoFE;
@@ -482,6 +484,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
       int missing_count_DETIdItem = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
+         std::cout << funcname << "Registering tdccalib for KLDC detector ID: " << detectorId << std::endl;
+         std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << SegmentNumber << std::endl;
          for(int i=0+32; i<128-32; ++i){
             int ChannelNumber = i;
             uint32_t dopeKey_DETtoFE;
@@ -567,6 +571,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
       int missing_count_DETIdItem = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
+         std::cout << funcname << "Registering driftlen for KLDC detector ID: " << detectorId << std::endl;
+         std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << SegmentNumber << std::endl;
          for(int i=0+32; i<128-32; ++i){
             int ChannelNumber = i;
             uint32_t dopeKey_DETtoFE;
