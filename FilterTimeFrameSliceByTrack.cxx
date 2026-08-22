@@ -488,7 +488,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
                   #if 1
                   fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
                   #endif
-                  fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::geom);
+                  fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::CalibrationItem_DCDriftParam>(dopeKeyFEtoDET, std::move(calibitem_dcdriftparam), &chmap::DETConfItem::geom);
                } // if(found_FEtoDET)
                else{
                   std::cout << funcname << "no DETIdItem found" << std::endl;
@@ -569,7 +569,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
                   #if 1
                   fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
                   #endif
-                  fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::geom);
+                  fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::CalibrationItem_DCDriftParam>(dopeKeyFEtoDET, std::move(calibitem_dcdriftparam), &chmap::DETConfItem::geom);
                } // if(found_FEtoDET)
                else{
                   std::cout << funcname << "no DETIdItem found" << std::endl;
