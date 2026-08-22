@@ -395,6 +395,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       geomitemdc->SetRotationAngles(tiltAngle, rotationAngle1, rotationAngle2);
       geomitemdc->SetWireGeometry(wireCenterNumber, wirePitch, offset);
 
+      int missing_count_FEAddrItem = 0;
+      int missing_count_DETIdItem = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
          for(int i=0+32; i<128-32; ++i){
@@ -412,13 +414,15 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                   fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::membername_geom);
                } // if(found_FEtoDET)
                else{
-                  std::cout << funcname << "no DETIdItem found" << std::endl;
+                  ++missing_count_DETIdItem;
                }
             } // if(found_DETtoFE)
             else{
-               std::cout << funcname << "no FEAddrItem found" << std::endl;
+               ++missing_count_FEAddrItem;
             }
          } // for(int i=0+32; i<128-32; ++i)
+         std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
+         std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
       } // if(DetectorName == "kldc")
    } // for(const auto& geom : fTemporaryGeometries)
 
@@ -474,6 +478,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
 */
       calibitem_dctdccalib->SetTdcCalibration(offset, scale);
 
+      int missing_count_FEAddrItem = 0;
+      int missing_count_DETIdItem = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
          for(int i=0+32; i<128-32; ++i){
@@ -491,13 +497,15 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
                   fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
                } // if(found_FEtoDET)
                else{
-                  std::cout << funcname << "no DETIdItem found" << std::endl;
+                  ++missing_count_DETIdItem;
                }
             } // if(found_DETtoFE)
             else{
-               std::cout << funcname << "no FEAddrItem found" << std::endl;
+               ++missing_count_FEAddrItem;
             }
          } // for(int i=0+32; i<128-32; ++i)
+         std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
+         std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
       } // if(DetectorName == "kldc")
    } // for(const auto& calib : fTemporaryDCTdcCalibs)
 
@@ -555,6 +563,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 */
       calibitem_dcdriftlength->SetApproximation(approxOrder, coefficients);
 
+      int missing_count_FEAddrItem = 0;
+      int missing_count_DETIdItem = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
          for(int i=0+32; i<128-32; ++i){
@@ -572,13 +582,15 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
                   fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCDriftLength>(dopeKeyFEtoDET, std::move(calibitem_dcdriftlength), &chmap::DETConfItem::membername_calib_dcdriftlen);
                } // if(found_FEtoDET)
                else{
-                  std::cout << funcname << "no DETIdItem found" << std::endl;
+                  ++missing_count_DETIdItem;
                }
             } // if(found_DETtoFE)
             else{
-               std::cout << funcname << "no FEAddrItem found" << std::endl;
+               ++missing_count_FEAddrItem;
             }
          } // for(int i=0+32; i<128-32; ++i)
+         std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
+         std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
       } // if(DetectorName == "kldc")
    } // for(const auto& drift : fTemporaryDCDriftParams)
 
