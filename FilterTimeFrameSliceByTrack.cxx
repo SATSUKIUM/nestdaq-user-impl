@@ -514,9 +514,6 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
          else{
             ++missing_count_FEAddrItem;
          }
-
-         std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
-         std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
       } // if(DetectorName == "kldc")
    } // for(const auto& calib : fTemporaryDCTdcCalibs)
 
