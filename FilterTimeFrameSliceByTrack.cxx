@@ -338,13 +338,15 @@ void FilterTimeFrameSliceByTrack::DefineDetectorIdMap()
 bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] ";
-
    std::cout << "\n" << funcname << "Registering geometry configurations..." << std::endl;
+
+   // Loop over loaded temporary geometries
    for(const auto& geom : fTemporaryGeometries){
       #if CHECK_COUT_DETCONF_REGISTERING
       std::cout << funcname << "Registering geometry for detector ID: " << geom.detectoridentifier << std::endl;
       #endif
 
+      // geom -> local variables
       int detectorId = geom.detectoridentifier;
       std::string detectorName = geom.detectorname;
       double x = geom.x;
@@ -359,6 +361,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       double wirePitch = geom.wirepitch;
       double offset = geom.offset;
 
+      // prepare channel map information
       std::string DetectorName = detectorNameMap[detectorId];
       std::string PlaneName = detectorPlaneMap[detectorId];
       int SegmentNumber = detectorSegmentMap[detectorId];
@@ -375,6 +378,21 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
 
       // Create GeomItemDC and set its properties
       std::unique_ptr<chmap::GeomItemDC> geomitemdc = std::make_unique<chmap::GeomItemDC>();
+/* CLASS DEFINITION
+    class GeomItemDC : public GeomItem {
+        public:
+            virtual ~GeomItemDC() = default;
+            void SetWireGeometry(double centerWireNumber_, double wirePitch_, double offset_) {
+                centerWireNumber = centerWireNumber_;
+                wirePitch = wirePitch_;
+                offset = offset_;
+            }
+        private:
+            double centerWireNumber; // もし1.0なら、中心のワイヤーは1番ワイヤー。0.5なら、中心のワイヤーは1番と2番の間にある。
+            double wirePitch; // [mm] 測定軸方向のワイヤ間隔
+            double offset; // [mm] 測定軸方向のワイヤのオフセット(微調整のため)
+    }; // class GeomItemDC
+*/
       geomitemdc->SetGlobalPosition(x, y, z);
       geomitemdc->SetResolution(resolution, resolution, resolution);
       geomitemdc->SetRotationAngles(tiltAngle, rotationAngle1, rotationAngle2);
@@ -415,18 +433,75 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib] ";
    std::cout << "\n" << funcname << "Registering TDC calibration configurations..." << std::endl;
+
+   // Loop over loaded temporary DC TDC calibration entries
    for(const auto& calib : fTemporaryDCTdcCalibs){
       #if CHECK_COUT_DETCONF_REGISTERING
       std::cout << funcname << "Registering TDC calibration for detector ID: " << calib.detectoridentifier << ", wire ID: " << calib.wireidentifier << std::endl;
       #endif
+
+      // calib -> local variables
       int detectorId = calib.detectoridentifier;
       int wireId = calib.wireidentifier;
       double offset = calib.offset;
       double scale = calib.scale;
 
+      // prepare channel map information
       std::string DetectorName = detectorNameMap[detectorId];
       std::string PlaneName = detectorPlaneMap[detectorId];
       int SegmentNumber = detectorSegmentMap[detectorId];
+      std::string ChannelName;
+      uint8_t ChannelNameIdx = chmap::dictionary::queryIndex_readout_channel("0");
+      std::cout << funcname << "ChannelNameIdx: " << static_cast<int>(ChannelNameIdx) << std::endl;
+      fChMap->detname_dictionary.invIndex(ChannelNameIdx, ChannelName);
+      #if CHECK_COUT_DETCONF_REGISTERING
+      std::cout << "\tDetectorName: " << DetectorName << std::endl;
+      std::cout << "\tPlaneName: " << PlaneName << std::endl;
+      std::cout << "\tSegmentNumber: " << SegmentNumber << std::endl;
+      std::cout << "\tChannelName: " << ChannelName << std::endl;
+      #endif
+
+      // Create CalibrationItem_DCTdcCalib and set its properties
+      std::unique_ptr<chmap::CalibrationItem_DCTdcCalib> calibitem_dctdccalib = std::make_unique<chmap::CalibrationItem_DCTdcCalib>();
+/* CLASS DEFINITION
+    class CalibrationItem_DCTdcCalib : public CalibrationItem {
+        public:
+            virtual ~CalibrationItem_DCTdcCalib() = default;
+            void SetTdcCalibration(double offset_, double scale_) {
+                offset = offset_;
+                scale = scale_;
+            }
+        private:
+            double offset, scale; // relative time = (absolute time * scale) + offset
+    };
+*/
+      calibitem_dctdccalib->SetTdcCalibration(offset, scale);
+
+      // Register KLDC
+      if(DetectorName == "kldc"){
+         for(int i=0+32; i<128-32; ++i){
+            int ChannelNumber = i;
+            uint32_t dopeKey_DETtoFE;
+            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
+            if(found_DETtoFE){
+               chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+               uint32_t dopeKeyFEtoDET;
+               bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
+               if(found_FEtoDET){
+                  #if 1
+                  fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
+                  #endif
+                  fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::geom);
+               } // if(found_FEtoDET)
+               else{
+                  std::cout << funcname << "no DETIdItem found" << std::endl;
+               }
+            } // if(found_DETtoFE)
+            else{
+               std::cout << funcname << "no FEAddrItem found" << std::endl;
+            }
+         } // for(int i=0+32; i<128-32; ++i)
+      } // if(DetectorName == "kldc")
    } // for(const auto& calib : fTemporaryDCTdcCalibs)
 
    std::cout << funcname << "Registered " << fTemporaryDCTdcCalibs.size() << " TDC calibration entries." << std::endl;
@@ -437,10 +512,14 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam] ";
    std::cout << "\n" << funcname << "Registering drift parameter configurations..." << std::endl;
+
+   // Loop over loaded temporary DC drift length parameter entries
    for(const auto& drift : fTemporaryDCDriftParams){
       #if CHECK_COUT_DETCONF_REGISTERING
       std::cout << funcname << "Registering drift parameter for detector ID: " << drift.detectoridentifier << ", approx order: " << drift.approxOrder << std::endl;
       #endif
+
+      // drift -> local variables
       int detectorId = drift.detectoridentifier;
       int approxOrder = drift.approxOrder;
       const std::vector<double>& coefficients = drift.coefficients;
@@ -448,6 +527,62 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
       std::string DetectorName = detectorNameMap[detectorId];
       std::string PlaneName = detectorPlaneMap[detectorId];
       int SegmentNumber = detectorSegmentMap[detectorId];
+
+      // prepare channel map information
+      std::string ChannelName;
+      uint8_t ChannelNameIdx = chmap::dictionary::queryIndex_readout_channel("0");
+      std::cout << funcname << "ChannelNameIdx: " << static_cast<int>(ChannelNameIdx) << std::endl;
+      fChMap->detname_dictionary.invIndex(ChannelNameIdx, ChannelName);
+      #if CHECK_COUT_DETCONF_REGISTERING
+      std::cout << "\tDetectorName: " << DetectorName << std::endl;
+      std::cout << "\tPlaneName: " << PlaneName << std::endl;
+      std::cout << "\tSegmentNumber: " << SegmentNumber << std::endl;
+      std::cout << "\tChannelName: " << ChannelName << std::endl;
+      #endif
+
+      // Create CalibrationItem_DCDriftLength and set its properties
+      std::unique_ptr<chmap::CalibrationItem_DCDriftLength> calibitem_dcdriftlength = std::make_unique<chmap::CalibrationItem_DCDriftLength>();
+/* CLASS DEFINITION
+    class CalibrationItem_DCDriftLength : public CalibrationItem {
+        public:
+            virtual ~CalibrationItem_DCDriftLength() = default;
+            void SetApproximation(int approxOrder_, const std::vector<double>& coeffs_) {
+                approxOrder = approxOrder_;
+                coeffs = coeffs_;
+            }
+        private:
+            int approxOrder; // the number of coefficients for polynomial approximation of drift length
+            std::vector<double> coeffs; // coefficients for polynomial approximation of drift length
+            // dLen(t) = coeffs[0] + coeffs[1]*t + coeffs[2]*t^2 + ... + coeffs[n]*t^n
+    };
+*/
+      calibitem_dcdriftlength->SetApproximation(approxOrder, coefficients);
+
+      // Register KLDC
+      if(DetectorName == "kldc"){
+         for(int i=0+32; i<128-32; ++i){
+            int ChannelNumber = i;
+            uint32_t dopeKey_DETtoFE;
+            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
+            if(found_DETtoFE){
+               chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+               uint32_t dopeKeyFEtoDET;
+               bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
+               if(found_FEtoDET){
+                  #if 1
+                  fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
+                  #endif
+                  fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::geom);
+               } // if(found_FEtoDET)
+               else{
+                  std::cout << funcname << "no DETIdItem found" << std::endl;
+               }
+            } // if(found_DETtoFE)
+            else{
+               std::cout << funcname << "no FEAddrItem found" << std::endl;
+            }
+         } // for(int i=0+32; i<128-32; ++i)
+      } // if(DetectorName == "kldc")
    } // for(const auto& drift : fTemporaryDCDriftParams)
 
    std::cout << funcname << "Registered " << fTemporaryDCDriftParams.size() << " drift parameter entries." << std::endl;
