@@ -163,9 +163,6 @@ int FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry(std::string_view fi
          std::cerr << funcName << "Failed to parse line: " << line << std::endl;
          continue;
       }
-      else{
-         lineNumber++;
-      }
       fTemporaryGeometries.push_back({detectoridentifier, detectorname, x, y, z, tiltangle, rotationangle1, rotationangle2, length, resolution, wirecenternumber, wirepitch, offset});
    } // while(std::getline(ifs, line))
 
