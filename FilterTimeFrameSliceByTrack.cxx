@@ -99,9 +99,9 @@ void FilterTimeFrameSliceByTrack::InitTask()
    }
 
    DefineDetectorIdMap(); // for reading detector configuration files from AnalyzerT103
-   LoadConfigGeometry(geometryFile);
-   LoadConfigDCTdcCalib(dctdcCalibFile);
-   LoadConfigDCDriftParam(dcDriftParamFile);
+   LoadDetectorConfig_Geometry(geometryFile);
+   LoadDetectorConfig_DCTdcCalib(dctdcCalibFile);
+   LoadDetectorConfig_DCDriftParam(dcDriftParamFile);
    RegisterDetectorConfig_Geometry();
    RegisterDetectorConfig_DCTdcCalib();
    RegisterDetectorConfig_DCDriftParam();
@@ -138,7 +138,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
 int FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry(std::string_view filename)
 {
-   const string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry] ";
+   const std::string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry] ";
    std::ifstream ifs(filename.data());
    if(!ifs.is_open()){
       std::cerr << funcName << "Failed to open file: " << filename << std::endl;
@@ -176,7 +176,7 @@ int FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry(std::string_view fi
 
 int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCTdcCalib(std::string_view filename)
 {
-   const string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCTdcCalib] ";
+   const std::string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCTdcCalib] ";
    std::ifstream ifs(filename.data());
    if(!ifs.is_open()){
       std::cerr << funcName << "Failed to open file: " << filename << std::endl;
@@ -210,7 +210,7 @@ int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCTdcCalib(std::string_view 
 
 int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCDriftParam(std::string_view filename)
 {
-   const string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCDriftParam] ";
+   const std::string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCDriftParam] ";
    std::ifstream ifs(filename.data());
    if(!ifs.is_open()){
       std::cerr << funcName << "Failed to open file: " << filename << std::endl;
