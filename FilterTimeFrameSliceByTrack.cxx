@@ -83,17 +83,17 @@ void FilterTimeFrameSliceByTrack::InitTask()
    std::cout << "[FilterTimeFrameSliceByTrack::InitTask] DC drift parameter configuration file: " << dcDriftParamFile << std::endl;
 
    if (!geometryFile.empty()) {
-      if (!ParseDetectorConfig_Geometry(geometryFile)) {
+      if (!LoadDetectorConfig_Geometry(geometryFile)) {
          std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to parse geometry configuration file: " << geometryFile << std::endl;
       }
    }
    if (!dctdcCalibFile.empty()) {
-      if (!ParseDetectorConfig_DCTdcCalib(dctdcCalibFile)) {
+      if (!LoadDetectorConfig_DCTdcCalib(dctdcCalibFile)) {
          std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to parse DC TDC calibration configuration file: " << dctdcCalibFile << std::endl;
       }
    }
    if (!dcDriftParamFile.empty()) {
-      if (!ParseDetectorConfig_DCDriftParam(dcDriftParamFile)) {
+      if (!LoadDetectorConfig_DCDriftParam(dcDriftParamFile)) {
          std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to parse DC drift parameter configuration file: " << dcDriftParamFile << std::endl;
       }
    }
