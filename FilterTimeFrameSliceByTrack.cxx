@@ -485,7 +485,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
       // Register KLDC
       if(DetectorName == "kldc"){
          std::cout << funcname << "Registering tdccalib for KLDC detector ID: " << detectorId << std::endl;
-         std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << SegmentNumber << std::endl;
+         std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << SegmentNumber << ",wire: " << wireId << std::endl;
 
          int ChannelNumber = wireId - 1; // wireId is 1-indexed, ChannelNumber is 0-indexed
          uint32_t dopeKey_DETtoFE;
