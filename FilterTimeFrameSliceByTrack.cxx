@@ -361,34 +361,34 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
 
       // prepare channel map information
       std::string DetectorName = detectorNameMap[detectorId];
-      uint8_t DetectorNameIdx;
-      if(fChMap->detname_dictionary.getIndex(DetectorName, DetectorNameIdx) != true){
-         #if 1
-         std::cout << funcname << "DetectorName: " << DetectorName << " not found in channel map dictionary." << std::endl;
-         #endif
-         continue;
-      }
+      // uint8_t DetectorNameIdx;
+      // if(fChMap->detname_dictionary.getIndex(DetectorName, DetectorNameIdx) != true){
+      //    #if 1
+      //    std::cout << funcname << "DetectorName: " << DetectorName << " not found in channel map dictionary." << std::endl;
+      //    #endif
+      //    continue;
+      // }
 
       std::string PlaneName = detectorPlaneMap[detectorId];
-      uint8_t PlaneNameIdx;
-      if(fChMap->plane_dictionary.getIndex(PlaneName, PlaneNameIdx) != true){
-         #if 1
-         std::cout << funcname << "PlaneName: " << PlaneName << " not found in channel map dictionary." << std::endl;
-         #endif
-         continue;
-      }
+      // uint8_t PlaneNameIdx;
+      // if(fChMap->plane_dictionary.getIndex(PlaneName, PlaneNameIdx) != true){
+      //    #if 1
+      //    std::cout << funcname << "PlaneName: " << PlaneName << " not found in channel map dictionary." << std::endl;
+      //    #endif
+      //    continue;
+      // }
 
       uint8_t SegmentNumber = detectorSegmentMap[detectorId];
       std::cout << "\n" << funcname << "segment number for detector ID " << detectorId << ": " << static_cast<int>(SegmentNumber) << std::endl;
 
       std::string ChannelName = "0";
-      uint8_t ChannelNameIdx;
-      if(fChMap->readout_channel_dictionary.getIndex(ChannelName, ChannelNameIdx) != true){
-         #if 1
-         std::cout << funcname << "ChannelName: " << ChannelName << " not found in channel map dictionary." << std::endl;
-         #endif
-         continue;
-      }
+      // uint8_t ChannelNameIdx;
+      // if(fChMap->readout_channel_dictionary.getIndex(ChannelName, ChannelNameIdx) != true){
+      //    #if 1
+      //    std::cout << funcname << "ChannelName: " << ChannelName << " not found in channel map dictionary." << std::endl;
+      //    #endif
+      //    continue;
+      // }
 
       // uint8_t ChannelNameIdx = chmap::dictionary::queryIndex_readout_channel(ChannelName);
       // std::cout << funcname << "ChannelNameIdx: " << static_cast<int>(ChannelNameIdx) << std::endl;
@@ -431,11 +431,11 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
          for(int i=0+32; i<128-32; ++i){
             int ChannelNumber = i;
             uint32_t dopeKey_DETtoFE;
-            #if 1
+            #if 0
             std::cout << funcname << "channel map query: " << std::endl;
             std::cout << "\t" << DetectorName << "(index: " << static_cast<int>(DetectorNameIdx) << "), " << PlaneName << "(index: " << static_cast<int>(PlaneNameIdx) << "), Segment: " << static_cast<int>(SegmentNumber) << ", ChannelName: " << ChannelName << "(index: " << static_cast<int>(ChannelNameIdx) << "), ChannelNumber: " << static_cast<int>(ChannelNumber) << std::endl;
             #endif
-            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorNameIdx, PlaneNameIdx, SegmentNumber, ChannelNameIdx, static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE);
+            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, ChannelName, static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE);
             if(found_DETtoFE){
                chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
                uint32_t dopeKeyFEtoDET;
@@ -489,11 +489,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
       // prepare channel map information
       std::string DetectorName = detectorNameMap[detectorId];
       std::string PlaneName = detectorPlaneMap[detectorId];
-      int SegmentNumber = detectorSegmentMap[detectorId];
-      std::string ChannelName;
-      uint8_t ChannelNameIdx = chmap::dictionary::queryIndex_readout_channel("0");
-      // std::cout << funcname << "ChannelNameIdx: " << static_cast<int>(ChannelNameIdx) << std::endl;
-      fChMap->detname_dictionary.invIndex(ChannelNameIdx, ChannelName);
+      uint8_t SegmentNumber = detectorSegmentMap[detectorId];
+      std::string ChannelName = std::string("0");
       #if CHECK_COUT_DETCONF_REGISTERING
       std::cout << "\tDetectorName: " << DetectorName << std::endl;
       std::cout << "\tPlaneName: " << PlaneName << std::endl;
