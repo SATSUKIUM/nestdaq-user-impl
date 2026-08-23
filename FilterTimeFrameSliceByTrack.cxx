@@ -361,12 +361,12 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
 
       // prepare channel map information
       std::string DetectorName = detectorNameMap[detectorId];
-      uint8_t DetectorNameIdx = fChMap->getIndex(DetectorName);
+      uint8_t DetectorNameIdx = fChMap->detname_dictionary.getIndex(DetectorName);
       std::string PlaneName = detectorPlaneMap[detectorId];
-      uint8_t PlaneNameIdx = fChMap->getIndex(PlaneName);
+      uint8_t PlaneNameIdx = fChMap->plane_dictionary.getIndex(PlaneName);
       uint8_t SegmentNumber = detectorSegmentMap[detectorId];
       std::string ChannelName = "0";
-      uint8_t ChannelNameIdx = fChMap->getIndex(ChannelName);
+      uint8_t ChannelNameIdx = fChMap->readout_channel_dictionary.getIndex(ChannelName);
       // uint8_t ChannelNameIdx = chmap::dictionary::queryIndex_readout_channel(ChannelName);
       // std::cout << funcname << "ChannelNameIdx: " << static_cast<int>(ChannelNameIdx) << std::endl;
       // fChMap->detname_dictionary.invIndex(ChannelNameIdx, ChannelName);
