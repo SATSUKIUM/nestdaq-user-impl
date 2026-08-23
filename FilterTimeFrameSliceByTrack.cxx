@@ -424,7 +424,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
          for(int i=0+32; i<128-32; ++i){
             int ChannelNumber = i;
             uint32_t dopeKey_DETtoFE;
-            std::cout << "fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string("U"), static_cast<uint8_t>(2), std::string("0"), static_cast<uint16_t>(95), dopeKey_DETtoFE)" << std::endl;
+            std::cout << "fChMap->getDopeKey_DETtoFE(std::string(\"kldc\"), std::string(\"U\"), static_cast<uint8_t>(2), std::string(\"0\"), static_cast<uint16_t>(95), dopeKey_DETtoFE)" << std::endl;
             bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string("U"), static_cast<uint8_t>(2), std::string("0"), static_cast<uint16_t>(95), dopeKey_DETtoFE);
             if(found_DETtoFE){
                chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
@@ -443,7 +443,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
             } // if(found_DETtoFE)
             else{
                ++missing_count_FEAddrItem;
-               std::cout << "not found: fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string("U"), static_cast<uint8_t>(2), std::string("0"), static_cast<uint16_t>(95), dopeKey_DETtoFE)" << std::endl;
+               std::cout << "not found: fChMap->getDopeKey_DETtoFE(std::string(\"kldc\"), std::string(\"U\"), static_cast<uint8_t>(2), std::string(\"0\"), static_cast<uint16_t>(95), dopeKey_DETtoFE)" << std::endl;
             }
          } // for(int i=0+32; i<128-32; ++i)
          // std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
