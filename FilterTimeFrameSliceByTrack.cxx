@@ -77,12 +77,20 @@ void FilterTimeFrameSliceByTrack::InitTask()
    uint8_t test_ch_kldc2 = 96;
 
    uint32_t dopeKey_FEtoDET_kldc2u95;
-   std::cout << "t" << funcname << "checking kldc 2 U 95 search" << std::endl;
+   std::cout << "\t" << funcname << "checking kldc 2 U 95 search" << std::endl;
    bool found_FEtoDET_kldc2u95 = fChMap->getDopeKey_FEtoDET(test_ip3rd_kldc2, test_ip4th_kldc2, test_ch_kldc2, dopeKey_FEtoDET_kldc2u95);
    if(found_FEtoDET_kldc2u95 == true){
-      std::cout << funcname << "\tfound." << std::endl;
+      std::cout << "\t" << funcname << "found." << std::endl;
       chmap::DETIdItem detitem_kldc2u95 = fChMap->getDETIdItem(dopeKey_FEtoDET_kldc2u95);
       detitem_kldc2u95.decode();
+   }
+
+   uint32_t dopeKey_DETtoFE_kldc2u95;
+   bool found_DETtoFE_kldc2u95 = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string("U"), static_cast<uint8_t>(2), std::string("0"), static_cast<uint16_t>(95), dopeKey_DETtoFE_kldc2u95);
+   if(found_DETtoFE_kldc2u95 == true){
+      std::cout << "\t" << funcname << "found." << std::endl;
+      chmap::FEAddrItem feaddritem_kldc2u95 = fChMap->getFEAddrItem(dopeKey_DETtoFE_kldc2u95);
+      feaddritem_kldc2u95.decode();
    }
    #endif
 
