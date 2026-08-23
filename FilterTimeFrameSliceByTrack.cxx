@@ -39,6 +39,7 @@ FilterTimeFrameSliceByTrack::FilterTimeFrameSliceByTrack()
 
 void FilterTimeFrameSliceByTrack::InitTask()
 {
+   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::InitTask] ";
    FilterTimeFrameSliceABC::InitTask();
    using opt = OptionKey;
 
@@ -68,6 +69,20 @@ void FilterTimeFrameSliceByTrack::InitTask()
       std::cout << "\t\tfound." << std::endl;
       detitem = fChMap->getDETIdItem(dope_key);
       detitem.decode();
+   }
+
+   // test kldc 2 U 95
+   uint8_t test_ip3rd_kldc2 = 0x02;
+   uint8_t test_ip4th_kldc2 = 0xB2;
+   uint8_t test_ch_kldc2 = 96;
+
+   uint32_t dopeKey_FEtoDET_kldc2u95;
+   std::cout << "t" << funcname << "checking kldc 2 U 95 search" << std::endl;
+   bool found_FEtoDET_kldc2u95 = fChMap->getDopeKey_FEtoDET(test_ip3rd_kldc2, test_ip4th_kldc2, test_ch_kldc2, dopeKey_FEtoDET_kldc2u95);
+   if(found_FEtoDET_kldc2u95 == true){
+      std::cout << funcname << "\tfound." << std::endl;
+      chmap::DETIdItem detitem_kldc2u95 = fChMap->getDETIdItem(dopeKey_FEtoDET_kldc2u95);
+      detitem_kldc2u95.decode();
    }
    #endif
 
@@ -424,7 +439,6 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
          for(int i=0+32; i<128-32; ++i){
             int ChannelNumber = i;
             uint32_t dopeKey_DETtoFE;
-            std::cout << "fChMap->getDopeKey_DETtoFE(std::string(\"kldc\"), std::string(\"U\"), static_cast<uint8_t>(2), std::string(\"0\"), static_cast<uint16_t>(95), dopeKey_DETtoFE)" << std::endl;
             bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string("U"), static_cast<uint8_t>(2), std::string("0"), static_cast<uint16_t>(95), dopeKey_DETtoFE);
             if(found_DETtoFE){
                chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
@@ -443,7 +457,6 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
             } // if(found_DETtoFE)
             else{
                ++missing_count_FEAddrItem;
-               std::cout << "not found: fChMap->getDopeKey_DETtoFE(std::string(\"kldc\"), std::string(\"U\"), static_cast<uint8_t>(2), std::string(\"0\"), static_cast<uint16_t>(95), dopeKey_DETtoFE)" << std::endl;
             }
          } // for(int i=0+32; i<128-32; ++i)
          // std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
