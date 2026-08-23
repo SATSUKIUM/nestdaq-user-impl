@@ -95,7 +95,7 @@ protected:
 
    std::map<int, std::string> detectorNameMap;
    std::map<int, std::string> detectorPlaneMap;
-   std::map<int, int> detectorSegmentMap;
+   std::map<int, uint8_t> detectorSegmentMap;
    void DefineDetectorIdMap(); // for reading detector configuration files from AnalyzerT103
 
    bool RegisterDetectorConfig_Geometry();
