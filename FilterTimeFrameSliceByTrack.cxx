@@ -93,6 +93,10 @@ void FilterTimeFrameSliceByTrack::InitTask()
       chmap::FEAddrItem feaddritem_kldc2u95 = fChMap->getFEAddrItem(dopeKey_DETtoFE_kldc2u95);
       feaddritem_kldc2u95.decode();
    }
+   else{
+      std::cout << "\t" << funcname << "not found when searching the counterpart of\n";
+      detitem_kldc2u95.decode();
+   }
    #endif
 
    // ================================
