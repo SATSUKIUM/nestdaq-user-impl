@@ -427,13 +427,13 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       // Register KLDC
       if(DetectorName == "kldc"){
          std::cout << funcname << "Registering geometry for KLDC detector ID: " << detectorId << std::endl;
-         std::cout << "\t" << DetectorName << "(index: " << static_cast<int>(DetectorNameIdx) << "), " << PlaneName << "(index: " << static_cast<int>(PlaneNameIdx) << "), Segment: " << static_cast<int>(SegmentNumber) << std::endl;
+         std::cout << "\t" << DetectorName << ", " << PlaneName << "), Segment: " << static_cast<int>(SegmentNumber) << std::endl;
          for(int i=0+32; i<128-32; ++i){
             int ChannelNumber = i;
             uint32_t dopeKey_DETtoFE;
             #if 0
             std::cout << funcname << "channel map query: " << std::endl;
-            std::cout << "\t" << DetectorName << "(index: " << static_cast<int>(DetectorNameIdx) << "), " << PlaneName << "(index: " << static_cast<int>(PlaneNameIdx) << "), Segment: " << static_cast<int>(SegmentNumber) << ", ChannelName: " << ChannelName << "(index: " << static_cast<int>(ChannelNameIdx) << "), ChannelNumber: " << static_cast<int>(ChannelNumber) << std::endl;
+            std::cout << "\t" << DetectorName << ", " << PlaneName << "), Segment: " << static_cast<int>(SegmentNumber) << ", ChannelName: " << ChannelName << ", ChannelNumber: " << static_cast<int>(ChannelNumber) << std::endl;
             #endif
             bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, ChannelName, static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE);
             if(found_DETtoFE){
