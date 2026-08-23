@@ -421,16 +421,10 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       int missing_count_DETIdItem = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
-         std::cout << funcname << "Registering geometry for KLDC detector ID: " << detectorId << std::endl;
-         std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << static_cast<int>(SegmentNumber) << std::endl;
          for(int i=0+32; i<128-32; ++i){
             int ChannelNumber = i;
             uint32_t dopeKey_DETtoFE;
-            #if 0
-            std::cout << funcname << "channel map query: " << std::endl;
-            std::cout << "\t" << DetectorName << ", " << PlaneName << "), Segment: " << static_cast<int>(SegmentNumber) << ", ChannelName: " << ChannelName << ", ChannelNumber: " << static_cast<int>(ChannelNumber) << std::endl;
-            #endif
-            // bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string(DetectorName), std::string(PlaneName), static_cast<uint8_t>(SegmentNumber), std::string(ChannelName), static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE);
+            std::cout << "fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string("U"), static_cast<uint8_t>(2), std::string("0"), static_cast<uint16_t>(95), dopeKey_DETtoFE)" << std::endl;
             bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string("U"), static_cast<uint8_t>(2), std::string("0"), static_cast<uint16_t>(95), dopeKey_DETtoFE);
             if(found_DETtoFE){
                chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
@@ -449,10 +443,11 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
             } // if(found_DETtoFE)
             else{
                ++missing_count_FEAddrItem;
+               std::cout << "not found: fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string("U"), static_cast<uint8_t>(2), std::string("0"), static_cast<uint16_t>(95), dopeKey_DETtoFE)" << std::endl;
             }
          } // for(int i=0+32; i<128-32; ++i)
-         std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
-         std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
+         // std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
+         // std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
       } // if(DetectorName == "kldc")
    } // for(const auto& geom : fTemporaryGeometries)
 
