@@ -454,8 +454,12 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                ++missing_count_FEAddrItem;
             }
          } // for(int i=0+32; i<128-32; ++i)
-         std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
-         std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
+         if(missing_count_DETIdItem > 0){
+            std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
+         }
+         if(missing_count_DETIdItem > 0){
+            std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
+         }
       } // if(DetectorName == "kldc")
    } // for(const auto& geom : fTemporaryGeometries)
 
