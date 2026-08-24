@@ -134,9 +134,6 @@ void FilterTimeFrameSliceByTrack::InitTask()
    }
 
    DefineDetectorIdMap(); // for reading detector configuration files from AnalyzerT103
-   LoadDetectorConfig_Geometry(geometryFile);
-   LoadDetectorConfig_DCTdcCalib(dctdcCalibFile);
-   LoadDetectorConfig_DCDriftParam(dcDriftParamFile);
    RegisterDetectorConfig_Geometry();
    RegisterDetectorConfig_DCTdcCalib();
    RegisterDetectorConfig_DCDriftParam();
