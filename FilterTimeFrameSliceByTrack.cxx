@@ -536,8 +536,12 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
       } // if(DetectorName == "kldc")
    } // for(const auto& calib : fTemporaryDCTdcCalibs)
 
-   std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
-   std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
+   if(missing_count_FEAddrItem > 0){
+      std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
+   }
+   if(missing_count_DETIdItem > 0){
+      std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
+   }
 
    std::cout << funcname << "Registered " << registered_count_dctdccalib_kldc << " TDC calibration entries of KLDC." << std::endl;
    return true;
@@ -604,8 +608,12 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
                ++missing_count_FEAddrItem;
             }
          } // for(int i=0+32; i<128-32; ++i)
-         std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
-         std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
+         if(missing_count_FEAddrItem > 0){
+            std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
+         }
+         if(missing_count_DETIdItem > 0){
+            std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
+         }
          std::cout << funcname << "Registered " << registered_count_geomitemdc_kldc << " drift parameter entries." << std::endl;
       } // if(DetectorName == "kldc")
    } // for(const auto& drift : fTemporaryDCDriftParams)
