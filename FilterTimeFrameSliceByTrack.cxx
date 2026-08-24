@@ -282,7 +282,7 @@ int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCDriftParam(std::string_vie
          }
       }
       fTemporaryDCDriftParams.push_back({detectoridentifier, approxOrder, coefficients});
-      #if 1
+      #if 0
       std::cout << "{detectoridentifier, approxOrder, coefficients} = {" << detectoridentifier << ", " << approxOrder << ", {";
       for(int i = 0; i < approxOrder; ++i){
          std::cout << coefficients[i];
@@ -562,7 +562,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
    int registered_count_geomitemdc_kldc = 0;
    // Loop over loaded temporary DC drift length parameter entries
    for(const auto& drift : fTemporaryDCDriftParams){
-      #if 1
+      #if 0
       std::cout << funcname << "detectorID: " << drift.detectoridentifier << ", approxOrder: " << drift.approxOrder << ", coefficients: {";
       for(int i = 0; i < drift.approxOrder; ++i){
          std::cout << drift.coefficients[i];
@@ -632,10 +632,10 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
          if(missing_count_DETIdItem > 0){
             std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
          }
-         std::cout << funcname << "Registered " << registered_count_geomitemdc_kldc << " drift parameter entries." << std::endl;
       } // if(DetectorName == "kldc")
    } // for(const auto& drift : fTemporaryDCDriftParams)
 
+   std::cout << funcname << "Registered " << registered_count_geomitemdc_kldc << " drift parameter entries." << std::endl;
    return true;
 } // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 
