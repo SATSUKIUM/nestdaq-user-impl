@@ -285,6 +285,16 @@ int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCDriftParam(std::string_vie
          }
       }
       fTemporaryDCDriftParams.push_back({detectoridentifier, approxOrder, coefficients});
+      #if 1
+      std::cout << "{detectoridentifier, approxOrder, coefficients} = {" << detectoridentifier << ", " << approxOrder << ", {";
+      for(int i = 0; i < approxOrder; ++i){
+         std::cout << coefficients[i];
+         if(i < approxOrder - 1){
+            std::cout << ", ";
+         }
+      }
+      std::cout << "}}" << std::endl;
+      #endif
    } // while(std::getline(ifs, line))
 
    std::cout << funcName << "Parsed " << fTemporaryDCDriftParams.size() << " drift parameter entries from file: " << filename << std::endl;
@@ -554,6 +564,16 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 
    // Loop over loaded temporary DC drift length parameter entries
    for(const auto& drift : fTemporaryDCDriftParams){
+      #if 1
+      std::cout << funcname << "detectorID: " << drift.detectoridentifier << ", approxOrder: " << drift.approxOrder << ", coefficients: {";
+      for(int i = 0; i < drift.approxOrder; ++i){
+         std::cout << drift.coefficients[i];
+         if(i < drift.approxOrder - 1){
+            std::cout << ", ";
+         }
+      }
+      std::cout << "}" << std::endl;
+      #endif
       // drift -> local variables
       int detectorId = drift.detectoridentifier;
       int approxOrder = drift.approxOrder;
