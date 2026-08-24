@@ -559,6 +559,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam] ";
    std::cout << "\n" << funcname << "Registering drift parameter configurations...(# of items: " << fTemporaryDCDriftParams.size() << ")" << std::endl;
 
+   int registered_count_geomitemdc_kldc = 0;
    // Loop over loaded temporary DC drift length parameter entries
    for(const auto& drift : fTemporaryDCDriftParams){
       #if 1
@@ -603,7 +604,6 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 
       int missing_count_FEAddrItem = 0;
       int missing_count_DETIdItem = 0;
-      int registered_count_geomitemdc_kldc = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
          for(int i=0+32; i<128-32; ++i){
