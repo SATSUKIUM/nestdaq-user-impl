@@ -62,40 +62,47 @@ void FilterTimeFrameSliceByTrack::InitTask()
    uint8_t test_ch_T1right = 12;
 
    uint32_t dope_key;
-   chmap::DETIdItem detitem;
-   std::cout << "\tchecking T1 right search" << std::endl;
-   bool found = fChMap->getDopeKey_FEtoDET(test_ip3rd_T1right, test_ip4th_T1right, test_ch_T1right, dope_key);
-   if(found == true){
-      std::cout << "\t\tfound." << std::endl;
-      detitem = fChMap->getDETIdItem(dope_key);
-      detitem.decode();
+   chmap::DETIdItem detiditem_;
+   std::cout << "\tchecking T1 right DETIdItem search..." << std::endl;
+   bool _FOUND = fChMap->getDopeKey_FEtoDET(test_ip3rd_T1right, test_ip4th_T1right, test_ch_T1right, dope_key);
+   if(_FOUND == true){
+      std::cout << "\t\t-> found." << std::endl;
+      detiditem = fChMap->getDETIdItem(dope_key);
+      detiditem.decode();
+   }
+   else{
+      std::cout << "\t\t-> not found." << std::endl;
    }
 
    // test kldc 2 U 95
-   uint8_t test_ip3rd_kldc2 = 0x02;
-   uint8_t test_ip4th_kldc2 = 0xB2;
-   uint8_t test_ch_kldc2 = 96;
+   uint8_t test_ip3rd_kldc2u95 = 0x02;
+   uint8_t test_ip4th_kldc2u95 = 0xB2;
+   uint8_t test_ch_kldc2u95 = 96;
 
    uint32_t dopeKey_FEtoDET_kldc2u95;
-   chmap::DETIdItem detitem_kldc2u95;
-   std::cout << "\t" << funcname << "checking kldc 2 U 95 search" << std::endl;
-   bool found_FEtoDET_kldc2u95 = fChMap->getDopeKey_FEtoDET(test_ip3rd_kldc2, test_ip4th_kldc2, test_ch_kldc2, dopeKey_FEtoDET_kldc2u95);
-   if(found_FEtoDET_kldc2u95 == true){
-      std::cout << "\t" << funcname << "found." << std::endl;
-      detitem_kldc2u95 = fChMap->getDETIdItem(dopeKey_FEtoDET_kldc2u95);
-      detitem_kldc2u95.decode();
+   chmap::DETIdItem detiditem_kldc2u95;
+   std::cout << "\t" << funcname << "checking kldc 2 U 95 DETIdItem search" << std::endl;
+   bool _FOUND_FEtoDET_kldc2u95 = fChMap->getDopeKey_FEtoDET(test_ip3rd_kldc2u95, test_ip4th_kldc2u95, test_ch_kldc2u95, dopeKey_FEtoDET_kldc2u95);
+   if(_FOUND_FEtoDET_kldc2u95 == true){
+      std::cout << "\t" << funcname << "-> found." << std::endl;
+      detiditem_kldc2u95 = fChMap->getDETIdItem(dopeKey_FEtoDET_kldc2u95);
+      detiditem_kldc2u95.decode();
+   }
+   else{
+      std::cout << "\t" << funcname << "-> not found." << std::endl;
    }
 
    uint32_t dopeKey_DETtoFE_kldc2u95;
-   bool found_DETtoFE_kldc2u95 = fChMap->getDopeKey_DETtoFE(detitem_kldc2u95, dopeKey_DETtoFE_kldc2u95);
-   if(found_DETtoFE_kldc2u95 == true){
-      std::cout << "\t" << funcname << "found." << std::endl;
+   std::cout << "\t" << funcname << "checking kldc 2 U 95 FEAddrItem search..." << std::endl;
+   bool _FOUND_DETtoFE_kldc2u95 = fChMap->getDopeKey_DETtoFE(detiditem_kldc2u95, dopeKey_DETtoFE_kldc2u95);
+   if(_FOUND_DETtoFE_kldc2u95 == true){
+      std::cout << "\t" << funcname << "-> found." << std::endl;
       chmap::FEAddrItem feaddritem_kldc2u95 = fChMap->getFEAddrItem(dopeKey_DETtoFE_kldc2u95);
       feaddritem_kldc2u95.decode();
    }
    else{
-      std::cout << "\t" << funcname << "not found when searching the counterpart of\n";
-      detitem_kldc2u95.decode();
+      std::cout << "\t" << funcname << "-> not found when searching the counterpart of\n";
+      detiditem_kldc2u95.decode();
    }
    #endif
 
@@ -166,6 +173,15 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
 int FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry(std::string_view filename)
 {
+   /*
+   input file format
+   - ignore lines starting with '#'
+   - each line contains the following fields:
+     detectorID detectorname x y z tiltangle rotationangle1 rotationangle2 length resolution wirecenternumber wirepitch offset
+      - fields are separated by whitespace
+   - wirecenternumber is the number of wires where the center of Drift Chamber is located
+      - 4.5 means the center is between wire 4 and wire 5
+   */
    const std::string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry] ";
    std::ifstream ifs(filename.data());
    if(!ifs.is_open()){
@@ -365,7 +381,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] ";
    std::cout << "\n" << funcname << "Registering geometry configurations...(# of items: " << fTemporaryGeometries.size() << ")" << std::endl;
 
-   int registered_count = 0;
+   int registered_count_geomitemdc_kldc = 0;
    // Loop over loaded temporary geometries
    for(const auto& geom : fTemporaryGeometries){
       #if CHECK_COUT_DETCONF_REGISTERING
@@ -374,7 +390,6 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
 
       // geom -> local variables
       int detectorId = geom.detectoridentifier;
-      std::string detectorName = geom.detectorname;
       double x = geom.x;
       double y = geom.y;
       double z = geom.z;
@@ -389,39 +404,9 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
 
       // prepare channel map information
       std::string DetectorName = detectorNameMap[detectorId];
-      // uint8_t DetectorNameIdx;
-      // if(fChMap->detname_dictionary.getIndex(DetectorName, DetectorNameIdx) != true){
-      //    #if 1
-      //    std::cout << funcname << "DetectorName: " << DetectorName << " not found in channel map dictionary." << std::endl;
-      //    #endif
-      //    continue;
-      // }
-
       std::string PlaneName = detectorPlaneMap[detectorId];
-      // uint8_t PlaneNameIdx;
-      // if(fChMap->plane_dictionary.getIndex(PlaneName, PlaneNameIdx) != true){
-      //    #if 1
-      //    std::cout << funcname << "PlaneName: " << PlaneName << " not found in channel map dictionary." << std::endl;
-      //    #endif
-      //    continue;
-      // }
-
       uint8_t SegmentNumber = detectorSegmentMap[detectorId];
-      std::cout << "\n" << funcname << "segment number for detector ID " << detectorId << ": " << static_cast<int>(SegmentNumber) << std::endl;
-
       std::string ChannelName = "0";
-      // uint8_t ChannelNameIdx;
-      // if(fChMap->readout_channel_dictionary.getIndex(ChannelName, ChannelNameIdx) != true){
-      //    #if 1
-      //    std::cout << funcname << "ChannelName: " << ChannelName << " not found in channel map dictionary." << std::endl;
-      //    #endif
-      //    continue;
-      // }
-
-      // uint8_t ChannelNameIdx = chmap::dictionary::queryIndex_readout_channel(ChannelName);
-      // std::cout << funcname << "ChannelNameIdx: " << static_cast<int>(ChannelNameIdx) << std::endl;
-      // fChMap->detname_dictionary.invIndex(ChannelNameIdx, ChannelName);
-
 
       // Create GeomItemDC and set its properties
       std::unique_ptr<chmap::GeomItemDC> geomitemdc = std::make_unique<chmap::GeomItemDC>();
@@ -458,11 +443,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                uint32_t dopeKeyFEtoDET;
                bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
                if(found_FEtoDET){
-                  #if 1
-                  fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
-                  #endif
                   fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::membername_geom);
-                  registered_count++;
+                  registered_count_geomitemdc_kldc++;
                } // if(found_FEtoDET)
                else{
                   ++missing_count_DETIdItem;
@@ -472,12 +454,12 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                ++missing_count_FEAddrItem;
             }
          } // for(int i=0+32; i<128-32; ++i)
-         // std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
-         // std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
+         std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
+         std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
       } // if(DetectorName == "kldc")
    } // for(const auto& geom : fTemporaryGeometries)
 
-   std::cout << funcname << "Registered " << registered_count << " geometry entries." << std::endl;
+   std::cout << funcname << "Registered " << registered_count_geomitemdc_kldc << " geometry entries of KLDC" << std::endl;
    return true;
 } // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
 
@@ -488,15 +470,11 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
 
    int missing_count_FEAddrItem = 0;
    int missing_count_DETIdItem = 0;
-   int registered_count = 0;
+   int registered_count_dctdccalib_kldc = 0;
    bool isFirstEntry = true;
 
    // Loop over loaded temporary DC TDC calibration entries
    for(const auto& calib : fTemporaryDCTdcCalibs){
-      #if CHECK_COUT_DETCONF_REGISTERING
-      std::cout << funcname << "Registering TDC calibration for detector ID: " << calib.detectoridentifier << ", wire ID: " << calib.wireidentifier << std::endl;
-      #endif
-
       // calib -> local variables
       int detectorId = calib.detectoridentifier;
       int wireId = calib.wireidentifier; // 1-indexed
@@ -508,12 +486,6 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
       std::string PlaneName = detectorPlaneMap[detectorId];
       uint8_t SegmentNumber = detectorSegmentMap[detectorId];
       std::string ChannelName = std::string("0");
-      #if CHECK_COUT_DETCONF_REGISTERING
-      std::cout << "\tDetectorName: " << DetectorName << std::endl;
-      std::cout << "\tPlaneName: " << PlaneName << std::endl;
-      std::cout << "\tSegmentNumber: " << SegmentNumber << std::endl;
-      std::cout << "\tChannelName: " << ChannelName << std::endl;
-      #endif
       if(isFirstEntry){
          std::cout << funcname << "Registering first tdccalib for KLDC detector ID: " << detectorId << std::endl;
          std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << static_cast<int>(SegmentNumber) << ",wire: " << wireId << std::endl;
@@ -547,11 +519,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
             uint32_t dopeKeyFEtoDET;
             bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
             if(found_FEtoDET){
-               #if 1
-               fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
-               #endif
                fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
-               registered_count++;
+               registered_count_dctdccalib_kldc++;
             } // if(found_FEtoDET)
             else{
                ++missing_count_DETIdItem;
@@ -566,7 +535,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
    std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
    std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
 
-   std::cout << funcname << "Registered " << registered_count << " TDC calibration entries." << std::endl;
+   std::cout << funcname << "Registered " << registered_count_dctdccalib_kldc << " TDC calibration entries of KLDC." << std::endl;
    return true;
 } // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
 
@@ -577,10 +546,6 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 
    // Loop over loaded temporary DC drift length parameter entries
    for(const auto& drift : fTemporaryDCDriftParams){
-      #if CHECK_COUT_DETCONF_REGISTERING
-      std::cout << funcname << "Registering drift parameter for detector ID: " << drift.detectoridentifier << ", approx order: " << drift.approxOrder << std::endl;
-      #endif
-
       // drift -> local variables
       int detectorId = drift.detectoridentifier;
       int approxOrder = drift.approxOrder;
@@ -588,19 +553,10 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 
       std::string DetectorName = detectorNameMap[detectorId];
       std::string PlaneName = detectorPlaneMap[detectorId];
-      int SegmentNumber = detectorSegmentMap[detectorId];
+      uint8_t SegmentNumber = detectorSegmentMap[detectorId];
 
       // prepare channel map information
-      std::string ChannelName;
-      uint8_t ChannelNameIdx = chmap::dictionary::queryIndex_readout_channel("0");
-      // std::cout << funcname << "ChannelNameIdx: " << static_cast<int>(ChannelNameIdx) << std::endl;
-      fChMap->detname_dictionary.invIndex(ChannelNameIdx, ChannelName);
-      #if CHECK_COUT_DETCONF_REGISTERING
-      std::cout << "\tDetectorName: " << DetectorName << std::endl;
-      std::cout << "\tPlaneName: " << PlaneName << std::endl;
-      std::cout << "\tSegmentNumber: " << SegmentNumber << std::endl;
-      std::cout << "\tChannelName: " << ChannelName << std::endl;
-      #endif
+      std::string ChannelName = std::string("0");
 
       // Create CalibrationItem_DCDriftLength and set its properties
       std::unique_ptr<chmap::CalibrationItem_DCDriftLength> calibitem_dcdriftlength = std::make_unique<chmap::CalibrationItem_DCDriftLength>();
@@ -622,11 +578,9 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 
       int missing_count_FEAddrItem = 0;
       int missing_count_DETIdItem = 0;
-      int registered_count = 0;
+      int registered_count_geomitemdc_kldc = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
-         std::cout << funcname << "Registering first driftlen for KLDC detector ID: " << detectorId << std::endl;
-         std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << SegmentNumber << std::endl;
          for(int i=0+32; i<128-32; ++i){
             int ChannelNumber = i;
             uint32_t dopeKey_DETtoFE;
@@ -636,9 +590,6 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
                uint32_t dopeKeyFEtoDET;
                bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
                if(found_FEtoDET){
-                  #if 1
-                  fChMap->getDETIdItem(dopeKeyFEtoDET).decode();
-                  #endif
                   fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCDriftLength>(dopeKeyFEtoDET, std::move(calibitem_dcdriftlength), &chmap::DETConfItem::membername_calib_dcdriftlen);
                } // if(found_FEtoDET)
                else{
@@ -651,7 +602,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
          } // for(int i=0+32; i<128-32; ++i)
          std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
          std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
-         std::cout << funcname << "Registered " << registered_count << " drift parameter entries." << std::endl;
+         std::cout << funcname << "Registered " << registered_count_geomitemdc_kldc << " drift parameter entries." << std::endl;
       } // if(DetectorName == "kldc")
    } // for(const auto& drift : fTemporaryDCDriftParams)
 
