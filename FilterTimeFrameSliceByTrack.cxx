@@ -62,13 +62,13 @@ void FilterTimeFrameSliceByTrack::InitTask()
    uint8_t test_ch_T1right = 12;
 
    uint32_t dope_key;
-   chmap::DETIdItem detiditem_;
+   chmap::DETIdItem detiditem_t1right;
    std::cout << "\tchecking T1 right DETIdItem search..." << std::endl;
    bool _FOUND = fChMap->getDopeKey_FEtoDET(test_ip3rd_T1right, test_ip4th_T1right, test_ch_T1right, dope_key);
    if(_FOUND == true){
       std::cout << "\t\t-> found." << std::endl;
-      detiditem = fChMap->getDETIdItem(dope_key);
-      detiditem.decode();
+      detiditem_t1right = fChMap->getDETIdItem(dope_key);
+      detiditem_t1right.decode();
    }
    else{
       std::cout << "\t\t-> not found." << std::endl;
