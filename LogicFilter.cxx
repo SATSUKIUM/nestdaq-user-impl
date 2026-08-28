@@ -176,7 +176,7 @@ private:
 	int fIteration = 0;
 	#endif
 
-	std::map<uint32_t, uint32_t> fNEntryInSubTCT_LogicFilter; // key: iSubTCT, value: # of signals in iSubTCT
+	std::map<uint32_t, uint32_t> fNEntryInSubTimeRegion_LogicFilter; // key: iSubTR, value: # of signals in iSubTR
 };
 
 
@@ -247,7 +247,7 @@ void LogicFilter::InitTask()
 	std::cout << "\tMax group id: " << max_group_id << std::endl;
 
 	// --------------------------------
-	// sort signals in each group by subgroup_id for making SubTCT in order of subgroup_id
+	// sort signals in each group by subgroup_id for making SubTimeRegion in order of subgroup_id
 	// --------------------------------
 	std::cout << "\n[LogicFilter::InitTask] Sorting signals in each group by subgroup_id... " << std::endl;
 	for(auto &group : groups){
@@ -295,7 +295,7 @@ void LogicFilter::InitTask()
 	// register signals to Trigger
 	// --------------------------------
 	std::cout << "\n[LogicFilter::InitTask] Registering signals to Trigger... " << std::endl;
-	int iSubTCT = -1; // subgroupが見つかれば、0から順番に割り当てる
+	int iSubTimeRegion = -1; // subgroupが見つかれば、0から順番に割り当てる
 	std::pair<uint32_t, uint32_t> last_subgroup = std::make_pair(UINT32_MAX, UINT32_MAX); // 最初にsubgroupが見つかれば必ず、このペアとは異なる
 	for(size_t i = 0; i < max_group_id + 1; i++){
 		auto &group = groups[i];
@@ -306,34 +306,34 @@ void LogicFilter::InitTask()
 		for(const auto &sig : group){
 			if(sig.subgroup_id != SignalParser::NO_SUBGROUP){
 				if(last_subgroup != std::make_pair(sig.group_id, sig.subgroup_id)){
-					iSubTCT++;
-					fNEntryInSubTCT_LogicFilter[iSubTCT] = 1;
+					iSubTimeRegion++;
+					fNEntryInSubTimeRegion_LogicFilter[iSubTimeRegion] = 1;
 					last_subgroup = std::make_pair(sig.group_id, sig.subgroup_id);
-					std::cout << "\t\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTCT " << iSubTCT << std::endl;
+					std::cout << "\t\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTimeRegion " << iSubTimeRegion << std::endl;
 				}
 				else{
-					fNEntryInSubTCT_LogicFilter[iSubTCT]++;
-					std::cout << "\t\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTCT " << iSubTCT << " (entry count in this SubTCT: " << fNEntryInSubTCT_LogicFilter[iSubTCT] << "th)" << std::endl;
+					fNEntryInSubTimeRegion_LogicFilter[iSubTimeRegion]++;
+					std::cout << "\t\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTimeRegion " << iSubTimeRegion << " (entry count in this SubTimeRegion: " << fNEntryInSubTimeRegion_LogicFilter[iSubTimeRegion] << "th)" << std::endl;
 				}
 			}
 			std::cout << "\t\tRegistering signal: group_id=" << sig.group_id
 				<< " subgroup_id=" << sig.subgroup_id
-				<< " iSubTCT=" << (sig.subgroup_id != SignalParser::NO_SUBGROUP ? iSubTCT : UINT32_MAX)
+				<< " iSubTimeRegion=" << (sig.subgroup_id != SignalParser::NO_SUBGROUP ? iSubTimeRegion : UINT32_MAX)
 				<< " femId=" << std::hex << sig.femId
 				<< " channel=" << std::dec <<sig.channel
 				<< " offset=" << sig.offset
 				<< std::endl;
-			fTrig->EntryTo(sig.group_id, sig.subgroup_id, iSubTCT, sig.femId, sig.channel, static_cast<int>(sig.offset));
+			fTrig->EntryTo(sig.group_id, sig.subgroup_id, iSubTimeRegion, sig.femId, sig.channel, static_cast<int>(sig.offset));
 		}
 	}
-	std::cout << "\tNumber of SubTCT: " << iSubTCT + 1 << std::endl;
-	fTrig->SetfnEntryInSubTCT(fNEntryInSubTCT_LogicFilter);
+	std::cout << "\tNumber of SubTimeRegions: " << iSubTimeRegion + 1 << std::endl;
+	fTrig->SetfnEntryInSubTimeRegion(fNEntryInSubTimeRegion_LogicFilter);
 	std::cout << "\tDone." << std::endl;
 
 	// --------------------------------
-	// Initialize SubTCTs
+	// Initialize SubTimeRegions
 	// --------------------------------
-	std::cout << "\n[LogicFilter::InitTask] Setting SubTCT... " << std::endl;
+	std::cout << "\n[LogicFilter::InitTask] Setting SubTimeRegions... " << std::endl;
 	fTrig->SetSubTCT(1024 * 128, fNEntryInSubTCT_LogicFilter); // (int, map<uint32_t, uint32_t>) -> (subTCTSize, nEntryInSubTCT)
 	std::cout << "\tDone." << std::endl;
 
@@ -1193,7 +1193,7 @@ bool LogicFilter::ConditionalRun()
 
 			//Trigger process
 			fTrig->CleanUpTimeRegion();
-			fTrig->CleanUpSubTCT(fNEntryInSubTCT_LogicFilter);
+			fTrig->CleanUpSubTimeRegion(fNEntryInSubTimeRegion_LogicFilter);
 			std::vector<uint32_t> *hits = fTrig->Exec(hbf_list);
 			fltdata.emplace_back(*hits);
 			int nhits = hits->size();
