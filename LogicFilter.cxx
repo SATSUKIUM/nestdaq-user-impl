@@ -334,7 +334,7 @@ void LogicFilter::InitTask()
 	// Initialize SubTimeRegions
 	// --------------------------------
 	std::cout << "\n[LogicFilter::InitTask] Setting SubTimeRegions... " << std::endl;
-	fTrig->SetSubTCT(1024 * 128, fNEntryInSubTCT_LogicFilter); // (int, map<uint32_t, uint32_t>) -> (subTCTSize, nEntryInSubTCT)
+	fTrig->SetSubTimeRegion(1024 * 128, fNEntryInSubTimeRegion_LogicFilter); // (int, map<uint32_t, uint32_t>) -> (subTimeRegionSize, nEntryInSubTimeRegion)
 	std::cout << "\tDone." << std::endl;
 
 	// --------------------------------
