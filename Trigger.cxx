@@ -379,7 +379,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
 										if(isMemberOfSubGroup){
-											fSubTimeRegion[iSubTimeRegion][hit + k] &= ~markbit; // サブTimeRegionのビットを降ろす
+											fSubTimeRegions[iSubTimeRegion][hit + k] &= ~markbit; // サブTimeRegionのビットを降ろす
 										}
 										else{
 											fTimeRegion[hit + k] |= markbit;
@@ -412,7 +412,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
 										if(isMemberOfSubGroup){
-											fSubTimeRegion[iSubTimeRegion][hit + k] &= ~markbit; // サブTimeRegionのビットを降ろす
+											fSubTimeRegions[iSubTimeRegion][hit + k] &= ~markbit; // サブTimeRegionのビットを降ろす
 										}
 										else{
 											fTimeRegion[hit + k] |= markbit;
@@ -443,7 +443,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 								for (int k = -static_cast<int>(leftwidth) ; k < static_cast<int>(rightwidth) + 1 ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
 										if(isMemberOfSubGroup){
-											fSubTimeRegion[iSubTimeRegion][hit + k] &= ~markbit; // サブTimeRegionのビットを降ろす
+											fSubTimeRegions[iSubTimeRegion][hit + k] &= ~markbit; // サブTimeRegionのビットを降ろす
 										} // if(isMemberOfSubGroup)
 										else{
 											fTimeRegion[hit + k] |= markbit;
@@ -478,7 +478,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 								for (int k = -1 * leftwidth ; k < (rightwidth + 1) ; k++) {
 									if ((hit + k) < fTimeRegionSize) {
 										if(isMemberOfSubGroup){
-											fSubTimeRegion[iSubTimeRegion][hit + k] &= ~markbit; // サブTimeRegionのビットを降ろす
+											fSubTimeRegions[iSubTimeRegion][hit + k] &= ~markbit; // サブTimeRegionのビットを降ろす
 										}
 										else{
 											fTimeRegion[hit + k] |= markbit;
@@ -585,7 +585,7 @@ void Trigger::ScanSubTRandMarkMainTR()
 		// 	}
 		// }
 		for(uint32_t i = 0; i < fSubTimeRegionSize; ++i){
-			if(fSubTimeRegion[iSubTimeRegion][i] == uint32_t(0u)){
+			if(fSubTimeRegions[iSubTimeRegion][i] == uint32_t(0u)){
 				fTimeRegion[i] |= iMainTimeRegion;
 				#if DEBUG_MORE32 & 0
 				std::cout << "[Trigger::ScanSubTRandMarkMainTR] mark bit for MainTimeRegion: " << std::bitset<32>(iMainTimeRegion) << " to hit time " << i << std::endl;
