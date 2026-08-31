@@ -511,7 +511,14 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
                if(found_FEtoDET){
                   fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::membername_geom);
-                  registered_count_geomitemdc_kldc++;
+                  chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
+                  const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
+                  if(retrieved_geomitemdc != nullptr){
+                     registered_count_geomitemdc_kldc++;
+                  }
+                  else{
+                     std::cerr << funcname << "Failed to register GeomItemDC for detector ID: " << detectorId << std::endl;
+                  }
                } // if(found_FEtoDET)
                else{
                   ++missing_count_DETIdItem;
