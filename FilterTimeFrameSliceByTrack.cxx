@@ -112,11 +112,11 @@ void FilterTimeFrameSliceByTrack::InitTask()
    const uint8_t test_segment_utofright = 0;
    const uint16_t test_channelnumber_utofright = 0;
    const std::string_view test_channelname_utofright = "right";
-   std::cout << "\t" << funcname << "checking uTOF right DETIdItem search..." << std::endl;
+   std::cout << "\t" << funcname << "checking utof right DETIdItem search..." << std::endl;
    _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_utofright, test_planename_utofright, test_segment_utofright, test_channelname_utofright, test_channelnumber_utofright, dopeKey_DETtoFE);
    if(_FOUND_DETtoFE == true){
       std::cout << "\t" << funcname << "-> found." << std::endl;
-      detiditem = fChMap->getDETIdItem(dopeKey_DETtoFE);
+      detiditem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
       detiditem.decode();
    }
 
@@ -126,11 +126,11 @@ void FilterTimeFrameSliceByTrack::InitTask()
    const uint8_t test_segment_utofleft = 0;
    const uint16_t test_channelnumber_utofleft = 0;
    const std::string_view test_channelname_utofleft = "left";
-   std::cout << "\t" << funcname << "checking uTOF left DETIdItem search..." << std::endl;
+   std::cout << "\t" << funcname << "checking utof left DETIdItem search..." << std::endl;
    _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_utofleft, test_planename_utofleft, test_segment_utofleft, test_channelname_utofleft, test_channelnumber_utofleft, dopeKey_DETtoFE);
    if(_FOUND_DETtoFE == true){
       std::cout << "\t" << funcname << "-> found." << std::endl;
-      detiditem = fChMap->getDETIdItem(dopeKey_DETtoFE);
+      detiditem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
       detiditem.decode();
    }
    #endif
