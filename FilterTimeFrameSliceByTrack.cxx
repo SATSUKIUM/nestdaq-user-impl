@@ -63,7 +63,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
    uint32_t dopeKey_FEtoDET;
    uint32_t dopeKey_DETtoFE;
    chmap::DETIdItem detiditem;
-   chmapp::FEAddrItem feaddritem;
+   chmap::FEAddrItem feaddritem;
 
    std::cout << "\tchecking T1 right DETIdItem search..." << std::endl;
    bool _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(test_ip3rd_T1right, test_ip4th_T1right, test_ch_T1right, dopeKey_FEtoDET);
