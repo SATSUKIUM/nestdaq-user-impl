@@ -168,11 +168,11 @@ void FilterTimeFrameSliceByTrack::InitTask()
    #if CHECK_COUT_DETCONF
    // kldc 1 U 64
    std::cout << "\n\t" << "checking kldc 1 U 64 DETIdItem search..." << std::endl;
-   const string_view test_detectorname_kldc1u64 = "kldc";
-   const string_view test_planename_kldc1u64 = "U";
+   const std::string_view test_detectorname_kldc1u64 = "kldc";
+   const std::string_view test_planename_kldc1u64 = "U";
    const uint8_t test_segment_kldc1u64 = 1;
    const uint16_t test_channelnumber_kldc1u64 = 64;
-   const string_view test_channelname_kldc1u64 = "0";
+   const std::string_view test_channelname_kldc1u64 = "0";
    _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_kldc1u64, test_planename_kldc1u64, test_segment_kldc1u64, test_channelname_kldc1u64, test_channelnumber_kldc1u64, dopeKey_DETtoFE);
    if(_FOUND_DETtoFE == true){
       std::cout << "\t" << "-> found." << std::endl;
