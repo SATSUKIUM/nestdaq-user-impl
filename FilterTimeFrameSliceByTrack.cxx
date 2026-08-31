@@ -496,6 +496,11 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       geomitemdc->SetResolution(resolution, resolution, resolution);
       geomitemdc->SetRotationAngles(tiltAngle, rotationAngle1, rotationAngle2);
       geomitemdc->SetWireGeometry(wireCenterNumber, wirePitch, offset);
+      #if 1
+      if(geomitemdc.get() == nullptr){
+         std::cerr << funcname << "raw pointer of geomitemdc is nullptr for detector ID: " << detectorId << std::endl;
+      }
+      #endif
 
       int missing_count_FEAddrItem = 0;
       int missing_count_DETIdItem = 0;
@@ -510,9 +515,21 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                uint32_t dopeKeyFEtoDET;
                bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
                if(found_FEtoDET){
+                  #if 1
+                  if(geomitemdc.get() == nullptr){
+                     std::cerr << funcname << "raw pointer of geomitemdc is nullptr for detector ID: " << detectorId << std::endl;
+                  }
+                  #endif
                   fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::membername_geom);
+
                   chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
                   const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
+                  #if 1
+                  std::cout << "pointer address of geomitemdc after move: " << geomitemdc.get() << std::endl;
+                  std::cout << "pointer address of retrieved_geomitemdc: " << retrieved_geomitemdc << std::endl;
+                  std::cout << "pointer address of detiditem.detconf: " << detiditem.detconf << std::endl;
+                  std::cout << "pointer address of detiditem.detconf->membername_geom.get(): " << detiditem.detconf->membername_geom.get() << std::endl;
+                  #endif
                   if(retrieved_geomitemdc != nullptr){
                      registered_count_geomitemdc_kldc++;
                   }
