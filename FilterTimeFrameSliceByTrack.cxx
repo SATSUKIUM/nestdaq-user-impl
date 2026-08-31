@@ -504,7 +504,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
          for(int i=0+32; i<128-32; ++i){
             int ChannelNumber = i;
             uint32_t dopeKey_DETtoFE;
-            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string("U"), static_cast<uint8_t>(2), std::string("0"), static_cast<uint16_t>(95), dopeKey_DETtoFE);
+            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, std::string("0"), static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE);
             if(found_DETtoFE){
                chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
                uint32_t dopeKeyFEtoDET;
