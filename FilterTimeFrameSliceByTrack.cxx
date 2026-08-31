@@ -166,14 +166,14 @@ void FilterTimeFrameSliceByTrack::InitTask()
    RegisterDetectorConfig_DCTdcCalib();
    RegisterDetectorConfig_DCDriftParam();
    #if CHECK_COUT_DETCONF
-   // kldc 2 U 95
-   std::cout << "\n\t" << "checking kldc 2 U 95 DETIdItem search..." << std::endl;
-   const std::string_view test_detectorname_kldc2u95 = "kldc";
-   const std::string_view test_planename_kldc2u95 = "U";
-   const uint8_t test_segment_kldc2u95 = 2;
-   const uint16_t test_channelnumber_kldc2u95 = 95;
-   const std::string_view test_channelname_kldc2u95 = "0";
-   _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_kldc2u95, test_planename_kldc2u95, test_segment_kldc2u95, test_channelname_kldc2u95, test_channelnumber_kldc2u95, dopeKey_DETtoFE);
+   // kldc 1 U 63
+   std::cout << "\n\t" << "checking kldc 1 U 63 DETIdItem search..." << std::endl;
+   const std::string_view test_detectorname_kldc1u63 = "kldc";
+   const std::string_view test_planename_kldc1u63 = "U";
+   const uint8_t test_segment_kldc1u63 = 1;
+   const uint16_t test_channelnumber_kldc1u63 = 63;
+   const std::string_view test_channelname_kldc1u63 = "0";
+   _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_kldc1u63, test_planename_kldc1u63, test_segment_kldc1u63, test_channelname_kldc1u63, test_channelnumber_kldc1u63, dopeKey_DETtoFE);
    if(_FOUND_DETtoFE == true){
       std::cout << "\t" << "-> found." << std::endl;
       feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
@@ -186,13 +186,13 @@ void FilterTimeFrameSliceByTrack::InitTask()
          // check detector configuration for kldc 1 U 63
          const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
          if(retrieved_geomitemdc != nullptr){
-            std::cout << "\t" << "-> found detector configuration for kldc 2 U 95." << std::endl;
+            std::cout << "\t" << "-> found detector configuration for kldc 1 U 63." << std::endl;
          }
          else{
-            std::cout << "\t" << "-> not found detector configuration for kldc 2 U 95." << std::endl;
+            std::cout << "\t" << "-> not found detector configuration for kldc 1 U 63." << std::endl;
          }
-      }
-   }
+      } // if(_FOUND_FEtoDET == true)
+   } // if(_FOUND_DETtoFE == true)
    else{
       std::cout << "\t" << "-> not found." << std::endl;
    }
@@ -498,7 +498,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
 
                   chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
                   const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
-                  #if 1
+                  #if 0
                   std::cout << "pointer address of geomitemdc after move: " << geomitemdc.get() << std::endl;
                   std::cout << "pointer address of detiditem.detconf: " << detiditem.detconf << std::endl;
                   std::cout << "pointer address of detiditem.detconf->membername_geom.get(): " << detiditem.detconf->membername_geom.get() << std::endl;
