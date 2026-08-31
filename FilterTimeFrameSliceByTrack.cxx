@@ -475,39 +475,18 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       uint8_t SegmentNumber = detectorSegmentMap[detectorId];
       std::string ChannelName = "0";
 
-      // Create GeomItemDC and set its properties
-      std::unique_ptr<chmap::GeomItemDC> geomitemdc = std::make_unique<chmap::GeomItemDC>();
-/* CLASS DEFINITION
-    class GeomItemDC : public GeomItem {
-        public:
-            virtual ~GeomItemDC() = default;
-            void SetWireGeometry(double centerWireNumber_, double wirePitch_, double offset_) {
-                centerWireNumber = centerWireNumber_;
-                wirePitch = wirePitch_;
-                offset = offset_;
-            }
-        private:
-            double centerWireNumber; // もし1.0なら、中心のワイヤーは1番ワイヤー。0.5なら、中心のワイヤーは1番と2番の間にある。
-            double wirePitch; // [mm] 測定軸方向のワイヤ間隔
-            double offset; // [mm] 測定軸方向のワイヤのオフセット(微調整のため)
-    }; // class GeomItemDC
-*/
-      geomitemdc->SetGlobalPosition(x, y, z);
-      geomitemdc->SetResolution(resolution, resolution, resolution);
-      geomitemdc->SetRotationAngles(tiltAngle, rotationAngle1, rotationAngle2);
-      geomitemdc->SetWireGeometry(wireCenterNumber, wirePitch, offset);
-      #if 1
-      if(geomitemdc.get() == nullptr){
-         std::cerr << funcname << "raw pointer of geomitemdc is nullptr for detector ID: " << detectorId << std::endl;
-      }
-      #endif
-
       int missing_count_FEAddrItem = 0;
       int missing_count_DETIdItem = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
          for(int i=0+32; i<128-32; ++i){
             int ChannelNumber = i;
+            std::unique_ptr<chmap::GeomItemDC> geomitemdc = std::make_unique<chmap::GeomItemDC>();
+            geomitemdc->SetGlobalPosition(x, y, z);
+            geomitemdc->SetResolution(resolution, resolution, resolution);
+            geomitemdc->SetRotationAngles(tiltAngle, rotationAngle1, rotationAngle2);
+            geomitemdc->SetWireGeometry(wireCenterNumber, wirePitch, offset);
+
             uint32_t dopeKey_DETtoFE;
             bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, std::string("0"), static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE);
             if(found_DETtoFE){
@@ -515,20 +494,15 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                uint32_t dopeKeyFEtoDET;
                bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
                if(found_FEtoDET){
-                  #if 1
-                  if(geomitemdc.get() == nullptr){
-                     std::cerr << funcname << "raw pointer of geomitemdc is nullptr for detector ID: " << detectorId << std::endl;
-                  }
-                  #endif
                   fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::membername_geom);
 
                   chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
                   const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
                   #if 1
                   std::cout << "pointer address of geomitemdc after move: " << geomitemdc.get() << std::endl;
-                  std::cout << "pointer address of retrieved_geomitemdc: " << retrieved_geomitemdc << std::endl;
                   std::cout << "pointer address of detiditem.detconf: " << detiditem.detconf << std::endl;
                   std::cout << "pointer address of detiditem.detconf->membername_geom.get(): " << detiditem.detconf->membername_geom.get() << std::endl;
+                  std::cout << "pointer address of retrieved_geomitemdc: " << retrieved_geomitemdc << std::endl;
                   #endif
                   if(retrieved_geomitemdc != nullptr){
                      registered_count_geomitemdc_kldc++;
