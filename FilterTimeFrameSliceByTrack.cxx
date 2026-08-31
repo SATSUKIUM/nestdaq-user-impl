@@ -184,6 +184,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
          detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
          detiditem.decode();
          // check detector configuration for kldc 1 U 64
+      }
    }
    else{
       std::cout << "\t" << "-> not found." << std::endl;
