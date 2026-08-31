@@ -517,7 +517,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                      registered_count_geomitemdc_kldc++;
                   }
                   else{
-                     std::cerr << funcname << "Failed to register GeomItemDC for detector ID: " << detectorId << std::endl;
+                     std::cerr << funcname << "Failed to register GeomItemDC for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
                   }
                } // if(found_FEtoDET)
                else{
