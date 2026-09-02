@@ -149,6 +149,12 @@ protected:
    // ================================
    const double tdc64h_to_ns = 0.9765625*0.001; // HighResolution TDC LSB unit: 0.9762265 ps, convert to ns
 
+   // ================================
+   // File I/O for debugging
+   // ================================
+   std::ofstream fDebugFile;
+   std::string fDebugFileName;
+
 
 }; // class nestdaq::FilterTimeFrameSliceByTrack
 

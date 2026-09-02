@@ -217,13 +217,24 @@ void FilterTimeFrameSliceByTrack::InitTask()
       std::cout << "\t" << "-> not found." << std::endl;
    }
    #endif
+
+   // ================================
+   // File I/O for debugging
+   // ================================
+   fDebugFileName = "./fileout/tracking/FilterTimeFrameSliceByTrack_debug.txt";
+   fDebugFile.open(fDebugFileName, std::ios::out);
+   if (!fDebugFile.is_open()) {
+      std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to open debug file: " << fDebugFileName << std::endl;
+   }
 } // void FilterTimeFrameSliceByTrack::InitTask()
 
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::ProcessSlice] ";
+   #if DEBUG_LFTDC
    std::cout << funcname << "Function called" << std::endl;
    std::cout << "\tchecking TLF TDC 4ns unit: " << std::dec << std::setw(10) << fLFTDC4n << " -> " << std::setw(10) << fLFTDC4n * 4 << " [ns]" << std::endl;
+   #endif
 
    auto tfHeader = tf.GetHeader();
    auto numSTF = tfHeader->numSource;
@@ -264,7 +275,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          if(nTDC == 0){
             continue; // no TDC data
          }
-         #if CHECK_COUT_UTOF_TIMING
+         #if DEBUG_LFTDC
          std::cout << funcname << "HR TDC FEE found. femId = " << std::hex << femId << std::dec << std::endl;
          std::cout << "\tnTDC: " << nTDC << std::endl;
          #endif
@@ -277,10 +288,11 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             if(ch == ch_utof_right){
                ftdc = tdc64_h.tdc * 0.9765625 * 0.001; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける
                ftdc_int = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
-               #if CHECK_COUT_UTOF_TIMING
+               #if DEBUG_LFTDC
                std::cout << funcname << "(double) utof right: ch = " << ch << ", tdc     - lftdc = " << ftdc - lftdc << std::endl;
                std::cout << funcname << "(int)    utof right: ch = " << ch << ", tdc_int - lftdc = " << static_cast<int>(ftdc_int) - static_cast<int>(lftdc) << std::endl;
                #endif
+               fDebugFile << ch << " " << ftdc - lftdc << std::endl;
                if(ftdc >= tdc_min && ftdc <= tdc_max){
                   nTDC_utof_right++;
                   time_utof_right = ftdc;
@@ -289,10 +301,11 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             if(ch == ch_utof_left){
                ftdc = tdc64_h.tdc * 0.9765625 * 0.001; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける
                ftdc_int = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
-               #if CHECK_COUT_UTOF_TIMING
+               #if DEBUG_LFTDC
                std::cout << funcname << "(double) utof left: ch = " << ch << ", tdc     - lftdc = " << ftdc - lftdc << std::endl;
                std::cout << funcname << "(int)    utof left: ch = " << ch << ", tdc_int - lftdc = " << static_cast<int>(ftdc_int) - static_cast<int>(lftdc) << std::endl;
                #endif
+               fDebugFile << ch << " " << ftdc - lftdc << std::endl;
                if(ftdc >= tdc_min && ftdc <= tdc_max){
                   nTDC_utof_left++;
                   time_utof_left = ftdc;
@@ -302,7 +315,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       } // if(stfHeader->femType == SubTimeFrame::TDC64H_V3)
    } // for(auto& stf : tf)
 
-   #if 1
+   #if DEBUG_LFTDC
    if(nTDC_utof_right > 0 || nTDC_utof_left > 0){
       std::cout << funcname << "UTOF hit in range [lftdc-2, lftdc+2] = [" << lftdc << " - 2, " << lftdc <<  " + 2]" << std::endl;
       std::cout << "\tutof right: nTDC = " << nTDC_utof_right << ", time = " << time_utof_right << std::endl;
