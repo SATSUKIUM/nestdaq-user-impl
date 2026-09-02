@@ -31,6 +31,7 @@ namespace nestdaq {
    struct temporary_geometry;
    struct temporary_dctdccalib;
    struct temporary_dcdriftparam;
+   class DCHit;
 }
 
 struct nestdaq::DCRawHit {
