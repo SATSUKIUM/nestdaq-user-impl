@@ -255,6 +255,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          for(uint32_t iTDC=0; iTDC<nTDC; ++iTDC){
             TDC64H_V3::Unpack(hbf->UncheckedAt(iTDC), &tdc64_h);
             ch = tdc64_h.ch;
+            #if CHECK_COUT_UTOF_TIMING
+            std::cout << funcname << "TDC unpacked: ch = " << ch << ", raw tdc = " << tdc64_h.tdc << std::endl;
+            #endif
             if(ch == ch_utof_right){
                tdc = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
                #if CHECK_COUT_UTOF_TIMING
@@ -264,7 +267,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                   nTDC_utof_right++;
                   time_utof_right = tdc;
                }
-            }
+            } // if(ch == ch_utof_right)
             if(ch == ch_utof_left){
                tdc = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
                #if CHECK_COUT_UTOF_TIMING
@@ -274,7 +277,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                   nTDC_utof_left++;
                   time_utof_left = tdc;
                }
-            }
+            } // if(ch == ch_utof_left)
          } // for(uint32_t iTDC=0; iTDC<nTDC; ++iTDC)
       } // if(stfHeader->femType == SubTimeFrame::TDC64H_V3)
    } // for(auto& stf : tf)
