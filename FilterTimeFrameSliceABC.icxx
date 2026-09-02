@@ -47,9 +47,8 @@ void FilterTimeFrameSliceABC::PreRun()
 
 bool FilterTimeFrameSliceABC::ConditionalRun()
 {
-   #if CHECK_COUT_CONDITIONALRUN
-   std::cout << "[FilterTimeFrameSliceABC::ConditionalRun] Function called" << std::endl;
-   #endif
+   const std::string_view funcname = "[FilterTimeFrameSliceABC::ConditionalRun] ";
+   std::cout << funcname << "Function called" << std::endl;
    fDoCheck = fKTimer[0].Check();
    
    // clear the time frame of previous cycle
@@ -104,6 +103,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    std::cout << "\tcheck point" << std::endl;
    #endif
 
+   std::cout << funcname << "fTFs.size() = " << fTFs.size() << std::endl;
    for (uint64_t ifrm = 0, nfrm = fTFs.size(); ifrm < nfrm; ++ifrm) {
       #if CHECK_COUT_CONDITIONALRUN
       std::cout << "\t\tcheck point: ifrm = " << ifrm << std::endl;
@@ -116,6 +116,8 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          std::cout << "\t\tTF type: META" << std::endl;
          #endif
          lf = &fLFs[idxTFMETA];
+         nTrig = lf->GetHeader()->numTrigs;
+         std::cout << funcname << idxTFMETA << "-th META TF: numTrigs = " << nTrig << std::endl;
          #if CHECK_COUT_CONDITIONALRUN
          std::cout << "\t\tlf = &fLFs[" << idxTFMETA << "]" << std::endl;
          #endif

@@ -303,9 +303,11 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    } // for(auto& stf : tf)
 
    #if 1
-   std::cout << funcname << "UTOF hit in range [lftdc-2, lftdc+2] = [" << lftdc << " - 2, " << lftdc <<  " + 2]" << std::endl;
-   std::cout << "\tutof right: nTDC = " << nTDC_utof_right << ", time = " << time_utof_right << std::endl;
-   std::cout << "\tutof left: nTDC = " << nTDC_utof_left << ", time = " << time_utof_left << std::endl;
+   if(nTDC_utof_right > 0 || nTDC_utof_left > 0){
+      std::cout << funcname << "UTOF hit in range [lftdc-2, lftdc+2] = [" << lftdc << " - 2, " << lftdc <<  " + 2]" << std::endl;
+      std::cout << "\tutof right: nTDC = " << nTDC_utof_right << ", time = " << time_utof_right << std::endl;
+      std::cout << "\tutof left: nTDC = " << nTDC_utof_left << ", time = " << time_utof_left << std::endl;
+   }
    #endif
    #endif
 
