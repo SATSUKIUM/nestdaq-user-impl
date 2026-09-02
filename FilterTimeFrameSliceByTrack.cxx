@@ -356,7 +356,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          } // for(uint32_t i=0; i<nData; ++i)
       } // else if(stfHeader->femType == SubTimeFrame::TDC64L)
       else if(stfHeader->femType == SubTimeFrame::TDC64H_V3){
-         std::cout << "TDC64H_V3 FEM found. femId = " << std::hex << femId << std::dec << std::endl;
+         // std::cout << "TDC64H_V3 FEM found. femId = " << std::hex << femId << std::dec << std::endl;
          TDC64H_V3::tdc64 tdc;
          for(uint32_t i=0; i<nData; ++i){
             TDC64H_V3::Unpack(hbf->UncheckedAt(i), &tdc);
@@ -373,7 +373,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          } // for(uint32_t i=0; i<nData; ++i)
       } // else if(stfHeader->femType == SubTimeFrame::TDC64H_V3)
       else if(stfHeader->femType == SubTimeFrame::TDC64L_V3){
-         std::cout << "TDC64L_V3 FEM found. femId = " << std::hex << femId << std::dec << std::endl;
+         // std::cout << "TDC64L_V3 FEM found. femId = " << std::hex << femId << std::dec << std::endl;
          TDC64L_V3::tdc64 tdc;
          for(uint32_t i=0; i<nData; ++i){
             TDC64L_V3::Unpack(hbf->UncheckedAt(i), &tdc);
