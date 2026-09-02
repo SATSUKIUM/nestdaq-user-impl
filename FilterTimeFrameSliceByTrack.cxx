@@ -201,8 +201,8 @@ void FilterTimeFrameSliceByTrack::InitTask()
 
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
-   // std::cout << "[FilterTimeFrameSliceByTrack::ProcessSlice] Function called" << std::endl;
-   // std::cout << "\tchecking TLF TDC 4ns unit: " << fLFTDC4n << std::endl;
+   std::cout << "[FilterTimeFrameSliceByTrack::ProcessSlice] Function called" << std::endl;
+   std::cout << "\tchecking TLF TDC 4ns unit: " << fLFTDC4n << std::endl;
 
    
 
@@ -215,7 +215,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       for (int i = 0; i < nData; ++i) {
          // unpack data
          // Unpack(hbf->UncheckedAt(i),tdc);
-         //
+      //
       }
       // judge
       doKeep = true;

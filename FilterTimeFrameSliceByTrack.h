@@ -38,6 +38,47 @@ struct nestdaq::DCRawHit {
    uint32_t tdc;
 }; // struct nestdaq::DCRawHit
 
+class nestdaq::DCHit {
+public:
+   DCHit();
+   DCHit(double wirePos, double wireAngle, const chmap::DETIdItem* detid) {
+      this->wirePos = wirePos;
+      this->wireAngle = wireAngle;
+      this->detid = detid;
+   };
+   ~DCHit() = default;
+
+   void AddHit(double tdc){
+      TDCs.push_back(tdc);
+      return;
+   }
+
+   const chmap::DETIdItem* GetDETIdItem() const { return detid; };
+   int Clear(){
+      int n = TDCs.size();
+      TDCs.clear();
+      DriftTimes.clear();
+      DriftLengths.clear();
+      return n;
+   };
+
+   void CalcDriftTimes();
+   void CalcDriftLengths();
+
+   double GetWirePos() const { return wirePos; };
+   double GetWireAngle() const { return wireAngle; };
+   double GetDriftLength(int nth) const { return DriftLengths[nth]; };
+
+private:
+   double wirePos;
+   double wireAngle;
+   
+   std::vector<double> TDCs;
+   std::vector<double> DriftTimes;
+   std::vector<double> DriftLengths;
+   const chmap::DETIdItem* detid;
+}; // class nestdaq::DCHit
+
 struct nestdaq::temporary_geometry {
    int detectoridentifier;
    std::string detectorname;
