@@ -118,9 +118,15 @@ void FilterTimeFrameSliceByTrack::InitTask()
    std::cout << "\n\t" << "checking utof right FEAddrItem search..." << std::endl;
    _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_utofright, test_planename_utofright, test_segment_utofright, test_channelname_utofright, test_channelnumber_utofright, dopeKey_DETtoFE);
    if(_FOUND_DETtoFE == true){
-      std::cout << "\t" << "-> found." << std::endl;
+      std::cout << "\t" << "utof right FEAddrItem -> found." << std::endl;
       feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
       feaddritem.decode();
+      _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+      if(_FOUND_FEtoDET == true){
+         std::cout << "\t" << "utof right DETIdItem -> found." << std::endl;
+         detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+         detiditem.decode();
+      }
    }
 
    // check existance of utof left DETIdItem
@@ -132,9 +138,15 @@ void FilterTimeFrameSliceByTrack::InitTask()
    std::cout << "\n\t" << "checking utof left FEAddrItem search..." << std::endl;
    _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_utofleft, test_planename_utofleft, test_segment_utofleft, test_channelname_utofleft, test_channelnumber_utofleft, dopeKey_DETtoFE);
    if(_FOUND_DETtoFE == true){
-      std::cout << "\t" << "-> found." << std::endl;
+      std::cout << "\t" << "utof left FEAddrItem -> found." << std::endl;
       feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
       feaddritem.decode();
+      _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+      if(_FOUND_FEtoDET == true){
+         std::cout << "\t" << "utof left DETIdItem -> found." << std::endl;
+         detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+         detiditem.decode();
+      }
    }
    #endif
 
@@ -219,6 +231,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
    chmap::DETIdItem* detiditem = nullptr;
 
+   #if 0
    // Scan, searching for UTOF
    const uint32_t femId_utof = 0xc0a802a9;
    const uint16_t ch_utof_right = 10;
@@ -289,6 +302,86 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    std::cout << funcname << "UTOF hit in range [lftdc-2, lftdc+2] = [" << lftdc << " - 2, " << lftdc <<  " + 2]" << std::endl;
    std::cout << "\tutof right: nTDC = " << nTDC_utof_right << ", time = " << time_utof_right << std::endl;
    std::cout << "\tutof left: nTDC = " << nTDC_utof_left << ", time = " << time_utof_left << std::endl;
+   #endif
+   #endif
+
+   #if 1
+   uint8_t femId_ip3rd = 0;
+   uint8_t femId_ip4th = 0;
+   uint32_t keyFEtoDET;
+   for(auto& stf : tf){
+      auto stfHeader = stf->GetHeader();
+      auto& hbf = stf->at(0);
+      auto hbfHeader = hbf->GetHeader();
+      uint32_t nData = hbf->GetNumData();
+      femId = stfHeader->femId;
+      femId_ip3rd = (femId >> 8) & 0xff;
+      femId_ip4th = femId & 0xff;
+
+      if(header->femType == SubTimeFrame::TDC64H){
+         std::cout << "TDC64H FEM found. femId = " << std::hex << femId << std::dec << std::endl;
+         TDC64H::tdc64 tdc;
+         for(uint32_t i=0; i<nData; ++i){
+            TDC64H::Unpack(hbf->UncheckedAt(i), &tdc);
+            ch = tdc.ch;
+            tdc = tdc.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
+            bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
+            if(isFound){
+               detiditem = &fChMap->getDETIdItem(keyFEtoDET);
+               detiditem->decode();
+            } // if(isFound)
+         } // for(uint32_t i=0; i<nData; ++i)
+      } // if(header->femType == SubTimeFrame::TDC64H0)
+      else if(header->femType == SubTimeFrame::TDC64L){
+         std::cout << "TDC64L FEM found. femId = " << std::hex << femId << std::dec << std::endl;
+         TDC64L::tdc64 tdc;
+         for(uint32_t i=0; i<nData; ++i){
+            TDC64L::Unpack(hbf->UncheckedAt(i), &tdc);
+            ch = tdc.ch;
+            tdc = tdc.tdc;
+            bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
+            if(isFound){
+               detiditem = &fChMap->getDETIdItem(keyFEtoDET);
+               detiditem->decode();
+            } // if(isFound)
+
+         } // for(uint32_t i=0; i<nData; ++i)
+      } // else if(header->femType == SubTimeFrame::TDC64L)
+      else if(header->femType == SubTimeFrame::TDC64H_V3){
+         std::cout << "TDC64H_V3 FEM found. femId = " << std::hex << femId << std::dec << std::endl;
+         TDC64H_V3::tdc64 tdc;
+         for(uint32_t i=0; i<nData; ++i){
+            TDC64H_V3::Unpack(hbf->UncheckedAt(i), &tdc);
+            ch = tdc.ch;
+            tdc = tdc.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
+            bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
+            if(isFound){
+               detiditem = &fChMap->getDETIdItem(keyFEtoDET);
+               detiditem->decode();
+            } // if(isFound)
+
+         } // for(uint32_t i=0; i<nData; ++i)
+      } // else if(header->femType == SubTimeFrame::TDC64H_V3)
+      else if(header->femType == SubTimeFrame::TDC64L_V3){
+         std::cout << "TDC64L_V3 FEM found. femId = " << std::hex << femId << std::dec << std::endl;
+         TDC64L_V3::tdc64 tdc;
+         for(uint32_t i=0; i<nData; ++i){
+            TDC64L_V3::Unpack(hbf->UncheckedAt(i), &tdc);
+            ch = tdc.ch;
+            tdc = tdc.tdc;
+            bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
+            if(isFound){
+               detiditem = &fChMap->getDETIdItem(keyFEtoDET);
+               detiditem->decode();
+            } // if(isFound)
+
+         } // for(uint32_t i=0; i<nData; ++i)
+      } // else if(header->femType == SubTimeFrame::TDC64L_V3)
+      else{
+         std::cout << funcname << "Unknown FEM type: " << header->femType << std::endl;
+      }
+
+   }
    #endif
 
    // Scan, searching for KLDC with hit time after the coincidence TDC from LogicFilter block
