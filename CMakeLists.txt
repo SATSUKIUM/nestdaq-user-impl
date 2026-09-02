@@ -348,7 +348,7 @@ install(TARGETS
 
 
 foreach(lvar IN ITEMS
-    TriggerView;
+    # TriggerView;
 )
 
 set(EXEC ${lvar})
