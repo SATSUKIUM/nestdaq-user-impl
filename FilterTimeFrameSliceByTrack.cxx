@@ -309,6 +309,10 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    uint8_t femId_ip3rd = 0;
    uint8_t femId_ip4th = 0;
    uint32_t keyFEtoDET;
+   const uint8_t utof_detname_index = 0x0c;
+   const uint8_t utof_planename_index = 0x00;
+   const uint8_t utof_right_channelname_index = 0x04;
+   const uint8_t utof_left_channelname_index = 0x03;
    for(auto& stf : tf){
       auto stfHeader = stf->GetHeader();
       auto& hbf = stf->at(0);
@@ -328,7 +332,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
             if(isFound){
                detiditem = &fChMap->getDETIdItem(keyFEtoDET);
-               detiditem->decode();
+               if(detiditem->name == utof_detname_index && detiditem->plane == utof_planename_index && channel_number == 0 && (detiditem->readout_channel == utof_right_channelname_index || detiditem->readout_channel == utof_left_channelname_index)){
+                  std::cout << funcname << "UTOF hit found. femId = " << std::hex << femId << std::dec << ", ch = " << ch << ", tdc = " << ftdc << std::endl;
+               }
             } // if(isFound)
          } // for(uint32_t i=0; i<nData; ++i)
       } // if(stfHeader->femType == SubTimeFrame::TDC64H)
@@ -342,7 +348,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
             if(isFound){
                detiditem = &fChMap->getDETIdItem(keyFEtoDET);
-               detiditem->decode();
+               if(detiditem->name == utof_detname_index && detiditem->plane == utof_planename_index && channel_number == 0 && (detiditem->readout_channel == utof_right_channelname_index || detiditem->readout_channel == utof_left_channelname_index)){
+                  std::cout << funcname << "UTOF hit found. femId = " << std::hex << femId << std::dec << ", ch = " << ch << ", tdc = " << ftdc << std::endl;
+               }
             } // if(isFound)
 
          } // for(uint32_t i=0; i<nData; ++i)
@@ -357,7 +365,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
             if(isFound){
                detiditem = &fChMap->getDETIdItem(keyFEtoDET);
-               detiditem->decode();
+               if(detiditem->name == utof_detname_index && detiditem->plane == utof_planename_index && channel_number == 0 && (detiditem->readout_channel == utof_right_channelname_index || detiditem->readout_channel == utof_left_channelname_index)){
+                  std::cout << funcname << "UTOF hit found. femId = " << std::hex << femId << std::dec << ", ch = " << ch << ", tdc = " << ftdc << std::endl;
+               }
             } // if(isFound)
 
          } // for(uint32_t i=0; i<nData; ++i)
@@ -372,7 +382,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
             if(isFound){
                detiditem = &fChMap->getDETIdItem(keyFEtoDET);
-               detiditem->decode();
+               if(detiditem->name == utof_detname_index && detiditem->plane == utof_planename_index && channel_number == 0 && (detiditem->readout_channel == utof_right_channelname_index || detiditem->readout_channel == utof_left_channelname_index)){
+                  std::cout << funcname << "UTOF hit found. femId = " << std::hex << femId << std::dec << ", ch = " << ch << ", tdc = " << ftdc << std::endl;
+               }
             } // if(isFound)
 
          } // for(uint32_t i=0; i<nData; ++i)
