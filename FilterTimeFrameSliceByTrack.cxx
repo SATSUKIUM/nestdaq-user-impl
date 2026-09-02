@@ -26,6 +26,10 @@
 // for registering the detector configurations
 #include <map>
 
+// for cout
+#include <iomanip>
+#include <iostream>
+
 // for debugging
 #include "FilterTimeFrameSliceByTrackDebugger.h"
 
@@ -219,7 +223,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::ProcessSlice] ";
    std::cout << funcname << "Function called" << std::endl;
-   std::cout << "\tchecking TLF TDC 4ns unit: " << fLFTDC4n << std::endl;
+   std::cout << "\tchecking TLF TDC 4ns unit: " << std::dec << std::setw(10) << fLFTDC4n << " -> " << std::setw(10) << fLFTDC4n * 4 << " [ns]" << std::endl;
 
    auto tfHeader = tf.GetHeader();
    auto numSTF = tfHeader->numSource;
@@ -231,7 +235,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
    chmap::DETIdItem* detiditem = nullptr;
 
-   #if 0
+   #if 1
    // Scan, searching for UTOF
    const uint32_t femId_utof = 0xc0a802a9;
    const uint16_t ch_utof_right = 10;
@@ -298,14 +302,14 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       } // if(stfHeader->femType == SubTimeFrame::TDC64H_V3)
    } // for(auto& stf : tf)
 
-   #if CHECK_COUT_UTOF_TIMING
+   #if 1
    std::cout << funcname << "UTOF hit in range [lftdc-2, lftdc+2] = [" << lftdc << " - 2, " << lftdc <<  " + 2]" << std::endl;
    std::cout << "\tutof right: nTDC = " << nTDC_utof_right << ", time = " << time_utof_right << std::endl;
    std::cout << "\tutof left: nTDC = " << nTDC_utof_left << ", time = " << time_utof_left << std::endl;
    #endif
    #endif
 
-   #if 1
+   #if 0
    uint8_t femId_ip3rd = 0;
    uint8_t femId_ip4th = 0;
    uint32_t keyFEtoDET;
