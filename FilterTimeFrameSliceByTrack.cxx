@@ -215,7 +215,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    uint32_t femId = 0;
    uint16_t ch = 0; // 8でも十分なんだけど、255よりでかい謎のエントリーを除外するために16で受ける
    double tdc = 0; // unit: ns
-   const uint32_t lftdc = lftdc4n * 4; // FilterTimeFrameSliceABCの持ってるfield lftdc4n
+   const uint32_t lftdc = fLFTDC4n * 4; // FilterTimeFrameSliceABCの持ってるfield lftdc4n
 
    chmap::DETIdItem* detiditem = nullptr;
 
@@ -244,7 +244,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          auto& hbf = stf->at(0);
          nTDC = hbf->GetNumData();
          for(uint32_t iTDC=0; iTDC<nTDC; ++iTDC){
-            TDC64H_V3::Unpack(hbf->UncheckedAt(iTDC), tdc64_h);
+            TDC64H_V3::Unpack(hbf->UncheckedAt(iTDC), &tdc64_h);
             ch = tdc64_h.ch;
             if(ch == ch_utof_right){
                tdc = tdc64_h.time<<10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
