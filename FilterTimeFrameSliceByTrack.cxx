@@ -274,7 +274,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             // std::cout << funcname << "TDC unpacked: ch = " << ch << ", raw tdc = " << tdc64_h.tdc << std::endl;
             // #endif
             if(ch == ch_utof_right){
-               ftdc = tdc64_h.tdc * 0.9765625 * 0.001; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
+               ftdc = tdc64_h.tdc / (0.9765625) * 0.001; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
                #if CHECK_COUT_UTOF_TIMING
                std::cout << funcname << "utof right: ch = " << ch << ", tdc - lftdc = " << ftdc - lftdc << std::endl;
                #endif
@@ -284,7 +284,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                }
             } // if(ch == ch_utof_right)
             if(ch == ch_utof_left){
-               ftdc = tdc64_h.tdc * 0.9765625 * 0.001; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
+               ftdc = tdc64_h.tdc / (0.9765625) * 0.001; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
                #if CHECK_COUT_UTOF_TIMING
                std::cout << funcname << "utof left: ch = " << ch << ", tdc - lftdc = " << ftdc - lftdc << std::endl;
                #endif
