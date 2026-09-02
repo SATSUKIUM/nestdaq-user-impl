@@ -142,7 +142,13 @@ protected:
 
    bool RegisterDetectorConfig_Geometry();
    bool RegisterDetectorConfig_DCTdcCalib();
-   bool RegisterDetectorConfig_DCDriftParam();
+   bool RegisterDetectorConfig_DCDriftParam(); 
+
+   // ================================
+   // TDC value calculation
+   // ================================
+   const double tdc64h_to_ns = 0.9765625*0.001; // HighResolution TDC LSB unit: 0.9762265 ps, convert to ns
+
 
 }; // class nestdaq::FilterTimeFrameSliceByTrack
 

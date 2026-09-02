@@ -15,6 +15,10 @@
 #include "utility/MessageUtil.h"
 #include "UnpackTdc.h"
 
+#include "SubTimeFrameHeader.h"
+#include "TimeFrameHeader.h"
+#include "FrameContainer.h" // TTF, TSTF, THBF, TLF(parse raw data)
+
 // for the Parser of detector configurations
 #include <fstream>
 #include <sstream>
@@ -201,10 +205,72 @@ void FilterTimeFrameSliceByTrack::InitTask()
 
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
-   std::cout << "[FilterTimeFrameSliceByTrack::ProcessSlice] Function called" << std::endl;
+   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::ProcessSlice] ";
+   std::cout << funcname << "Function called" << std::endl;
    std::cout << "\tchecking TLF TDC 4ns unit: " << fLFTDC4n << std::endl;
 
-   
+   auto tfHeader = tf.GetHeader();
+   auto numSTF = tfHeader->numSource;
+
+   uint32_t femId = 0;
+   uint16_t ch = 0; // 8でも十分なんだけど、255よりでかい謎のエントリーを除外するために16で受ける
+   double tdc = 0; // unit: ns
+   const uint32_t lftdc = lftdc4n * 4; // FilterTimeFrameSliceABCの持ってるfield lftdc4n
+
+   chmap::DETIdItem* detiditem = nullptr;
+
+   // Scan, searching for UTOF
+   const uint32_t femId_utof = 0xc0a802a9;
+   const uint16_t ch_utof_right = 10;
+   const uint16_t ch_utof_left = 8;
+   const uint32_t tdc_min = lftdc - 3; // unit: ns
+   const uint32_t tdc_max = lftdc + 3; // unit: ns
+   int nTDC_utof_right = 0;
+   int nTDC_utof_left = 0;
+   uint32_t time_utof_right = 0;
+   uint32_t time_utof_left = 0;
+   for(auto& stf : tf){
+      auto stfHeader = stf->GetHeader();
+      femId = stfHeader->femId;
+      if(femId != femId_utof){
+         continue;
+      }
+      auto numHBF = stfHeader->numMessages; // tabun, 1
+
+      TDC64H_V3::tdc64 tdc64_h;
+      // TDC64L_V3::tdc64 tdc64_l;
+      uint32_t nTDC = 0;
+      if(stfHeader->femType == SubTimeFrame::TDC64H_V3){
+         auto& hbf = stf->at(0);
+         nTDC = hbf->GetNumData();
+         for(uint32_t iTDC=0; iTDC<nTDC; ++iTDC){
+            TDC64H_V3::Unpack(hbf->UncheckedAt(iTDC), tdc64_h);
+            ch = tdc64_h.ch;
+            if(ch == ch_utof_right){
+               tdc = tdc64_h.time<<10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
+               if(tdc >= tdc_min && tdc <= tdc_max){
+                  nTDC_utof_right++;
+                  time_utof_right = tdc;
+               }
+            }
+            if(ch == ch_utof_left){
+               tdc = tdc64_h.time<<10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
+               if(tdc >= tdc_min && tdc <= tdc_max){
+                  nTDC_utof_left++;
+                  time_utof_left = tdc;
+               }
+            }
+         } // for(uint32_t iTDC=0; iTDC<nTDC; ++iTDC)
+      } // if(stfHeader->femType == SubTimeFrame::TDC64H_V3)
+   } // for(auto& stf : tf)
+
+   #if CHECK_COUT_UTOF_TIMING
+   std::cout << funcname << "UTOF hit in range [lftdc-2, lftdc+2] = [" << lftdc << " - 2, " << lftdc <<  " + 2]" << std::endl;
+   std::cout << "\tutof right: nTDC = " << nTDC_utof_right << ", time = " << time_utof_right << std::endl;
+   std::cout << "\tutof left: nTDC = " << nTDC_utof_left << ", time = " << time_utof_left << std::endl;
+   #endif
+
+   // Scan, searching for KLDC with hit time after the coincidence TDC from LogicFilter block
 
 #if 0
    int doKeep = false;
@@ -225,7 +291,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       return false;
    }
 #endif   
-   return true;
+   return false;
 }
 
 int FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry(std::string_view filename)
