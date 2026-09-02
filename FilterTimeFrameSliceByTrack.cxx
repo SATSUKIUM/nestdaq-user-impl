@@ -235,6 +235,11 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       if(femId != femId_utof){
          continue;
       }
+      #if CHECK_COUT_UTOF_TIMING
+      else{
+         std::cout << funcname << "UTOF FEM found. femId = " << std::hex << femId << std::dec << std::endl;
+      }
+      #endif
       auto numHBF = stfHeader->numMessages; // tabun, 1
 
       TDC64H_V3::tdc64 tdc64_h;
@@ -243,11 +248,18 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       if(stfHeader->femType == SubTimeFrame::TDC64H_V3){
          auto& hbf = stf->at(0);
          nTDC = hbf->GetNumData();
+         #if CHECK_COUT_UTOF_TIMING
+         std::cout << funcname << "HR TDC FEE found. femId = " << std::hex << femId << std::dec << std::endl;
+         std::cout << "\tnTDC: " << nTDC << std::endl;
+         #endif
          for(uint32_t iTDC=0; iTDC<nTDC; ++iTDC){
             TDC64H_V3::Unpack(hbf->UncheckedAt(iTDC), &tdc64_h);
             ch = tdc64_h.ch;
             if(ch == ch_utof_right){
                tdc = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
+               #if CHECK_COUT_UTOF_TIMING
+               std::cout << funcname << "utof right: ch = " << ch << ", tdc = " << tdc << std::endl;
+               #endif
                if(tdc >= tdc_min && tdc <= tdc_max){
                   nTDC_utof_right++;
                   time_utof_right = tdc;
@@ -255,6 +267,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             }
             if(ch == ch_utof_left){
                tdc = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
+               #if CHECK_COUT_UTOF_TIMING
+               std::cout << funcname << "utof left: ch = " << ch << ", tdc = " << tdc << std::endl;
+               #endif
                if(tdc >= tdc_min && tdc <= tdc_max){
                   nTDC_utof_left++;
                   time_utof_left = tdc;
