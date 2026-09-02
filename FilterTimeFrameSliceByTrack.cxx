@@ -223,8 +223,8 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    const uint32_t femId_utof = 0xc0a802a9;
    const uint16_t ch_utof_right = 10;
    const uint16_t ch_utof_left = 8;
-   const uint32_t tdc_min = lftdc - 3; // unit: ns
-   const uint32_t tdc_max = lftdc + 3; // unit: ns
+   const uint32_t tdc_min = lftdc - 15; // unit: ns
+   const uint32_t tdc_max = lftdc + 15; // unit: ns
    int nTDC_utof_right = 0;
    int nTDC_utof_left = 0;
    uint32_t time_utof_right = 0;
@@ -248,6 +248,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       if(stfHeader->femType == SubTimeFrame::TDC64H_V3){
          auto& hbf = stf->at(0);
          nTDC = hbf->GetNumData();
+         if(nTDC == 0){
+            continue; // no TDC data
+         }
          #if CHECK_COUT_UTOF_TIMING
          std::cout << funcname << "HR TDC FEE found. femId = " << std::hex << femId << std::dec << std::endl;
          std::cout << "\tnTDC: " << nTDC << std::endl;
