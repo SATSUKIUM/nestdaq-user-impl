@@ -276,7 +276,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             if(ch == ch_utof_right){
                ftdc = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
                #if CHECK_COUT_UTOF_TIMING
-               std::cout << funcname << "utof right: ch = " << ch << ", tdc = " << ftdc << std::endl;
+               std::cout << funcname << "utof right: ch = " << ch << ", tdc - lftdc = " << ftdc - lftdc << std::endl;
                #endif
                if(ftdc >= tdc_min && ftdc <= tdc_max){
                   nTDC_utof_right++;
@@ -286,7 +286,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             if(ch == ch_utof_left){
                ftdc = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
                #if CHECK_COUT_UTOF_TIMING
-               std::cout << funcname << "utof left: ch = " << ch << ", tdc = " << ftdc << std::endl;
+               std::cout << funcname << "utof left: ch = " << ch << ", tdc - lftdc = " << ftdc - lftdc << std::endl;
                #endif
                if(ftdc >= tdc_min && ftdc <= tdc_max){
                   nTDC_utof_left++;
