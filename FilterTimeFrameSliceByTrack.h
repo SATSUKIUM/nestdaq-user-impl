@@ -42,7 +42,6 @@ struct nestdaq::DCRawHit {
 
 class nestdaq::DCHit {
 public:
-   DCHit();
    DCHit(double wirePos, double wireAngle, const chmap::DETIdItem* detid) {
       this->wirePos = wirePos;
       this->wireAngle = wireAngle;
