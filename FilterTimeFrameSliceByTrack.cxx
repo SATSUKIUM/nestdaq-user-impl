@@ -258,6 +258,12 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    int nTDC_utof_left = 0;
    uint32_t time_utof_right = 0;
    uint32_t time_utof_left = 0;
+
+   #if 1
+   double min_diff_utof_right = 1e6;
+   double min_diff_utof_left = 1e6;
+   #endif
+
    for(auto& stf : tf){
       auto stfHeader = stf->GetHeader();
       femId = stfHeader->femId;
@@ -292,7 +298,11 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                std::cout << funcname << "(double) utof right: ch = " << ch << ", tdc     - lftdc = " << ftdc - lftdc << std::endl;
                std::cout << funcname << "(int)    utof right: ch = " << ch << ", tdc_int - lftdc = " << static_cast<int>(ftdc_int) - static_cast<int>(lftdc) << std::endl;
                #endif
-               fDebugFile << ch << " " << ftdc - lftdc << std::endl;
+
+               if(ftdc - lftdc < min_diff_utof_right){
+                  min_diff_utof_right = ftdc - lftdc;
+               }
+
                if(ftdc >= tdc_min && ftdc <= tdc_max){
                   nTDC_utof_right++;
                   time_utof_right = ftdc;
@@ -305,7 +315,11 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                std::cout << funcname << "(double) utof left: ch = " << ch << ", tdc     - lftdc = " << ftdc - lftdc << std::endl;
                std::cout << funcname << "(int)    utof left: ch = " << ch << ", tdc_int - lftdc = " << static_cast<int>(ftdc_int) - static_cast<int>(lftdc) << std::endl;
                #endif
-               fDebugFile << ch << " " << ftdc - lftdc << std::endl;
+               
+               if(ftdc - lftdc < min_diff_utof_left){
+                  min_diff_utof_left = ftdc - lftdc;
+               }
+
                if(ftdc >= tdc_min && ftdc <= tdc_max){
                   nTDC_utof_left++;
                   time_utof_left = ftdc;
@@ -314,6 +328,14 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          } // for(uint32_t iTDC=0; iTDC<nTDC; ++iTDC)
       } // if(stfHeader->femType == SubTimeFrame::TDC64H_V3)
    } // for(auto& stf : tf)
+
+   if(min_diff_utof_right < 1e6){
+      fDebugFile << 10 << " " << min_diff_utof_right << std::endl;
+   }
+   if(min_diff_utof_left < 1e6){
+      fDebugFile << 8 << " " << min_diff_utof_left << std::endl;
+   }
+
 
    #if DEBUG_LFTDC
    if(nTDC_utof_right > 0 || nTDC_utof_left > 0){
