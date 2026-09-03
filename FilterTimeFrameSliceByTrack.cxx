@@ -216,6 +216,46 @@ void FilterTimeFrameSliceByTrack::InitTask()
    else{
       std::cout << "\t" << "-> not found." << std::endl;
    }
+   // plane name index check
+   const std::string_view test_planename_up = "Up";
+   uint8_t test_planename_up_index = 0;
+   bool _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_up, test_planename_up_index);
+   if(_FOUND_Index == true){
+      std::cout << "\t" << "-> found plane name index for Up: " << std::hex << static_cast<int>(test_planename_up_index) << std::dec << std::endl;
+   }
+   else{
+      std::cout << "\t" << "-> not found plane name index for Up." << std::endl;
+   }
+
+   const std::string_view test_planename_vp = "V";
+   uint8_t test_planename_v_index = 0;
+   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_vp, test_planename_v_index);
+   if(_FOUND_Index == true){
+      std::cout << "\t" << "-> found plane name index for V: " << std::hex << static_cast<int>(test_planename_v_index) << std::dec << std::endl;
+   }
+   else{
+      std::cout << "\t" << "-> not found plane name index for V." << std::endl;
+   }
+
+   const std::string_view test_planename_u = "U";
+   uint8_t test_planename_u_index = 0;
+   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_u, test_planename_u_index);
+   if(_FOUND_Index == true){
+      std::cout << "\t" << "-> found plane name index for U: " << std::hex << static_cast<int>(test_planename_u_index) << std::dec << std::endl;
+   }
+   else{
+      std::cout << "\t" << "-> not found plane name index for U." << std::endl;
+   }
+
+   const std::string_view test_planename_vp = "Vp";
+   uint8_t test_planename_vp_index = 0;
+   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_vp, test_planename_vp_index);
+   if(_FOUND_Index == true){
+      std::cout << "\t" << "-> found plane name index for Vp: " << std::hex << static_cast<int>(test_planename_vp_index) << std::dec << std::endl;
+   }
+   else{
+      std::cout << "\t" << "-> not found plane name index for Vp." << std::endl;
+   }
    #endif
 
    // ================================
@@ -250,7 +290,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
    chmap::DETIdItem* detiditem = nullptr;
 
+   // ================================
    // Scan, searching for UTOF
+   // ================================
    const uint32_t femId_utof = 0xc0a802a9;
    const uint16_t ch_utof_right = 10;
    const uint16_t ch_utof_left = 8;
@@ -351,7 +393,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    }
    #endif
 
+   // ================================
    // Scan, searching for KLDC with hit time after the coincidence TDC from LogicFilter block
+   // ================================
    // define the standard time for the start time of drift time calculation
    int nStandardTime = utof_left_times.size();
    int standardTime = 0;
@@ -362,6 +406,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       return false;
    }
 
+   // scan
    uint8_t femId_ip3rd = 0;
    uint8_t femId_ip4th = 0;
    uint32_t keyFEtoDET;
@@ -400,7 +445,19 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       } // if(stfHeader->femType == SubTimeFrame::TDC64L_V3)
    } // for(auto& stf : tf)
 
+   #if 0
    std::cout << funcname << "Number of KLDC hits after standard time: " << kldcHits.size() << std::endl;
+   #endif
+
+   // distribute the KLDC hits to its container
+   // const int npp = 4; // KLDC1 UU', KLDC1 VV', KLDC2 UU', KLDC2 VV'
+   // const uint8_t kldc_detname_index = 0x06;
+   // const uint8_t u_plane_index = 0x00;
+   // std::vector<DCHit> kldcHitContainer(npp);
+   // for(auto& hit : kldcHits){
+   //    chmap::DETIdItem* detiditem = hit.detiditem;
+
+   // }
 
 #if 0
    int doKeep = false;
