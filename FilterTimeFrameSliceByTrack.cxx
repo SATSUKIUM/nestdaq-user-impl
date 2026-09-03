@@ -356,7 +356,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    int nStandardTime = utof_left_times.size();
    int standardTime = 0;
    if(nStandardTime > 0){
-      standardTime = static_cast<int>(std::min_element(utof_left_times.begin(), utof_left_times.end()));
+      standardTime = static_cast<int>(*std::min_element(utof_left_times.begin(), utof_left_times.end()));
    }
    else{
       return false;
