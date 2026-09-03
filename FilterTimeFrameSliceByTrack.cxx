@@ -217,7 +217,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
       std::cout << "\t" << "-> not found." << std::endl;
    }
    // plane name index check
-   const std::string_view test_planename_up = "Up";
+   const std::string test_planename_up = "Up";
    uint8_t test_planename_up_index = 0;
    bool _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_up, test_planename_up_index);
    if(_FOUND_Index == true){
@@ -227,7 +227,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
       std::cout << "\t" << "-> not found plane name index for Up." << std::endl;
    }
 
-   const std::string_view test_planename_v = "V";
+   const std::string test_planename_v = "V";
    uint8_t test_planename_v_index = 0;
    _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_v, test_planename_v_index);
    if(_FOUND_Index == true){
@@ -237,7 +237,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
       std::cout << "\t" << "-> not found plane name index for V." << std::endl;
    }
 
-   const std::string_view test_planename_u = "U";
+   const std::string test_planename_u = "U";
    uint8_t test_planename_u_index = 0;
    _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_u, test_planename_u_index);
    if(_FOUND_Index == true){
@@ -247,7 +247,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
       std::cout << "\t" << "-> not found plane name index for U." << std::endl;
    }
 
-   const std::string_view test_planename_vp = "Vp";
+   const std::string test_planename_vp = "Vp";
    uint8_t test_planename_vp_index = 0;
    _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_vp, test_planename_vp_index);
    if(_FOUND_Index == true){
