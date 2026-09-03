@@ -411,7 +411,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    uint8_t femId_ip4th = 0;
    uint32_t keyFEtoDET;
    const uint8_t kldc_detname_index = 0x06;
-   std::vector<DCRawHit> kldcHits;
+   std::vector<DCRawHit> kldcRawHits;
    for(auto& stf : tf){
       auto stfHeader = stf->GetHeader();
       if(stfHeader->femType == SubTimeFrame::TDC64L_V3){
@@ -434,7 +434,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                if(detiditem->name == kldc_detname_index){
                   if(ftdc_int >= standardTime){
                      DCRawHit hit(detiditem, ftdc_int);
-                     kldcHits.push_back(hit);
+                     kldcRawHits.push_back(hit);
                   } // if(ftdc_int >= standardTime)
                } // if(detiditem->name == kldc_detname_index)
             } // if(isFound)
@@ -446,18 +446,65 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    } // for(auto& stf : tf)
 
    #if 0
-   std::cout << funcname << "Number of KLDC hits after standard time: " << kldcHits.size() << std::endl;
+   std::cout << funcname << "Number of KLDC hits after standard time: " << kldcRawHits.size() << std::endl;
+   #endif
+
+   // sort the raw hits
+   std::sort(kldcRawHits.begin(), kldcRawHits.end(), [](const DCRawHit& left, const DCRawHit& right) {
+      if(left.detiditem->segment != right.detiditem->segment) {
+         return left.detiditem->segment < right.detiditem->segment;
+      } else if(left.detiditem->plane != right.detiditem->plane) {
+         return left.detiditem->plane < right.detiditem->plane;
+      } else {
+         return left.channel_number < right.channel_number;
+      }
+   });
+
+   #if 1
+   std::cout << "\tKLDC hit:" << std::endl;
+   for(const auto& hit : kldcRawHits){
+      std::cout << "\t\tsegment: " << std::dec << std::fill(' ') << std::setw(2) << static_cast<int>(hit.detiditem->segment)
+                << ", plane: " << std::setw(2) << static_cast<int>(hit.detiditem->plane)
+                << ", channel: " << std::setw(3) << hit.channel_number
+                << ", tdc: " << std::setw(10) << hit.tdc
+                << std::endl;
+   } // for(const auto& hit : kldcRawHits)
    #endif
 
    // distribute the KLDC hits to its container
-   // const int npp = 4; // KLDC1 UU', KLDC1 VV', KLDC2 UU', KLDC2 VV'
-   // const uint8_t kldc_detname_index = 0x06;
-   // const uint8_t u_plane_index = 0x00;
-   // std::vector<DCHit> kldcHitContainer(npp);
-   // for(auto& hit : kldcHits){
-   //    chmap::DETIdItem* detiditem = hit.detiditem;
+   const int npp = 4; // KLDC1 UU', KLDC1 VV', KLDC2 UU', KLDC2 VV'
+   const uint8_t kldc_detname_index = 0x06;
+   const uint8_t u_plane_index = 0x01; // (std::string)"U"
+   const uint8_t v_plane_index = 0x03; // (std::string)"V"
+   const uint8_t up_plane_index = 0x02; // (std::string)"Up"
+   const uint8_t vp_plane_index = 0x04; // (std::string)"Vp"
+   std::vector<DCHit> kldcHitContainer(npp);
+   std::vector<uint16_t> kldcHitWires(npp, 0); // マルチヒットを数えるために、kldcHitContainerに入れたワイヤ番号を保管しておく
 
-   // }
+   // for(auto& hit : kldcRawHits){
+   //    chmap::DETIdItem* detiditem = hit.detiditem;
+   //    uint8_t segment = detiditem->segment;
+   //    uint16_t wireNumber = detiditem->channel_number;
+   //    uint32_t tdc = hit.tdc;
+
+
+   //    if(detiditem->segment == 1){ // KLDC1
+   //       if(detiditem->planename == u_plane_index || detiditem->planename == up_plane_index){
+   //          kldcHitContainer[0].AddHit(hit);
+   //       }
+   //       else if(detiditem->planename == v_plane_index || detiditem->planename == vp_plane_index){
+   //          kldcHitContainer[1].AddHit(hit);
+   //       }
+   //    } // if(detiditem->segment == 1)
+   //    else if(detiditem->segment == 2){ // KLDC2
+   //       if(detiditem->planename == u_plane_index || detiditem->planename == up_plane_index){
+   //          kldcHitContainer[2].AddHit(hit);
+   //       }
+   //       else if(detiditem->planename == v_plane_index || detiditem->planename == vp_plane_index){
+   //          kldcHitContainer[3].AddHit(hit);
+   //       }
+   //    } // if(detiditem->segment == 2)
+   // } // for(auto& hit : kldcRawHits)
 
 #if 0
    int doKeep = false;
