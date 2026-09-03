@@ -396,7 +396,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          } // for(uint32_t i=0; i<nData; ++i)
       } // else if(stfHeader->femType == SubTimeFrame::TDC64L_V3)
       else{
-         std::cout << funcname << "Unknown FEM type: " << stfHeader->femType << std::endl;
+         continue; // skip other FEM types
       } // if(stfHeader->femType == SubTimeFrame::TDC64L_V3)
    } // for(auto& stf : tf)
 
