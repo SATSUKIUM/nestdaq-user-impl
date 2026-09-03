@@ -451,21 +451,21 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
    // sort the raw hits
    std::sort(kldcRawHits.begin(), kldcRawHits.end(), [](const DCRawHit& left, const DCRawHit& right) {
-      if(left.detiditem->segment != right.detiditem->segment) {
-         return left.detiditem->segment < right.detiditem->segment;
-      } else if(left.detiditem->plane != right.detiditem->plane) {
-         return left.detiditem->plane < right.detiditem->plane;
+      if(left.detid->segment != right.detid->segment) {
+         return left.detid->segment < right.detid->segment;
+      } else if(left.detid->plane != right.detid->plane) {
+         return left.detid->plane < right.detid->plane;
       } else {
-         return left.channel_number < right.channel_number;
+         return left.detid->channel_number < right.detid->channel_number;
       }
    });
 
    #if 1
    std::cout << "\tKLDC hit:" << std::endl;
    for(const auto& hit : kldcRawHits){
-      std::cout << "\t\tsegment: " << std::dec << std::fill(' ') << std::setw(2) << static_cast<int>(hit.detiditem->segment)
-                << ", plane: " << std::setw(2) << static_cast<int>(hit.detiditem->plane)
-                << ", channel: " << std::setw(3) << hit.channel_number
+      std::cout << "\t\tsegment: " << std::dec << std::fill(' ') << std::setw(2) << static_cast<int>(hit.detid->segment)
+                << ", plane: " << std::setw(2) << static_cast<int>(hit.detid->plane)
+                << ", channel: " << std::setw(3) << hit.detid->channel_number
                 << ", tdc: " << std::setw(10) << hit.tdc
                 << std::endl;
    } // for(const auto& hit : kldcRawHits)
