@@ -473,7 +473,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
    // distribute the KLDC hits to its container
    const int npp = 4; // KLDC1 UU', KLDC1 VV', KLDC2 UU', KLDC2 VV'
-   const uint8_t kldc_detname_index = 0x06;
+   // const uint8_t kldc_detname_index = 0x06;
    const uint8_t u_plane_index = 0x01; // (std::string)"U"
    const uint8_t v_plane_index = 0x03; // (std::string)"V"
    const uint8_t up_plane_index = 0x02; // (std::string)"Up"
