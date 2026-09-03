@@ -35,6 +35,7 @@ namespace nestdaq {
 }
 
 struct nestdaq::DCRawHit {
+   DCRawHit(chmap::DETIdItem* detid, uint32_t tdc) : detid(detid), tdc(tdc) {};
    const chmap::DETIdItem* detid;
    uint32_t tdc;
 }; // struct nestdaq::DCRawHit

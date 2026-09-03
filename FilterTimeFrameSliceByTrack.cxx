@@ -221,11 +221,13 @@ void FilterTimeFrameSliceByTrack::InitTask()
    // ================================
    // File I/O for debugging
    // ================================
+   #if FILEOUT_LFTDC
    fDebugFileName = "./fileout/tracking/FilterTimeFrameSliceByTrack_debug.txt";
    fDebugFile.open(fDebugFileName, std::ios::out);
    if (!fDebugFile.is_open()) {
       std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to open debug file: " << fDebugFileName << std::endl;
    }
+   #endif
 } // void FilterTimeFrameSliceByTrack::InitTask()
 
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
@@ -244,10 +246,10 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    double ftdc = 0; // unit: ns
    uint32_t ftdc_int = 0; // unit: ns
    const uint32_t lftdc = fLFTDC4n * 4; // FilterTimeFrameSliceABCの持ってるfield lftdc4n
+   std::vector<double> utof_left_times;
 
    chmap::DETIdItem* detiditem = nullptr;
 
-   #if 1
    // Scan, searching for UTOF
    const uint32_t femId_utof = 0xc0a802a9;
    const uint16_t ch_utof_right = 10;
@@ -259,7 +261,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    uint32_t time_utof_right = 0;
    uint32_t time_utof_left = 0;
 
-   #if 1
+   #if FILEOUT_LFTDC
    double min_diff_utof_right = 1e6;
    double min_diff_utof_left = 1e6;
    #endif
@@ -270,7 +272,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       if(femId != femId_utof){
          continue;
       }
-      auto numHBF = stfHeader->numMessages; // tabun, 1
+      // auto numHBF = stfHeader->numMessages; // tabun, 1
 
       TDC64H_V3::tdc64 tdc64_h;
       // TDC64L_V3::tdc64 tdc64_l;
@@ -288,53 +290,57 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          for(uint32_t iTDC=0; iTDC<nTDC; ++iTDC){
             TDC64H_V3::Unpack(hbf->UncheckedAt(iTDC), &tdc64_h);
             ch = tdc64_h.ch;
-            // #if CHECK_COUT_UTOF_TIMING
-            // std::cout << funcname << "TDC unpacked: ch = " << ch << ", raw tdc = " << tdc64_h.tdc << std::endl;
-            // #endif
-            if(ch == ch_utof_right){
-               ftdc = tdc64_h.tdc * 0.9765625 * 0.001; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける
-               ftdc_int = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
-               #if DEBUG_LFTDC
-               std::cout << funcname << "(double) utof right: ch = " << ch << ", tdc     - lftdc = " << ftdc - lftdc << std::endl;
-               std::cout << funcname << "(int)    utof right: ch = " << ch << ", tdc_int - lftdc = " << static_cast<int>(ftdc_int) - static_cast<int>(lftdc) << std::endl;
-               #endif
+            // if(ch == ch_utof_right){
+            //    ftdc = tdc64_h.tdc * 0.9765625 * 0.001; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける
+            //    // ftdc_int = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
+            //    #if DEBUG_LFTDC
+            //    std::cout << funcname << "(double) utof right: ch = " << ch << ", tdc     - lftdc = " << ftdc - lftdc << std::endl;
+            //    std::cout << funcname << "(int)    utof right: ch = " << ch << ", tdc_int - lftdc = " << static_cast<int>(ftdc_int) - static_cast<int>(lftdc) << std::endl;
+            //    #endif
 
-               if(fabs(ftdc - lftdc) < min_diff_utof_right){
-                  min_diff_utof_right = ftdc - lftdc;
-               }
+            //    #if FILEOUT_LFTDC
+            //    if(fabs(ftdc - lftdc) < min_diff_utof_right){
+            //       min_diff_utof_right = ftdc - lftdc;
+            //    }
+            //    #endif
 
-               if(ftdc >= tdc_min && ftdc <= tdc_max){
-                  nTDC_utof_right++;
-                  time_utof_right = ftdc;
-               }
-            } // if(ch == ch_utof_right)
+            //    if(ftdc >= tdc_min && ftdc <= tdc_max){
+            //       nTDC_utof_right++;
+            //       time_utof_right = ftdc;
+            //    }
+            // } // if(ch == ch_utof_right)
             if(ch == ch_utof_left){
                ftdc = tdc64_h.tdc * 0.9765625 * 0.001; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける
-               ftdc_int = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
+               // ftdc_int = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
                #if DEBUG_LFTDC
                std::cout << funcname << "(double) utof left: ch = " << ch << ", tdc     - lftdc = " << ftdc - lftdc << std::endl;
                std::cout << funcname << "(int)    utof left: ch = " << ch << ", tdc_int - lftdc = " << static_cast<int>(ftdc_int) - static_cast<int>(lftdc) << std::endl;
                #endif
                
+               #if FILEOUT_LFTDC
                if(fabs(ftdc - lftdc) < min_diff_utof_left){
                   min_diff_utof_left = ftdc - lftdc;
                }
+               #endif
 
-               if(ftdc >= tdc_min && ftdc <= tdc_max){
-                  nTDC_utof_left++;
-                  time_utof_left = ftdc;
-               }
+               utof_left_times.push_back(ftdc);
+               // if(ftdc >= tdc_min && ftdc <= tdc_max){
+               //    nTDC_utof_left++;
+               //    time_utof_left = ftdc;
+               // }
             } // if(ch == ch_utof_left)
          } // for(uint32_t iTDC=0; iTDC<nTDC; ++iTDC)
       } // if(stfHeader->femType == SubTimeFrame::TDC64H_V3)
    } // for(auto& stf : tf)
 
+   #if FILEOUT_LFTDC
    if(min_diff_utof_right < 1e6){
       fDebugFile << 10 << " " << min_diff_utof_right << std::endl;
    }
    if(min_diff_utof_left < 1e6){
       fDebugFile << 8 << " " << min_diff_utof_left << std::endl;
    }
+   #endif
 
 
    #if DEBUG_LFTDC
@@ -344,100 +350,57 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       std::cout << "\tutof left: nTDC = " << nTDC_utof_left << ", time = " << time_utof_left << std::endl;
    }
    #endif
-   #endif
 
-   #if 0
+   // Scan, searching for KLDC with hit time after the coincidence TDC from LogicFilter block
+   // define the standard time for the start time of drift time calculation
+   int nStandardTime = utof_left_times.size();
+   int standardTime = 0;
+   if(nStandardTime > 0){
+      standardTime = static_cast<int>(std::min_element(utof_left_times.begin(), utof_left_times.end()));
+   }
+   else{
+      return false;
+   }
+
    uint8_t femId_ip3rd = 0;
    uint8_t femId_ip4th = 0;
    uint32_t keyFEtoDET;
-   const uint8_t utof_detname_index = 0x0c;
-   const uint8_t utof_planename_index = 0x00;
-   const uint8_t utof_right_channelname_index = 0x04;
-   const uint8_t utof_left_channelname_index = 0x03;
+   const uint8_t kldc_detname_index = 0x06;
+   std::vector<DCRawHit> kldcHits;
    for(auto& stf : tf){
       auto stfHeader = stf->GetHeader();
-      auto& hbf = stf->at(0);
-      auto hbfHeader = hbf->GetHeader();
-      uint32_t nData = hbf->GetNumData();
-      femId = stfHeader->femId;
-      femId_ip3rd = (femId >> 8) & 0xff;
-      femId_ip4th = femId & 0xff;
-
-      if(stfHeader->femType == SubTimeFrame::TDC64H){
-         std::cout << "TDC64H FEM found. femId = " << std::hex << femId << std::dec << std::endl;
-         TDC64H::tdc64 tdc;
-         for(uint32_t i=0; i<nData; ++i){
-            TDC64H::Unpack(hbf->UncheckedAt(i), &tdc);
-            ch = tdc.ch;
-            ftdc = tdc.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
-            bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
-            if(isFound){
-               detiditem = &fChMap->getDETIdItem(keyFEtoDET);
-               if(detiditem->name == utof_detname_index && detiditem->plane == utof_planename_index && detiditem->channel_number == 0 && (detiditem->readout_channel == utof_right_channelname_index || detiditem->readout_channel == utof_left_channelname_index)){
-                  std::cout << funcname << "UTOF hit found. femId = " << std::hex << femId << std::dec << ", ch = " << ch << ", tdc = " << ftdc << std::endl;
-               }
-            } // if(isFound)
-         } // for(uint32_t i=0; i<nData; ++i)
-      } // if(stfHeader->femType == SubTimeFrame::TDC64H)
-      else if(stfHeader->femType == SubTimeFrame::TDC64L){
-         std::cout << "TDC64L FEM found. femId = " << std::hex << femId << std::dec << std::endl;
-         TDC64L::tdc64 tdc;
-         for(uint32_t i=0; i<nData; ++i){
-            TDC64L::Unpack(hbf->UncheckedAt(i), &tdc);
-            ch = tdc.ch;
-            ftdc = tdc.tdc;
-            bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
-            if(isFound){
-               detiditem = &fChMap->getDETIdItem(keyFEtoDET);
-               if(detiditem->name == utof_detname_index && detiditem->plane == utof_planename_index && detiditem->channel_number == 0 && (detiditem->readout_channel == utof_right_channelname_index || detiditem->readout_channel == utof_left_channelname_index)){
-                  std::cout << funcname << "UTOF hit found. femId = " << std::hex << femId << std::dec << ", ch = " << ch << ", tdc = " << ftdc << std::endl;
-               }
-            } // if(isFound)
-
-         } // for(uint32_t i=0; i<nData; ++i)
-      } // else if(stfHeader->femType == SubTimeFrame::TDC64L)
-      else if(stfHeader->femType == SubTimeFrame::TDC64H_V3){
-         // std::cout << "TDC64H_V3 FEM found. femId = " << std::hex << femId << std::dec << std::endl;
-         TDC64H_V3::tdc64 tdc;
-         for(uint32_t i=0; i<nData; ++i){
-            TDC64H_V3::Unpack(hbf->UncheckedAt(i), &tdc);
-            ch = tdc.ch;
-            ftdc = tdc.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
-            bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
-            if(isFound){
-               detiditem = &fChMap->getDETIdItem(keyFEtoDET);
-               if(detiditem->name == utof_detname_index && detiditem->plane == utof_planename_index && detiditem->channel_number == 0 && (detiditem->readout_channel == utof_right_channelname_index || detiditem->readout_channel == utof_left_channelname_index)){
-                  std::cout << funcname << "UTOF hit found. femId = " << std::hex << femId << std::dec << ", ch = " << ch << ", tdc = " << ftdc << std::endl;
-               }
-            } // if(isFound)
-
-         } // for(uint32_t i=0; i<nData; ++i)
-      } // else if(stfHeader->femType == SubTimeFrame::TDC64H_V3)
-      else if(stfHeader->femType == SubTimeFrame::TDC64L_V3){
+      if(stfHeader->femType == SubTimeFrame::TDC64L_V3){
          // std::cout << "TDC64L_V3 FEM found. femId = " << std::hex << femId << std::dec << std::endl;
+         auto& hbf = stf->at(0);
+         // auto hbfHeader = hbf->GetHeader();
+         uint32_t nData = hbf->GetNumData();
+         femId = stfHeader->femId;
+         femId_ip3rd = (femId >> 8) & 0xff;
+         femId_ip4th = femId & 0xff;
+
          TDC64L_V3::tdc64 tdc;
          for(uint32_t i=0; i<nData; ++i){
             TDC64L_V3::Unpack(hbf->UncheckedAt(i), &tdc);
             ch = tdc.ch;
-            ftdc = tdc.tdc;
+            ftdc_int = tdc.tdc;
             bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
             if(isFound){
                detiditem = &fChMap->getDETIdItem(keyFEtoDET);
-               if(detiditem->name == utof_detname_index && detiditem->plane == utof_planename_index && detiditem->channel_number == 0 && (detiditem->readout_channel == utof_right_channelname_index || detiditem->readout_channel == utof_left_channelname_index)){
-                  std::cout << funcname << "UTOF hit found. femId = " << std::hex << femId << std::dec << ", ch = " << ch << ", tdc = " << ftdc << std::endl;
-               }
+               if(detiditem->name == kldc_detname_index){
+                  if(ftdc_int >= standardTime){
+                     DCRawHit hit(&detiditem, ftdc_int);
+                     kldcHits.push_back(hit);
+                  } // if(ftdc_int >= standardTime)
+               } // if(detiditem->name == kldc_detname_index)
             } // if(isFound)
-
          } // for(uint32_t i=0; i<nData; ++i)
       } // else if(stfHeader->femType == SubTimeFrame::TDC64L_V3)
       else{
          std::cout << funcname << "Unknown FEM type: " << stfHeader->femType << std::endl;
-      }
+      } // if(stfHeader->femType == SubTimeFrame::TDC64L_V3)
+   } // for(auto& stf : tf)
 
-   }
-   #endif
-
-   // Scan, searching for KLDC with hit time after the coincidence TDC from LogicFilter block
+   std::cout << funcname << "Number of KLDC hits after standard time: " << kldcHits.size() << std::endl;
 
 #if 0
    int doKeep = false;
