@@ -299,7 +299,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                std::cout << funcname << "(int)    utof right: ch = " << ch << ", tdc_int - lftdc = " << static_cast<int>(ftdc_int) - static_cast<int>(lftdc) << std::endl;
                #endif
 
-               if(ftdc - lftdc < min_diff_utof_right){
+               if(fabs(ftdc - lftdc) < min_diff_utof_right){
                   min_diff_utof_right = ftdc - lftdc;
                }
 
@@ -316,7 +316,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                std::cout << funcname << "(int)    utof left: ch = " << ch << ", tdc_int - lftdc = " << static_cast<int>(ftdc_int) - static_cast<int>(lftdc) << std::endl;
                #endif
                
-               if(ftdc - lftdc < min_diff_utof_left){
+               if(fabs(ftdc - lftdc) < min_diff_utof_left){
                   min_diff_utof_left = ftdc - lftdc;
                }
 
