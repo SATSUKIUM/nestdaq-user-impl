@@ -227,9 +227,9 @@ void FilterTimeFrameSliceByTrack::InitTask()
       std::cout << "\t" << "-> not found plane name index for Up." << std::endl;
    }
 
-   const std::string_view test_planename_vp = "V";
+   const std::string_view test_planename_v = "V";
    uint8_t test_planename_v_index = 0;
-   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_vp, test_planename_v_index);
+   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_v, test_planename_v_index);
    if(_FOUND_Index == true){
       std::cout << "\t" << "-> found plane name index for V: " << std::hex << static_cast<int>(test_planename_v_index) << std::dec << std::endl;
    }
