@@ -388,7 +388,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                detiditem = &fChMap->getDETIdItem(keyFEtoDET);
                if(detiditem->name == kldc_detname_index){
                   if(ftdc_int >= standardTime){
-                     DCRawHit hit(&detiditem, ftdc_int);
+                     DCRawHit hit(detiditem, ftdc_int);
                      kldcHits.push_back(hit);
                   } // if(ftdc_int >= standardTime)
                } // if(detiditem->name == kldc_detname_index)
