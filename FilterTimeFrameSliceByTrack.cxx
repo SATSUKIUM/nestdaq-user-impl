@@ -463,7 +463,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    #if 1
    std::cout << "\tKLDC hit:" << std::endl;
    for(const auto& hit : kldcRawHits){
-      std::cout << "\t\tsegment: " << std::dec << std::fill(' ') << std::setw(2) << static_cast<int>(hit.detid->segment)
+      std::cout << "\t\tsegment: " << std::dec << std::setfill(' ') << std::setw(2) << static_cast<int>(hit.detid->segment)
                 << ", plane: " << std::setw(2) << static_cast<int>(hit.detid->plane)
                 << ", channel: " << std::setw(3) << hit.detid->channel_number
                 << ", tdc: " << std::setw(10) << hit.tdc
