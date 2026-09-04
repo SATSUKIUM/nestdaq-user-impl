@@ -352,7 +352,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             //    }
             // } // if(ch == ch_utof_right)
             if(ch == ch_utof_left){
-               ftdc = tdc64_h.tdc * 0.9765625 * 0.001; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける
+               ftdc = tdc64_h.tdc * tdc64h_to_ns; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける
                // ftdc_int = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
                #if DEBUG_LFTDC
                std::cout << funcname << "(double) utof left: ch = " << ch << ", tdc     - lftdc = " << ftdc - lftdc << std::endl;
@@ -472,39 +472,98 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    #endif
 
    // distribute the KLDC hits to its container
-   const int npp = 4; // KLDC1 UU', KLDC1 VV', KLDC2 UU', KLDC2 VV'
    // const uint8_t kldc_detname_index = 0x06;
    const uint8_t u_plane_index = 0x01; // (std::string)"U"
    const uint8_t v_plane_index = 0x03; // (std::string)"V"
    const uint8_t up_plane_index = 0x02; // (std::string)"Up"
    const uint8_t vp_plane_index = 0x04; // (std::string)"Vp"
-   std::vector<DCHit> kldcHitContainer(npp);
-   std::vector<uint16_t> kldcHitWires(npp, 0); // マルチヒットを数えるために、kldcHitContainerに入れたワイヤ番号を保管しておく
+   std::vector<std::vector<uint16_t>> kldcHitWires(npp, std::vector<uint16_t>()); // マルチヒットを数えるために、fKLDCHitContainerに入れたワイヤ番号を保管しておく
 
-   // for(auto& hit : kldcRawHits){
-   //    chmap::DETIdItem* detiditem = hit.detiditem;
-   //    uint8_t segment = detiditem->segment;
-   //    uint16_t wireNumber = detiditem->channel_number;
-   //    uint32_t tdc = hit.tdc;
+   for(auto& hit : kldcRawHits){
+      chmap::DETIdItem* detiditem = hit.detiditem;
+      uint8_t segment = detiditem->segment;
+      uint16_t wireNumber = detiditem->channel_number;
+      uint32_t tdc = hit.tdc;
+      double wirePos = 0.0;
+      double wireAngle = 0.0;
 
+      if(detiditem->segment == 1){ // KLDC1
+         if(detiditem->planename == u_plane_index || detiditem->planename == up_plane_index){
+            if(fKLDCHitContainer[0].empty() || fKLDCHitContainer[0].back().GetDETIdItem()->channel_number != wireNumber){
+               fKLDCHitContainer[0].back().AddHit(tdc);
+            }
+            else{
+               if(detiditem->detconf != nullptr){
+                  const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
+                  if(geomitemdc != nullptr){
+                     wirePos = geomitemdc->GetWirePosition();
+                     wireAngle = geomitemdc->GetWireAngle();
+                  }
+                  DCHit h(wirePos, wireAngle, detiditem, tdc);
+                  fKLDCHitContainer[0].push_back(h);
+               } // if(detiditem->detconf != nullptr)
+            }
+         } // if(detiditem->planename == u_plane_index || detiditem->planename == up_plane_index)
+         else if(detiditem->planename == v_plane_index || detiditem->planename == vp_plane_index){
+            if(fKLDCHitContainer[1].empty() || fKLDCHitContainer[1].back().GetDETIdItem()->channel_number != wireNumber){
+               fKLDCHitContainer[1].back().AddHit(tdc);
+            }
+            else{
+               if(detiditem->detconf != nullptr){
+                  const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
+                  if(geomitemdc != nullptr){
+                     wirePos = geomitemdc->GetWirePosition();
+                     wireAngle = geomitemdc->GetWireAngle();
+                  }
+                  DCHit h(wirePos, wireAngle, detiditem, tdc);
+                  fKLDCHitContainer[1].push_back(h);
+               } // if(detiditem->detconf != nullptr)
+            }
+         } // if(detiditem->planename == v_plane_index || detiditem->planename == vp_plane_index)
+      } // if(detiditem->segment == 1)
+      else if(detiditem->segment == 2){ // KLDC2
+         if(detiditem->planename == u_plane_index || detiditem->planename == up_plane_index){
+            if(fKLDCHitContainer[2].empty() || fKLDCHitContainer[2].back().GetDETIdItem()->channel_number != wireNumber){
+               fKLDCHitContainer[2].back().AddHit(tdc);
+            }
+            else{
+               if(detiditem->detconf != nullptr){
+                  const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
+                  if(geomitemdc != nullptr){
+                     wirePos = geomitemdc->GetWirePosition();
+                     wireAngle = geomitemdc->GetWireAngle();
+                  }
+                  DCHit h(wirePos, wireAngle, detiditem, tdc);
+                  fKLDCHitContainer[2].push_back(h);
+               } // if(detiditem->detconf != nullptr)
+            }
+         } // if(detiditem->planename == u_plane_index || detiditem->planename == up_plane_index)
+         else if(detiditem->planename == v_plane_index || detiditem->planename == vp_plane_index){
+            if(fKLDCHitContainer[3].empty() || fKLDCHitContainer[3].back().GetDETIdItem()->channel_number != wireNumber){
+               fKLDCHitContainer[3].back().AddHit(tdc);
+            }
+            else{
+               if(detiditem->detconf != nullptr){
+                  const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
+                  if(geomitemdc != nullptr){
+                     wirePos = geomitemdc->GetWirePosition();
+                     wireAngle = geomitemdc->GetWireAngle();
+                  }
+                  DCHit h(wirePos, wireAngle, detiditem, tdc);
+                  fKLDCHitContainer[3].push_back(h);
+               } // if(detiditem->detconf != nullptr)
+            }
+         } // if(detiditem->planename == v_plane_index || detiditem->planename == vp_plane_index)
+      } // if(detiditem->segment == 2)
+   } // for(auto& hit : kldcRawHits)
 
-   //    if(detiditem->segment == 1){ // KLDC1
-   //       if(detiditem->planename == u_plane_index || detiditem->planename == up_plane_index){
-   //          kldcHitContainer[0].AddHit(hit);
-   //       }
-   //       else if(detiditem->planename == v_plane_index || detiditem->planename == vp_plane_index){
-   //          kldcHitContainer[1].AddHit(hit);
-   //       }
-   //    } // if(detiditem->segment == 1)
-   //    else if(detiditem->segment == 2){ // KLDC2
-   //       if(detiditem->planename == u_plane_index || detiditem->planename == up_plane_index){
-   //          kldcHitContainer[2].AddHit(hit);
-   //       }
-   //       else if(detiditem->planename == v_plane_index || detiditem->planename == vp_plane_index){
-   //          kldcHitContainer[3].AddHit(hit);
-   //       }
-   //    } // if(detiditem->segment == 2)
-   // } // for(auto& hit : kldcRawHits)
+   // ================================
+   // tracking for each UTOF hit
+   // ================================
+   for(int i=0; i<nStandardTime; ++i){
+      int standardTime = static_cast<int>(utof_left_times[i]);
+      fKLDCHitContainer.SetStandardTime(standardTime);
+   }
 
 #if 0
    int doKeep = false;
@@ -1043,4 +1102,55 @@ std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)
 {
     return std::make_unique<FilterTimeFrameSliceByTrack>();
 }
+
+void nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer::SetStandardTime(int standardTime){
+   this->CalcDriftTimes(standardTime);
+} // void nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer::SetStandardTime(int standardTime)
+
+bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftTimes(double standardTime){
+   if(detid == nullptr){
+      return false;
+   }
+   else{
+      if(detid->detconf == nullptr){
+         return false;
+      }
+      else{
+         const chmap::CalibrationItem_DCTdcCalib* calibitem_dctdccalib = dynamic_cast<const chmap::CalibrationItem_DCTdcCalib*>(detid->detconf->membername_calib_dctdccalib.get());
+         if(calibitem_dctdccalib == nullptr){
+            return false;
+         }
+         double offset = calibitem_dctdccalib->GetOffset();
+         double scale = calibitem_dctdccalib->GetScale();
+         for(const auto& tdc : tdcs){
+            double driftTime = scale * (tdc - standardTime) + offset;
+            driftTimes.push_back(driftTime);
+         } // for(const auto& tdc : tdcs)
+      } // if(detid->detconf == nullptr)
+   } // if(detid == nullptr)
+
+   return this->CalcDriftLengths();
+} // bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftTimes(double standardTime)
+
+bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftLengths(){
+   if(detid == nullptr){
+      return false;
+   }
+   else{
+      if(detid->detconf == nullptr){
+         return false;
+      }
+      else{
+         const chmap::CalibrationItem_DCDriftLength* calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detid->detconf->membername_calib_dcdriftlen.get());
+         if(calibitem_dcdriftlen == nullptr){
+            return false;
+         }
+         for(const auto& driftTime : driftTimes){
+            double driftLength = calibitem_dcdriftlen->GetDriftLength(driftTime);
+            driftLengths.push_back(driftLength);
+         } // for(const auto& driftTime : driftTimes)
+      } // if(detid->detconf == nullptr)
+   } // if(detid == nullptr)
+   return true;
+} // bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftLengths()
 

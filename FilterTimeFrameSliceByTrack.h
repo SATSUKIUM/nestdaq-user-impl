@@ -27,26 +27,32 @@
 
 namespace nestdaq {
    class FilterTimeFrameSliceByTrack;
-   struct DCRawHit;
+   // struct DCRawHit;
+   // class DCHit;
    struct temporary_geometry;
    struct temporary_dctdccalib;
    struct temporary_dcdriftparam;
-   class DCHit;
 }
 
-struct nestdaq::DCRawHit {
+struct nestdaq::FilterTimeFrameSliceByTrack::DCRawHit {
    DCRawHit(chmap::DETIdItem* detid, uint32_t tdc) : detid(detid), tdc(tdc) {};
    const chmap::DETIdItem* detid;
    uint32_t tdc;
-}; // struct nestdaq::DCRawHit
+}; // struct nestdaq::FilterTimeFrameSliceByTrack::DCRawHit
 
-class nestdaq::DCHit {
+class nestdaq::FilterTimeFrameSliceByTrack::DCHit {
 public:
    DCHit(){};
    DCHit(double wirePos, double wireAngle, const chmap::DETIdItem* detid) {
       this->wirePos = wirePos;
       this->wireAngle = wireAngle;
       this->detid = detid;
+   };
+   DCHit(double wirePos, double wireAngle, const chmap::DETIdItem* detid, double tdc) {
+      this->wirePos = wirePos;
+      this->wireAngle = wireAngle;
+      this->detid = detid;
+      this->TDCs.push_back(tdc);
    };
    ~DCHit() = default;
 
@@ -64,8 +70,8 @@ public:
       return n;
    };
 
-   void CalcDriftTimes();
-   void CalcDriftLengths();
+   bool CalcDriftTimes(double standardTime);
+   bool CalcDriftLengths();
 
    double GetWirePos() const { return wirePos; };
    double GetWireAngle() const { return wireAngle; };
@@ -79,7 +85,15 @@ private:
    std::vector<double> DriftTimes;
    std::vector<double> DriftLengths;
    const chmap::DETIdItem* detid;
-}; // class nestdaq::DCHit
+}; // class nestdaq::FilterTimeFrameSliceByTrack::DCHit
+
+class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer : public std::vector<std::vector<DCHit>> {
+public:
+   KLDCHitContainer(size_t npp) : std::vector<std::vector<DCHit>>(npp) {};
+   void SetStandardTime(double standardTime);
+private:
+
+}; // class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer
 
 struct nestdaq::temporary_geometry {
    int detectoridentifier;
@@ -116,6 +130,9 @@ public:
 
    void InitTask() override;
    virtual bool ProcessSlice(TTF& ) override;
+
+   struct DCRawHit;
+   class DCHit;
 
 protected:
    // ================================
@@ -155,6 +172,13 @@ protected:
    // ================================
    std::ofstream fDebugFile;
    std::string fDebugFileName;
+
+   // ================================
+   // Tracking
+   // ================================
+   const int npp = 4; // KLDC1 UU', KLDC1 VV', KLDC2 UU', KLDC2 VV'
+   KLDCHitContainer fKLDCHitContainer(npp);
+   // double fStandardTime = 0.0;
 
 
 }; // class nestdaq::FilterTimeFrameSliceByTrack
