@@ -482,7 +482,6 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    const uint8_t vp_plane_index = 0x04; // (std::string)"Vp"
    std::vector<std::vector<uint16_t>> kldcHitWires(npp, std::vector<uint16_t>()); // マルチヒットを数えるために、fKLDCHitContainerに入れたワイヤ番号を保管しておく
 
-   std::cout << funcname << "just before the loop over kldcRawHits, fKLDCHitContainer sizes: " << std::endl;
    for(auto& hit : kldcRawHits){
       const chmap::DETIdItem* detiditem = hit.detid;
       uint8_t segment = detiditem->segment;
@@ -491,23 +490,15 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       double wirePos = 0.0;
       double wireAngle = 0.0;
 
-      std::cout << funcname << "segment: " << std::dec << static_cast<int>(segment)
-                << ", plane: " << std::setw(2) << static_cast<int>(detiditem->plane)
-                << ", channel: " << std::setw(3) << wireNumber
-                << ", tdc: " << std::setw(10) << tdc
-                << std::endl;
-
       if(detiditem->segment == 1){ // KLDC1
          if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
             if(!(fKLDCHitContainer[0].empty()) && fKLDCHitContainer[0].back().GetDETIdItem()->channel_number == wireNumber){
-               std::cout << funcname << "fKLDCHitContainer[0] is not empty and last hit's channel_number == wireNumber" << std::endl;
                fKLDCHitContainer[0].back().AddHit(tdc);
             }
             else{
                if(detiditem->detconf != nullptr){
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
-                     std::cout << funcname << "detiditem->detconf->membername_geom is not nullptr" << std::endl;
                      wirePos = geomitemdc->GetWirePosition();
                      wireAngle = geomitemdc->GetTiltAngle();
                   }
@@ -518,14 +509,12 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
          else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
             if(!(fKLDCHitContainer[1].empty()) && fKLDCHitContainer[1].back().GetDETIdItem()->channel_number == wireNumber){
-               std::cout << funcname << "fKLDCHitContainer[1] is not empty and last hit's channel_number == wireNumber" << std::endl;
                fKLDCHitContainer[1].back().AddHit(tdc);
             }
             else{
                if(detiditem->detconf != nullptr){
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
-                     std::cout << funcname << "detiditem->detconf->membername_geom is not nullptr" << std::endl;
                      wirePos = geomitemdc->GetWirePosition();
                      wireAngle = geomitemdc->GetTiltAngle();
                   }
@@ -538,14 +527,12 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       else if(detiditem->segment == 2){ // KLDC2
          if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
             if(!(fKLDCHitContainer[2].empty()) && fKLDCHitContainer[2].back().GetDETIdItem()->channel_number == wireNumber){
-               std::cout << funcname << "fKLDCHitContainer[2] is not empty and last hit's channel_number == wireNumber" << std::endl;
                fKLDCHitContainer[2].back().AddHit(tdc);
             }
             else{
                if(detiditem->detconf != nullptr){
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
-                     std::cout << funcname << "detiditem->detconf->membername_geom is not nullptr" << std::endl;
                      wirePos = geomitemdc->GetWirePosition();
                      wireAngle = geomitemdc->GetTiltAngle();
                   }
@@ -556,14 +543,12 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
          else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
             if(!(fKLDCHitContainer[3].empty()) && fKLDCHitContainer[3].back().GetDETIdItem()->channel_number == wireNumber){
-               std::cout << funcname << "fKLDCHitContainer[3] is not empty and last hit's channel_number == wireNumber" << std::endl;
                fKLDCHitContainer[3].back().AddHit(tdc);
             }
             else{
                if(detiditem->detconf != nullptr){
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
-                     std::cout << funcname << "detiditem->detconf->membername_geom is not nullptr" << std::endl;
                      wirePos = geomitemdc->GetWirePosition();
                      wireAngle = geomitemdc->GetTiltAngle();
                   }
