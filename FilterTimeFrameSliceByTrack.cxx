@@ -496,7 +496,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                if(detiditem->detconf != nullptr){
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
-                     wirePos = geomitemdc->GetWirePosition();
+                     wirePos = geomitemdc->GetWirePosition(wireNumber);
                      wireAngle = geomitemdc->GetWireAngle();
                   }
                   DCHit h(wirePos, wireAngle, detiditem, tdc);
@@ -512,7 +512,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                if(detiditem->detconf != nullptr){
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
-                     wirePos = geomitemdc->GetWirePosition();
+                     wirePos = geomitemdc->GetWirePosition(wireNumber);
                      wireAngle = geomitemdc->GetWireAngle();
                   }
                   DCHit h(wirePos, wireAngle, detiditem, tdc);
@@ -530,7 +530,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                if(detiditem->detconf != nullptr){
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
-                     wirePos = geomitemdc->GetWirePosition();
+                     wirePos = geomitemdc->GetWirePosition(wireNumber);
                      wireAngle = geomitemdc->GetWireAngle();
                   }
                   DCHit h(wirePos, wireAngle, detiditem, tdc);
@@ -546,7 +546,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                if(detiditem->detconf != nullptr){
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
-                     wirePos = geomitemdc->GetWirePosition();
+                     wirePos = geomitemdc->GetWirePosition(wireNumber);
                      wireAngle = geomitemdc->GetWireAngle();
                   }
                   DCHit h(wirePos, wireAngle, detiditem, tdc);
