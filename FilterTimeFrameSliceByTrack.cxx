@@ -488,7 +488,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       double wireAngle = 0.0;
 
       if(detiditem->segment == 1){ // KLDC1
-         if(detiditem->planename == u_plane_index || detiditem->planename == up_plane_index){
+         if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
             if(fKLDCHitContainer[0].empty() || fKLDCHitContainer[0].back().GetDETIdItem()->channel_number != wireNumber){
                fKLDCHitContainer[0].back().AddHit(tdc);
             }
@@ -503,8 +503,8 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                   fKLDCHitContainer[0].push_back(h);
                } // if(detiditem->detconf != nullptr)
             }
-         } // if(detiditem->planename == u_plane_index || detiditem->planename == up_plane_index)
-         else if(detiditem->planename == v_plane_index || detiditem->planename == vp_plane_index){
+         } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
+         else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
             if(fKLDCHitContainer[1].empty() || fKLDCHitContainer[1].back().GetDETIdItem()->channel_number != wireNumber){
                fKLDCHitContainer[1].back().AddHit(tdc);
             }
@@ -519,10 +519,10 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                   fKLDCHitContainer[1].push_back(h);
                } // if(detiditem->detconf != nullptr)
             }
-         } // if(detiditem->planename == v_plane_index || detiditem->planename == vp_plane_index)
+         } // if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index)
       } // if(detiditem->segment == 1)
       else if(detiditem->segment == 2){ // KLDC2
-         if(detiditem->planename == u_plane_index || detiditem->planename == up_plane_index){
+         if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
             if(fKLDCHitContainer[2].empty() || fKLDCHitContainer[2].back().GetDETIdItem()->channel_number != wireNumber){
                fKLDCHitContainer[2].back().AddHit(tdc);
             }
@@ -537,8 +537,8 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                   fKLDCHitContainer[2].push_back(h);
                } // if(detiditem->detconf != nullptr)
             }
-         } // if(detiditem->planename == u_plane_index || detiditem->planename == up_plane_index)
-         else if(detiditem->planename == v_plane_index || detiditem->planename == vp_plane_index){
+         } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
+         else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
             if(fKLDCHitContainer[3].empty() || fKLDCHitContainer[3].back().GetDETIdItem()->channel_number != wireNumber){
                fKLDCHitContainer[3].back().AddHit(tdc);
             }
@@ -553,7 +553,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                   fKLDCHitContainer[3].push_back(h);
                } // if(detiditem->detconf != nullptr)
             }
-         } // if(detiditem->planename == v_plane_index || detiditem->planename == vp_plane_index)
+         } // if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index)
       } // if(detiditem->segment == 2)
    } // for(auto& hit : kldcRawHits)
 
