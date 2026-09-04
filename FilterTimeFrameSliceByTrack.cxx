@@ -464,7 +464,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    });
 
    #if 1
-   std::cout << "\tKLDC hit:" << std::endl;
+   std::cout << funcname << "\tKLDC hit:" << std::endl;
    for(const auto& hit : kldcRawHits){
       std::cout << "\t\tsegment: " << std::dec << std::setfill(' ') << std::setw(2) << static_cast<int>(hit.detid->segment)
                 << ", plane: " << std::setw(2) << static_cast<int>(hit.detid->plane)
@@ -563,6 +563,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    // ================================
    // tracking for each UTOF hit
    // ================================
+   std::cout << funcname << "Number of UTOF left hits: " << nStandardTime << std::endl;
    for(int i=0; i<nStandardTime; ++i){
       int standardTime = static_cast<int>(utof_left_times[i]);
       fKLDCHitContainer.SetStandardTime(standardTime);
