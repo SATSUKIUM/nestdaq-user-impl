@@ -288,6 +288,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    uint16_t ch = 0; // 8でも十分なんだけど、255よりでかい謎のエントリーを除外するために16で受ける
    double ftdc = 0; // unit: ns
    uint32_t ftdc_int = 0; // unit: ns
+   uint32_t ftot_int = 0; // unit: ns
    const uint32_t lftdc = fLFTDC4n * 4; // FilterTimeFrameSliceABCの持ってるfield lftdc4n
    std::vector<double> utof_left_times;
 
@@ -431,12 +432,13 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             TDC64L_V3::Unpack(hbf->UncheckedAt(i), &tdc);
             ch = tdc.ch;
             ftdc_int = tdc.tdc;
+            ftot_int = tdc.tot;
             bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
             if(isFound){
                detiditem = &fChMap->getDETIdItem(keyFEtoDET);
                if(detiditem->name == kldc_detname_index){
                   if(ftdc_int >= standardTime){
-                     DCRawHit hit(detiditem, ftdc_int);
+                     DCRawHit hit(detiditem, ftdc_int, ftot_int);
                      kldcRawHits.push_back(hit);
                   } // if(ftdc_int >= standardTime)
                } // if(detiditem->name == kldc_detname_index)
@@ -502,14 +504,14 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                      wirePos = geomitemdc->GetWirePosition();
                      wireAngle = geomitemdc->GetTiltAngle();
                   }
-                  DCHit h(wirePos, wireAngle, detiditem, tdc);
+                  DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
                   fKLDCHitContainer[0].push_back(h);
                } // if(detiditem->detconf != nullptr)
             }
          } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
          else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
             if(!(fKLDCHitContainer[1].empty()) && fKLDCHitContainer[1].back().GetDETIdItem()->channel_number == wireNumber){
-               fKLDCHitContainer[1].back().AddHit(tdc);
+               fKLDCHitContainer[1].back().AddHit(tdc, tot);
             }
             else{
                if(detiditem->detconf != nullptr){
@@ -518,7 +520,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                      wirePos = geomitemdc->GetWirePosition();
                      wireAngle = geomitemdc->GetTiltAngle();
                   }
-                  DCHit h(wirePos, wireAngle, detiditem, tdc);
+                  DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
                   fKLDCHitContainer[1].push_back(h);
                } // if(detiditem->detconf != nullptr)
             }
@@ -527,7 +529,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       else if(detiditem->segment == 2){ // KLDC2
          if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
             if(!(fKLDCHitContainer[2].empty()) && fKLDCHitContainer[2].back().GetDETIdItem()->channel_number == wireNumber){
-               fKLDCHitContainer[2].back().AddHit(tdc);
+               fKLDCHitContainer[2].back().AddHit(tdc, tot);
             }
             else{
                if(detiditem->detconf != nullptr){
@@ -536,14 +538,14 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                      wirePos = geomitemdc->GetWirePosition();
                      wireAngle = geomitemdc->GetTiltAngle();
                   }
-                  DCHit h(wirePos, wireAngle, detiditem, tdc);
+                  DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
                   fKLDCHitContainer[2].push_back(h);
                } // if(detiditem->detconf != nullptr)
             }
          } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
          else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
             if(!(fKLDCHitContainer[3].empty()) && fKLDCHitContainer[3].back().GetDETIdItem()->channel_number == wireNumber){
-               fKLDCHitContainer[3].back().AddHit(tdc);
+               fKLDCHitContainer[3].back().AddHit(tdc, tot);
             }
             else{
                if(detiditem->detconf != nullptr){
@@ -552,7 +554,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                      wirePos = geomitemdc->GetWirePosition();
                      wireAngle = geomitemdc->GetTiltAngle();
                   }
-                  DCHit h(wirePos, wireAngle, detiditem, tdc);
+                  DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
                   fKLDCHitContainer[3].push_back(h);
                } // if(detiditem->detconf != nullptr)
             }
@@ -566,7 +568,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    std::cout << funcname << "Number of UTOF left hits: " << nStandardTime << std::endl;
    for(int i=0; i<nStandardTime; ++i){
       int standardTime = static_cast<int>(utof_left_times[i]);
-      fKLDCHitContainer.SetStandardTime(standardTime);
+      fKLDCHitContainer.SetStandardTime(standardTime, fDCTimeRange);
    }
 
 #if 0
@@ -1108,7 +1110,7 @@ std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)
     return std::make_unique<FilterTimeFrameSliceByTrack>();
 }
 
-void KLDCHitContainer::SetStandardTime(double standardTime){
+void KLDCHitContainer::SetStandardTime(double standardTime, const DCTimeRange& DCTimeRange){
    for(auto& std_vector_dchit : *this){
       for(auto& dchit : std_vector_dchit){
          dchit.CalcDriftTimes(standardTime);
@@ -1116,7 +1118,11 @@ void KLDCHitContainer::SetStandardTime(double standardTime){
    }
 } // void nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer::SetStandardTime(int standardTime)
 
-bool DCHit::CalcDriftTimes(double standardTime){
+bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
+   int dctdc_min = DCTimeRange.lower_bound;
+   int dctdc_max = DCTimeRange.upper_bound;
+   int dctot_min = DCTimeRange.tot_min;
+
    if(detid == nullptr){
       return false;
    }
@@ -1131,9 +1137,14 @@ bool DCHit::CalcDriftTimes(double standardTime){
          }
          double offset = calibitem_dctdccalib->GetOffset();
          double scale = calibitem_dctdccalib->GetScale();
-         for(const auto& tdc : TDCs){
-            double driftTime = scale * (tdc - standardTime) + offset;
-            DriftTimes.push_back(driftTime);
+
+         for(size_t i=0; i<TDCs.size(); ++i){ // already ensured that TDCs.size() == TOTs.size()
+            uint32_t tdc = TDCs[i];
+            uint32_t tot = TOTs[i];
+            if((tot > dctot_min) && (tdc >= dctdc_min) && (tdc <= dctdc_max)){
+               double driftTime = scale * (tdc - standardTime) + offset;
+               DriftTimes.push_back(driftTime);             
+            }
          } // for(const auto& tdc : tdcs)
       } // if(detid->detconf == nullptr)
    } // if(detid == nullptr)

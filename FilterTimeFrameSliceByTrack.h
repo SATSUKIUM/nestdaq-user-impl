@@ -30,15 +30,28 @@ namespace nestdaq {
    struct DCRawHit;
    class DCHit;
    class KLDCHitContainer;
+   struct DCTimeRange;
    struct temporary_geometry;
    struct temporary_dctdccalib;
    struct temporary_dcdriftparam;
 }
 
+struct nestdaq::DCTimeRange {
+   int lower_bound;
+   int upper_bound;
+   int tot_min;
+}; // struct nestdaq::FilterTimeFrameSliceByTrack::DCTimeRange
+
 struct nestdaq::DCRawHit {
-   DCRawHit(chmap::DETIdItem* detid, uint32_t tdc) : detid(detid), tdc(tdc) {};
+   DCRawHit(chmap::DETIdItem* detid, uint32_t tdc, uint32_t tot) : detid(detid), tdc(tdc), tot(tot) {};
    const chmap::DETIdItem* detid;
-   uint32_t tdc;
+   uint32_t tdc; // unit: ns
+   uint32_t tot; // unit: ns
+   // bool isInTimeRange{false};
+
+   // void timeRangeCheck(int low, int high, double standardTime) const {
+   //    isInTimeRange = ((tdc - standardTime) >= low && (tdc - standardTime) <= high);
+   // }
 }; // struct nestdaq::FilterTimeFrameSliceByTrack::DCRawHit
 
 class nestdaq::DCHit {
@@ -49,16 +62,18 @@ public:
       this->wireAngle = wireAngle;
       this->detid = detid;
    };
-   DCHit(double wirePos, double wireAngle, const chmap::DETIdItem* detid, double tdc) {
+   DCHit(double wirePos, double wireAngle, const chmap::DETIdItem* detid, uint32_t tdc, uint32_t tot) {
       this->wirePos = wirePos;
       this->wireAngle = wireAngle;
       this->detid = detid;
       this->TDCs.push_back(tdc);
+      this->TOTs.push_back(tot);
    };
    ~DCHit() = default;
 
-   void AddHit(double tdc){
+   void AddHit(uint32_t tdc, uint32_t tot){
       TDCs.push_back(tdc);
+      TOTs.push_back(tot);
       return;
    }
 
@@ -71,7 +86,7 @@ public:
       return n;
    };
 
-   bool CalcDriftTimes(double standardTime);
+   bool CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange);
    bool CalcDriftLengths();
 
    double GetWirePos() const { return wirePos; };
@@ -82,7 +97,8 @@ private:
    double wirePos;
    double wireAngle;
    
-   std::vector<double> TDCs;
+   std::vector<uint32_t> TDCs;
+   std::vector<uint32_t> TOTs;
    std::vector<double> DriftTimes;
    std::vector<double> DriftLengths;
    const chmap::DETIdItem* detid;
@@ -93,7 +109,7 @@ public:
    KLDCHitContainer(size_t npp){
       this->resize(npp);
    };
-   void SetStandardTime(double standardTime);
+   void SetStandardTime(double standardTime, const DCTimeRange& timeRange);
 private:
 }; // class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer
 
@@ -182,7 +198,9 @@ protected:
    // ================================
    static constexpr int npp = 4; // KLDC1 UU', KLDC1 VV', KLDC2 UU', KLDC2 VV'
    KLDCHitContainer fKLDCHitContainer{npp};
-   // double fStandardTime = 0.0;
+   DCTimeRange fDCTimeRange{
+      945, 1200, 55 // KLDC TDC cut
+   };
 
 
 }; // class nestdaq::FilterTimeFrameSliceByTrack
