@@ -1129,9 +1129,9 @@ bool DCHit::CalcDriftTimes(double standardTime){
          }
          double offset = calibitem_dctdccalib->GetOffset();
          double scale = calibitem_dctdccalib->GetScale();
-         for(const auto& tdc : tdcs){
+         for(const auto& tdc : TDCs){
             double driftTime = scale * (tdc - standardTime) + offset;
-            driftTimes.push_back(driftTime);
+            DriftTimes.push_back(driftTime);
          } // for(const auto& tdc : tdcs)
       } // if(detid->detconf == nullptr)
    } // if(detid == nullptr)
@@ -1152,9 +1152,9 @@ bool DCHit::CalcDriftLengths(){
          if(calibitem_dcdriftlen == nullptr){
             return false;
          }
-         for(const auto& driftTime : driftTimes){
+         for(const auto& driftTime : DriftTimes){
             double driftLength = calibitem_dcdriftlen->GetDriftLength(driftTime);
-            driftLengths.push_back(driftLength);
+            DriftLengths.push_back(driftLength);
          } // for(const auto& driftTime : driftTimes)
       } // if(detid->detconf == nullptr)
    } // if(detid == nullptr)
