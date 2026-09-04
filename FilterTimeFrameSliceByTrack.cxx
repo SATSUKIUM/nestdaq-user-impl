@@ -497,7 +497,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
                      wirePos = geomitemdc->GetWirePosition(wireNumber);
-                     wireAngle = geomitemdc->GetWireAngle();
+                     wireAngle = geomitemdc->GetTiltAngle();
                   }
                   DCHit h(wirePos, wireAngle, detiditem, tdc);
                   fKLDCHitContainer[0].push_back(h);
@@ -513,7 +513,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
                      wirePos = geomitemdc->GetWirePosition(wireNumber);
-                     wireAngle = geomitemdc->GetWireAngle();
+                     wireAngle = geomitemdc->GetTiltAngle();
                   }
                   DCHit h(wirePos, wireAngle, detiditem, tdc);
                   fKLDCHitContainer[1].push_back(h);
@@ -531,7 +531,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
                      wirePos = geomitemdc->GetWirePosition(wireNumber);
-                     wireAngle = geomitemdc->GetWireAngle();
+                     wireAngle = geomitemdc->GetTiltAngle();
                   }
                   DCHit h(wirePos, wireAngle, detiditem, tdc);
                   fKLDCHitContainer[2].push_back(h);
@@ -547,7 +547,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
                      wirePos = geomitemdc->GetWirePosition(wireNumber);
-                     wireAngle = geomitemdc->GetWireAngle();
+                     wireAngle = geomitemdc->GetTiltAngle();
                   }
                   DCHit h(wirePos, wireAngle, detiditem, tdc);
                   fKLDCHitContainer[3].push_back(h);
