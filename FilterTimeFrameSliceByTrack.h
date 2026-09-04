@@ -27,20 +27,21 @@
 
 namespace nestdaq {
    class FilterTimeFrameSliceByTrack;
-   // struct DCRawHit;
-   // class DCHit;
+   struct DCRawHit;
+   class DCHit;
+   class KLDCHitContainer;
    struct temporary_geometry;
    struct temporary_dctdccalib;
    struct temporary_dcdriftparam;
 }
 
-struct nestdaq::FilterTimeFrameSliceByTrack::DCRawHit {
+struct nestdaq::DCRawHit {
    DCRawHit(chmap::DETIdItem* detid, uint32_t tdc) : detid(detid), tdc(tdc) {};
    const chmap::DETIdItem* detid;
    uint32_t tdc;
 }; // struct nestdaq::FilterTimeFrameSliceByTrack::DCRawHit
 
-class nestdaq::FilterTimeFrameSliceByTrack::DCHit {
+class nestdaq::DCHit {
 public:
    DCHit(){};
    DCHit(double wirePos, double wireAngle, const chmap::DETIdItem* detid) {
@@ -87,7 +88,7 @@ private:
    const chmap::DETIdItem* detid;
 }; // class nestdaq::FilterTimeFrameSliceByTrack::DCHit
 
-class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer : public std::vector<std::vector<DCHit>> {
+class nestdaq::KLDCHitContainer : public std::vector<std::vector<DCHit>> {
 public:
    KLDCHitContainer(size_t npp){
       this->resize(npp);
@@ -133,9 +134,9 @@ public:
    void InitTask() override;
    virtual bool ProcessSlice(TTF& ) override;
 
-   struct DCRawHit;
-   class DCHit;
-   class KLDCHitContainer;
+   // struct DCRawHit;
+   // class DCHit;
+   // class KLDCHitContainer;
 
 protected:
    // ================================
