@@ -36,6 +36,9 @@
 #define DEBUG 0
 
 using nestdaq::FilterTimeFrameSliceByTrack;
+using nestdaq::DCRawHit;
+using nestdaq::DCHit;
+using nestdaq::KLDCHitContainer;
 namespace bpo = boost::program_options;
 
 
