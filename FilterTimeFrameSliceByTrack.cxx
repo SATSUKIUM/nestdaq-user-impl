@@ -1103,11 +1103,11 @@ std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)
     return std::make_unique<FilterTimeFrameSliceByTrack>();
 }
 
-void nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer::SetStandardTime(int standardTime){
+void KLDCHitContainer::SetStandardTime(int standardTime){
    this->CalcDriftTimes(standardTime);
 } // void nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer::SetStandardTime(int standardTime)
 
-bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftTimes(double standardTime){
+bool DCHit::CalcDriftTimes(double standardTime){
    if(detid == nullptr){
       return false;
    }
@@ -1132,7 +1132,7 @@ bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftTimes(double standard
    return this->CalcDriftLengths();
 } // bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftTimes(double standardTime)
 
-bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftLengths(){
+bool DCHit::CalcDriftLengths(){
    if(detid == nullptr){
       return false;
    }
