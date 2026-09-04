@@ -506,6 +506,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                if(detiditem->detconf != nullptr){
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
+                     std::cout << funcname << "detiditem->detconf->membername_geom is not nullptr" << std::endl;
                      wirePos = geomitemdc->GetWirePosition();
                      wireAngle = geomitemdc->GetTiltAngle();
                   }
@@ -522,6 +523,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                if(detiditem->detconf != nullptr){
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
+                     std::cout << funcname << "detiditem->detconf->membername_geom is not nullptr" << std::endl;
                      wirePos = geomitemdc->GetWirePosition();
                      wireAngle = geomitemdc->GetTiltAngle();
                   }
@@ -540,6 +542,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                if(detiditem->detconf != nullptr){
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
+                     std::cout << funcname << "detiditem->detconf->membername_geom is not nullptr" << std::endl;
                      wirePos = geomitemdc->GetWirePosition();
                      wireAngle = geomitemdc->GetTiltAngle();
                   }
@@ -556,6 +559,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                if(detiditem->detconf != nullptr){
                   const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
                   if(geomitemdc != nullptr){
+                     std::cout << funcname << "detiditem->detconf->membername_geom is not nullptr" << std::endl;
                      wirePos = geomitemdc->GetWirePosition();
                      wireAngle = geomitemdc->GetTiltAngle();
                   }
