@@ -500,6 +500,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       if(detiditem->segment == 1){ // KLDC1
          if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
             if(fKLDCHitContainer[0].empty() || fKLDCHitContainer[0].back().GetDETIdItem()->channel_number != wireNumber){
+               std::cout << funcname << "fKLDCHitContainer[0] is empty or last hit's channel_number != wireNumber" << std::endl;
                fKLDCHitContainer[0].back().AddHit(tdc);
             }
             else{
@@ -517,6 +518,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
          else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
             if(fKLDCHitContainer[1].empty() || fKLDCHitContainer[1].back().GetDETIdItem()->channel_number != wireNumber){
+               std::cout << funcname << "fKLDCHitContainer[1] is empty or last hit's channel_number != wireNumber" << std::endl;
                fKLDCHitContainer[1].back().AddHit(tdc);
             }
             else{
@@ -536,6 +538,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       else if(detiditem->segment == 2){ // KLDC2
          if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
             if(fKLDCHitContainer[2].empty() || fKLDCHitContainer[2].back().GetDETIdItem()->channel_number != wireNumber){
+               std::cout << funcname << "fKLDCHitContainer[2] is empty or last hit's channel_number != wireNumber" << std::endl;
                fKLDCHitContainer[2].back().AddHit(tdc);
             }
             else{
@@ -553,6 +556,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
          else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
             if(fKLDCHitContainer[3].empty() || fKLDCHitContainer[3].back().GetDETIdItem()->channel_number != wireNumber){
+               std::cout << funcname << "fKLDCHitContainer[3] is empty or last hit's channel_number != wireNumber" << std::endl;
                fKLDCHitContainer[3].back().AddHit(tdc);
             }
             else{
