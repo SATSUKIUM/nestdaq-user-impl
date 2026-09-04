@@ -489,13 +489,14 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       uint8_t segment = detiditem->segment;
       uint16_t wireNumber = detiditem->channel_number;
       uint32_t tdc = hit.tdc;
+      uint32_t tot = hit.tot;
       double wirePos = 0.0;
       double wireAngle = 0.0;
 
       if(detiditem->segment == 1){ // KLDC1
          if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
             if(!(fKLDCHitContainer[0].empty()) && fKLDCHitContainer[0].back().GetDETIdItem()->channel_number == wireNumber){
-               fKLDCHitContainer[0].back().AddHit(tdc);
+               fKLDCHitContainer[0].back().AddHit(tdc, tot);
             }
             else{
                if(detiditem->detconf != nullptr){
