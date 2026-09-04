@@ -133,6 +133,7 @@ public:
 
    struct DCRawHit;
    class DCHit;
+   class KLDCHitContainer;
 
 protected:
    // ================================
