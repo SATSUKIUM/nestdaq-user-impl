@@ -34,66 +34,6 @@ namespace nestdaq {
    struct temporary_dcdriftparam;
 }
 
-struct nestdaq::FilterTimeFrameSliceByTrack::DCRawHit {
-   DCRawHit(chmap::DETIdItem* detid, uint32_t tdc) : detid(detid), tdc(tdc) {};
-   const chmap::DETIdItem* detid;
-   uint32_t tdc;
-}; // struct nestdaq::FilterTimeFrameSliceByTrack::DCRawHit
-
-class nestdaq::FilterTimeFrameSliceByTrack::DCHit {
-public:
-   DCHit(){};
-   DCHit(double wirePos, double wireAngle, const chmap::DETIdItem* detid) {
-      this->wirePos = wirePos;
-      this->wireAngle = wireAngle;
-      this->detid = detid;
-   };
-   DCHit(double wirePos, double wireAngle, const chmap::DETIdItem* detid, double tdc) {
-      this->wirePos = wirePos;
-      this->wireAngle = wireAngle;
-      this->detid = detid;
-      this->TDCs.push_back(tdc);
-   };
-   ~DCHit() = default;
-
-   void AddHit(double tdc){
-      TDCs.push_back(tdc);
-      return;
-   }
-
-   const chmap::DETIdItem* GetDETIdItem() const { return detid; };
-   int Clear(){
-      int n = TDCs.size();
-      TDCs.clear();
-      DriftTimes.clear();
-      DriftLengths.clear();
-      return n;
-   };
-
-   bool CalcDriftTimes(double standardTime);
-   bool CalcDriftLengths();
-
-   double GetWirePos() const { return wirePos; };
-   double GetWireAngle() const { return wireAngle; };
-   double GetDriftLength(int nth) const { return DriftLengths[nth]; };
-
-private:
-   double wirePos;
-   double wireAngle;
-   
-   std::vector<double> TDCs;
-   std::vector<double> DriftTimes;
-   std::vector<double> DriftLengths;
-   const chmap::DETIdItem* detid;
-}; // class nestdaq::FilterTimeFrameSliceByTrack::DCHit
-
-class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer : public std::vector<std::vector<DCHit>> {
-public:
-   KLDCHitContainer(size_t npp) : std::vector<std::vector<DCHit>>(npp) {};
-   void SetStandardTime(double standardTime);
-private:
-
-}; // class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer
 
 struct nestdaq::temporary_geometry {
    int detectoridentifier;
@@ -183,6 +123,68 @@ protected:
 
 
 }; // class nestdaq::FilterTimeFrameSliceByTrack
+
+struct nestdaq::FilterTimeFrameSliceByTrack::DCRawHit {
+   DCRawHit(chmap::DETIdItem* detid, uint32_t tdc) : detid(detid), tdc(tdc) {};
+   const chmap::DETIdItem* detid;
+   uint32_t tdc;
+}; // struct nestdaq::FilterTimeFrameSliceByTrack::DCRawHit
+
+class nestdaq::FilterTimeFrameSliceByTrack::DCHit {
+public:
+   DCHit(){};
+   DCHit(double wirePos, double wireAngle, const chmap::DETIdItem* detid) {
+      this->wirePos = wirePos;
+      this->wireAngle = wireAngle;
+      this->detid = detid;
+   };
+   DCHit(double wirePos, double wireAngle, const chmap::DETIdItem* detid, double tdc) {
+      this->wirePos = wirePos;
+      this->wireAngle = wireAngle;
+      this->detid = detid;
+      this->TDCs.push_back(tdc);
+   };
+   ~DCHit() = default;
+
+   void AddHit(double tdc){
+      TDCs.push_back(tdc);
+      return;
+   }
+
+   const chmap::DETIdItem* GetDETIdItem() const { return detid; };
+   int Clear(){
+      int n = TDCs.size();
+      TDCs.clear();
+      DriftTimes.clear();
+      DriftLengths.clear();
+      return n;
+   };
+
+   bool CalcDriftTimes(double standardTime);
+   bool CalcDriftLengths();
+
+   double GetWirePos() const { return wirePos; };
+   double GetWireAngle() const { return wireAngle; };
+   double GetDriftLength(int nth) const { return DriftLengths[nth]; };
+
+private:
+   double wirePos;
+   double wireAngle;
+   
+   std::vector<double> TDCs;
+   std::vector<double> DriftTimes;
+   std::vector<double> DriftLengths;
+   const chmap::DETIdItem* detid;
+}; // class nestdaq::FilterTimeFrameSliceByTrack::DCHit
+
+class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer : public std::vector<std::vector<DCHit>> {
+public:
+   KLDCHitContainer(size_t npp) : std::vector<std::vector<DCHit>>(npp) {};
+   void SetStandardTime(double standardTime);
+private:
+
+}; // class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer
+
 
 
 
