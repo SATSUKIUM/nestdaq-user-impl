@@ -480,7 +480,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    std::vector<std::vector<uint16_t>> kldcHitWires(npp, std::vector<uint16_t>()); // マルチヒットを数えるために、fKLDCHitContainerに入れたワイヤ番号を保管しておく
 
    for(auto& hit : kldcRawHits){
-      chmap::DETIdItem* detiditem = hit.detiditem;
+      chmap::DETIdItem* detiditem = hit.detid;
       uint8_t segment = detiditem->segment;
       uint16_t wireNumber = detiditem->channel_number;
       uint32_t tdc = hit.tdc;
