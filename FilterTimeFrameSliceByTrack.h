@@ -117,8 +117,8 @@ protected:
    // ================================
    // Tracking
    // ================================
-   const int npp = 4; // KLDC1 UU', KLDC1 VV', KLDC2 UU', KLDC2 VV'
-   KLDCHitContainer fKLDCHitContainer(npp);
+   static constexpr int npp = 4; // KLDC1 UU', KLDC1 VV', KLDC2 UU', KLDC2 VV'
+   KLDCHitContainer fKLDCHitContainer{npp};
    // double fStandardTime = 0.0;
 
 
@@ -182,15 +182,8 @@ public:
    KLDCHitContainer(size_t npp){
       this->resize(npp);
    };
-   void Clear(){
-      for(auto& pairplane : *this){
-         pairplane.clear();
-      }
-      this->clear();
-   };
    void SetStandardTime(double standardTime);
 private:
-
 }; // class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer
 
 
