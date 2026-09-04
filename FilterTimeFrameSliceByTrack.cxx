@@ -452,7 +452,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    std::cout << funcname << "Number of KLDC hits after standard time: " << kldcRawHits.size() << std::endl;
    #endif
 
-   // sort the raw hits
+   // sort the raw hits, first by segment, then by plane, and finally by channel number
    std::sort(kldcRawHits.begin(), kldcRawHits.end(), [](const DCRawHit& left, const DCRawHit& right) {
       if(left.detid->segment != right.detid->segment) {
          return left.detid->segment < right.detid->segment;
@@ -463,7 +463,8 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       }
    });
 
-   #if 1
+   #if 0
+   // print the sorted KLDC hits for debugging
    std::cout << funcname << "\tKLDC hit:" << std::endl;
    for(const auto& hit : kldcRawHits){
       std::cout << "\t\tsegment: " << std::dec << std::setfill(' ') << std::setw(2) << static_cast<int>(hit.detid->segment)
@@ -475,13 +476,12 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    #endif
 
    // distribute the KLDC hits to its container
-   // const uint8_t kldc_detname_index = 0x06;
    const uint8_t u_plane_index = 0x01; // (std::string)"U"
    const uint8_t v_plane_index = 0x03; // (std::string)"V"
    const uint8_t up_plane_index = 0x02; // (std::string)"Up"
    const uint8_t vp_plane_index = 0x04; // (std::string)"Vp"
-   std::vector<std::vector<uint16_t>> kldcHitWires(npp, std::vector<uint16_t>()); // マルチヒットを数えるために、fKLDCHitContainerに入れたワイヤ番号を保管しておく
 
+   // 
    for(auto& hit : kldcRawHits){
       const chmap::DETIdItem* detiditem = hit.detid;
       uint8_t segment = detiditem->segment;
@@ -1109,10 +1109,10 @@ std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)
 }
 
 void KLDCHitContainer::SetStandardTime(double standardTime){
-   for(auto& stdvectordchit : *this){
-      for(auto& dchit : stdvectordchit){
+   for(auto& std_vector_dchit : *this){
+      for(auto& dchit : std_vector_dchit){
          dchit.CalcDriftTimes(standardTime);
-      } // for(auto& dchit : stdvectordchit)
+      } // for(auto& dchit : std_vector_dchit)
    }
 } // void nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer::SetStandardTime(int standardTime)
 
