@@ -482,6 +482,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    const uint8_t vp_plane_index = 0x04; // (std::string)"Vp"
    std::vector<std::vector<uint16_t>> kldcHitWires(npp, std::vector<uint16_t>()); // マルチヒットを数えるために、fKLDCHitContainerに入れたワイヤ番号を保管しておく
 
+   std::cout << funcname << "just before the loop over kldcRawHits, fKLDCHitContainer sizes: " << std::endl;
    for(auto& hit : kldcRawHits){
       const chmap::DETIdItem* detiditem = hit.detid;
       uint8_t segment = detiditem->segment;
@@ -489,6 +490,12 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       uint32_t tdc = hit.tdc;
       double wirePos = 0.0;
       double wireAngle = 0.0;
+
+      std::cout << funcname << "segment: " << std::dec << static_cast<int>(segment)
+                << ", plane: " << std::setw(2) << static_cast<int>(detiditem->plane)
+                << ", channel: " << std::setw(3) << wireNumber
+                << ", tdc: " << std::setw(10) << tdc
+                << std::endl;
 
       if(detiditem->segment == 1){ // KLDC1
          if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
