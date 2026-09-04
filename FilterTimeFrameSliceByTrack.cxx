@@ -1113,7 +1113,7 @@ std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)
 void KLDCHitContainer::SetStandardTime(double standardTime, const DCTimeRange& DCTimeRange){
    for(auto& std_vector_dchit : *this){
       for(auto& dchit : std_vector_dchit){
-         dchit.CalcDriftTimes(standardTime);
+         dchit.CalcDriftTimes(standardTime, DCTimeRange);
       } // for(auto& dchit : std_vector_dchit)
    }
 } // void nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer::SetStandardTime(int standardTime)
