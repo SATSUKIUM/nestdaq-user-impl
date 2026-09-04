@@ -179,7 +179,15 @@ private:
 
 class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer : public std::vector<std::vector<DCHit>> {
 public:
-   KLDCHitContainer(size_t npp) : std::vector<std::vector<DCHit>>(npp) {};
+   KLDCHitContainer(size_t npp){
+      this->resize(npp);
+   };
+   void Clear(){
+      for(auto& pairplane : *this){
+         pairplane.clear();
+      }
+      this->clear();
+   };
    void SetStandardTime(double standardTime);
 private:
 
