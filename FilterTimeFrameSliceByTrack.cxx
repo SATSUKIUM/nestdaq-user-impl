@@ -643,6 +643,13 @@ int FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry(std::string_view fi
 
 int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCTdcCalib(std::string_view filename)
 {
+   /*
+   input file format
+   - ignore lines starting with '#'
+   - each line contains the following fields:
+     detectorID wireID scale offset
+      - fields are separated by whitespace
+   */
    const std::string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCTdcCalib] ";
    std::ifstream ifs(filename.data());
    if(!ifs.is_open()){
@@ -663,7 +670,7 @@ int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCTdcCalib(std::string_view 
       int wireidentifier{0};
       double offset{0.0}, scale{0.0};
 
-      if(!(iss >> detectoridentifier >> wireidentifier >> offset >> scale)){
+      if(!(iss >> detectoridentifier >> wireidentifier >> scale >> offset)){
          std::cerr << funcName << "Failed to parse line: " << line << std::endl;
          continue;
       }
