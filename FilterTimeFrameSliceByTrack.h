@@ -110,6 +110,15 @@ public:
       this->resize(npp);
    };
    void SetStandardTime(double standardTime, const DCTimeRange& timeRange);
+   void clear(){
+      for(auto& std_vector_dchit : *this){
+         for(auto& dchit : std_vector_dchit){
+            dchit.Clear();
+         }
+         std_vector_dchit.clear();
+      }
+      this->std::vector<std::vector<DCHit>>::clear();
+   }
 private:
 }; // class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer
 
