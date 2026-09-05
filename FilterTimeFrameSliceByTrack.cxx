@@ -1144,14 +1144,18 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
          for(size_t i=0; i<TDCs.size(); ++i){ // already ensured that TDCs.size() == TOTs.size()
             uint32_t tdc = TDCs[i];
             uint32_t tot = TOTs[i];
-            if((tot > dctot_min) && (tdc >= dctdc_min) && (tdc <= dctdc_max)){
+            #if !FILEOUT_DRIFTTIME
+            if((tot > dctot_min) && (tdc - standardTime >= dctdc_min) && (tdc - standardTime <= dctdc_max)){
+            #else
+            if(tot > dctot_min){
+            #endif
                double driftTime = scale * (tdc - standardTime) + offset;
                DriftTimes.push_back(driftTime);         
                #if FILEOUT_DRIFTTIME
                int plane = static_cast<int>(detid->plane);
                int segment = static_cast<int>(detid->segment);
                int channel_number = static_cast<int>(detid->channel_number);
-               gDebugFile << segment << " " << plane << " " << channel_number << driftTime << std::endl;
+               gDebugFile << segment << " " << plane << " " << channel_number << "  " << driftTime << std::endl;
                #endif
             }
          } // for(const auto& tdc : tdcs)
