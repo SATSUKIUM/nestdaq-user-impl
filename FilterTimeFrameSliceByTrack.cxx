@@ -1123,6 +1123,7 @@ void KLDCHitContainer::SetStandardTime(double standardTime, const DCTimeRange& D
 } // void nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer::SetStandardTime(int standardTime)
 
 bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
+   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::DCHit::CalcDriftTimes] ";
    int dctdc_min = DCTimeRange.lower_bound;
    int dctdc_max = DCTimeRange.upper_bound;
    int dctot_min = DCTimeRange.tot_min;
@@ -1141,7 +1142,11 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
          }
          double offset = calibitem_dctdccalib->GetOffset();
          double scale = calibitem_dctdccalib->GetScale();
+         std::cout << funcname << "offset: " << offset << ", scale: " << scale << std::endl;
 
+         if(TDCs.size() == 0 || TOTs.size() == 0){
+            return false;
+         }
          for(size_t i=0; i<TDCs.size(); ++i){ // already ensured that TDCs.size() == TOTs.size()
             uint32_t tdc = TDCs[i];
             uint32_t tot = TOTs[i];
@@ -1151,6 +1156,7 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
             if(tot > dctot_min){
             #endif
                double driftTime = scale * (tdc - standardTime) + offset;
+               std::cout << "\tdriftTime = scale * (tdc - standardTime) + offset = " << scale << " * (" << tdc << " - " << standardTime << ") + " << offset << " = " << driftTime << std::endl;
                DriftTimes.push_back(driftTime);         
                #if FILEOUT_DRIFTTIME
                int plane = static_cast<int>(detid->plane);
