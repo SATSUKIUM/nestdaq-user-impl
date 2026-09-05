@@ -150,9 +150,6 @@ public:
    void InitTask() override;
    virtual bool ProcessSlice(TTF& ) override;
 
-   // struct DCRawHit;
-   // class DCHit;
-   // class KLDCHitContainer;
 
 protected:
    // ================================
@@ -193,14 +190,18 @@ protected:
    std::ofstream fDebugFile;
    std::string fDebugFileName;
 
+   std::ofstream fDebugFile_DriftTime;
+   std::string fDebugFileName_DriftTime;
+
    // ================================
    // Tracking
    // ================================
    static constexpr int npp = 4; // KLDC1 UU', KLDC1 VV', KLDC2 UU', KLDC2 VV'
    KLDCHitContainer fKLDCHitContainer{npp};
-   DCTimeRange fDCTimeRange{
-      945, 1200, 55 // KLDC TDC cut
+   const DCTimeRange fDCTimeRange{
+      945, 1200, 55 // KLDC TDC cut, lower_bound, upper_bound, tot_min, unit: ns
    };
+   const double fKLDCCellSize = 9.007; // KLDC cell size, unit: mm
 
 
 }; // class nestdaq::FilterTimeFrameSliceByTrack

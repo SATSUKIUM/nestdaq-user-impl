@@ -162,25 +162,25 @@ void FilterTimeFrameSliceByTrack::InitTask()
    // ================================
 
    const auto geometryFile = fConfig->GetProperty<std::string>(opt::GeometryConfigFile.data());
-   std::cout << "[FilterTimeFrameSliceByTrack::InitTask] Geometry configuration file: " << geometryFile << std::endl;
+   std::cout << funcname << "Geometry configuration file: " << geometryFile << std::endl;
    const auto dctdcCalibFile = fConfig->GetProperty<std::string>(opt::DCTdcCalibConfigFile.data());
-   std::cout << "[FilterTimeFrameSliceByTrack::InitTask] DC TDC calibration configuration file: " << dctdcCalibFile << std::endl;
+   std::cout << funcname << "DC TDC calibration configuration file: " << dctdcCalibFile << std::endl;
    const auto dcDriftParamFile = fConfig->GetProperty<std::string>(opt::DCDriftParamConfigFile.data());
-   std::cout << "[FilterTimeFrameSliceByTrack::InitTask] DC drift parameter configuration file: " << dcDriftParamFile << std::endl;
+   std::cout << funcname << "DC drift parameter configuration file: " << dcDriftParamFile << std::endl;
 
    if (!geometryFile.empty()) {
       if (!LoadDetectorConfig_Geometry(geometryFile)) {
-         std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to parse geometry configuration file: " << geometryFile << std::endl;
+         std::cerr << funcname << "Failed to parse geometry configuration file: " << geometryFile << std::endl;
       }
    }
    if (!dctdcCalibFile.empty()) {
       if (!LoadDetectorConfig_DCTdcCalib(dctdcCalibFile)) {
-         std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to parse DC TDC calibration configuration file: " << dctdcCalibFile << std::endl;
+         std::cerr << funcname << "Failed to parse DC TDC calibration configuration file: " << dctdcCalibFile << std::endl;
       }
    }
    if (!dcDriftParamFile.empty()) {
       if (!LoadDetectorConfig_DCDriftParam(dcDriftParamFile)) {
-         std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to parse DC drift parameter configuration file: " << dcDriftParamFile << std::endl;
+         std::cerr << funcname << "Failed to parse DC drift parameter configuration file: " << dcDriftParamFile << std::endl;
       }
    }
 
@@ -268,7 +268,15 @@ void FilterTimeFrameSliceByTrack::InitTask()
    fDebugFileName = "./fileout/tracking/FilterTimeFrameSliceByTrack_debug.txt";
    fDebugFile.open(fDebugFileName, std::ios::out);
    if (!fDebugFile.is_open()) {
-      std::cerr << "[FilterTimeFrameSliceByTrack::InitTask] Failed to open debug file: " << fDebugFileName << std::endl;
+      std::cerr << funcname << "Failed to open debug file: " << fDebugFileName << std::endl;
+   }
+   #endif
+
+   #if FILEOUT_DRIFTTIME
+   fDebugFileName_DriftTime = "./fileout/tracking/FilterTimeFrameSliceByTrack_debug_drifttime.txt";
+   fDebugFile_DriftTime.open(fDebugFileName_DriftTime, std::ios::out);
+   if (!fDebugFile_DriftTime.is_open()) {
+      std::cerr << funcname << "Failed to open drift time debug file: " << fDebugFileName_DriftTime << std::ios::endl;
    }
    #endif
 } // void FilterTimeFrameSliceByTrack::InitTask()
@@ -831,7 +839,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       double rotationAngle2 = geom.rotationangle2;
       double length = geom.length;
       double resolution = geom.resolution;
-      double wireCenterNumber = geom.wirecenternumber;
+      double wireCenterNumber = geom.wirecenternumber - 1.0; // convert to 0-index
       double wirePitch = geom.wirepitch;
       double offset = geom.offset;
 
@@ -1144,7 +1152,13 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
             uint32_t tot = TOTs[i];
             if((tot > dctot_min) && (tdc >= dctdc_min) && (tdc <= dctdc_max)){
                double driftTime = scale * (tdc - standardTime) + offset;
-               DriftTimes.push_back(driftTime);             
+               DriftTimes.push_back(driftTime);         
+               #if FILEOUT_DRIFTTIME
+               int plane = static_cast<int>(detid->plane);
+               int segment = static_cast<int>(detid->segment);
+               int channel_number = static_cast<int>(detid->channel_number);
+               fDebugFile_DriftTime << segment << " " << plane << " " << channel_number << driftTime << std::endl;
+               #endif
             }
          } // for(const auto& tdc : tdcs)
       } // if(detid->detconf == nullptr)
