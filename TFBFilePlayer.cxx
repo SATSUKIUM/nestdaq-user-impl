@@ -139,7 +139,7 @@ bool TFBFilePlayer::ConditionalRun()
     }
     auto tfHeader = reinterpret_cast<TF::Header*>(msgTFHeader.GetData());
 
-#if 1
+#if 0
     //LOG(debug4) << fmt::format("TF header: magic = {:016x}, tf-id = {:d}, n-src = {:d}, bytes = {:d}",
     //    tfHeader->magic, tfHeader->timeFrameId, tfHeader->numSource, tfHeader->length);
     LOG(debug4) << "TF header: magic = 0x" << std::hex << tfHeader->magic
@@ -156,10 +156,14 @@ bool TFBFilePlayer::ConditionalRun()
                   << " bytes. gcount = " << fInputFile.gcount();
         return false;
     }
+    #if 0
     LOG(debug4) << " buf size = " << buf.size();
+    #endif
     auto bufBegin = buf.data();
 
+    #if 0
     LOG(debug4) << "Pack TFH : out parts.size() = " << outParts.Size();
+    #endif
 #if 0
     std::for_each(reinterpret_cast<uint64_t*>(bufBegin),
         reinterpret_cast<uint64_t*>(bufBegin)+buf.size()/sizeof(uint64_t),
@@ -176,6 +180,7 @@ bool TFBFilePlayer::ConditionalRun()
         std::memcpy(header, bufBegin, headerNBytes);
         auto stfHeader = reinterpret_cast<STF::Header*>(header);
 
+        #if 0
         LOG(debug4)
             << "STF header: magic = 0x" << std::hex <<  stfHeader->magic
             << ", TF-id = " << std::dec << stfHeader->timeFrameId
@@ -190,6 +195,7 @@ bool TFBFilePlayer::ConditionalRun()
             << ", usec = " << stfHeader->timeUSec
 #endif
             ;
+        #endif
 
         auto wordBegin = reinterpret_cast<uint64_t*>(bufBegin + headerNBytes);
         auto bodyNBytes = stfHeader->length - headerNBytes;
@@ -317,10 +323,14 @@ bool TFBFilePlayer::ConditionalRun()
         }
         bufBegin += stfHeader->length;
 
+        #if 0
         LOG(debug4) << "Pack STF : out parts.size() = " << outParts.Size();
+        #endif
 
     }
+    #if 0
     LOG(debug4) << " n-iteration = " << fNumIteration << ": out parts.size() = " << outParts.Size();
+    #endif
 
     auto poller = NewPoller(fOutputChannelName);
     while (!NewStatePending()) {
