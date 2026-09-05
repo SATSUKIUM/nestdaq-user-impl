@@ -568,7 +568,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    // ================================
    // tracking for each UTOF hit
    // ================================
-   std::cout << funcname << "Number of UTOF left hits: " << nStandardTime << std::endl;
+   // std::cout << funcname << "Number of UTOF left hits: " << nStandardTime << std::endl;
    for(int i=0; i<nStandardTime; ++i){
       int standardTime = static_cast<int>(utof_left_times[i]);
       fKLDCHitContainer.SetStandardTime(standardTime, fDCTimeRange);
