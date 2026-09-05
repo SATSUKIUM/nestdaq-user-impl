@@ -41,8 +41,9 @@ using nestdaq::DCHit;
 using nestdaq::KLDCHitContainer;
 namespace bpo = boost::program_options;
 
-
-
+namespace{ // unnamed namespace(can be seen only in this translation unit)
+   std::ofstream gDebugFile = std::ofstream("./fileout/tracking/globalDebug.txt", std::ios::out);
+}
 
 FilterTimeFrameSliceByTrack::FilterTimeFrameSliceByTrack()
 {
@@ -1157,7 +1158,7 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
                int plane = static_cast<int>(detid->plane);
                int segment = static_cast<int>(detid->segment);
                int channel_number = static_cast<int>(detid->channel_number);
-               fDebugFile_DriftTime << segment << " " << plane << " " << channel_number << driftTime << std::endl;
+               gDebugFile << segment << " " << plane << " " << channel_number << driftTime << std::endl;
                #endif
             }
          } // for(const auto& tdc : tdcs)
