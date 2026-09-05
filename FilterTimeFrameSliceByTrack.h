@@ -107,8 +107,8 @@ private:
 class nestdaq::KLDCHitContainer : public std::vector<std::vector<DCHit>> {
 public:
    KLDCHitContainer(size_t npp){
-      npp = npp;
-      this->resize(npp);
+      npairplane = npp;
+      this->resize(npairplane);
    };
    void SetStandardTime(double standardTime, const DCTimeRange& timeRange);
    void reset(){
@@ -119,10 +119,10 @@ public:
          std_vector_dchit.clear();
       }
       this->std::vector<std::vector<DCHit>>::clear();
-      this->resize(npp);
+      this->resize(npairplane);
    }
 private:
-   int npp;
+   int npairplane{0};
 }; // class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer
 
 
