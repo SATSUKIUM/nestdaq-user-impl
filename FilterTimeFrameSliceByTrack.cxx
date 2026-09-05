@@ -571,7 +571,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    // ================================
    // std::cout << funcname << "Number of UTOF left hits: " << nStandardTime << std::endl;
    for(int i=0; i<nStandardTime; ++i){
-      int standardTime = static_cast<int>(utof_left_times[i]);
+      double standardTime = utof_left_times[i];
       fKLDCHitContainer.SetStandardTime(standardTime, fDCTimeRange);
    }
 
@@ -1149,7 +1149,9 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
          }
          double offset = calibitem_dctdccalib->GetOffset();
          double scale = calibitem_dctdccalib->GetScale();
+         #if CHECK_COUT_DRIFTTIME
          std::cout << funcname << "offset: " << offset << ", scale: " << scale << std::endl;
+         #endif
 
          if(TDCs.size() == 0 || TOTs.size() == 0){
             return false;
@@ -1163,7 +1165,9 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
             if(tot > dctot_min){
             #endif
                double driftTime = scale * (tdc - standardTime) + offset;
+               #if CHECK_COUT_DRIFTTIME
                std::cout << "\tdriftTime = scale * (tdc - standardTime) + offset = " << scale << " * (" << tdc << " - " << standardTime << ") + " << offset << " = " << driftTime << std::endl;
+               #endif
                DriftTimes.push_back(driftTime);         
                #if FILEOUT_DRIFTTIME
                int plane = static_cast<int>(detid->plane);
