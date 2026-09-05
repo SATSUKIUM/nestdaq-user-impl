@@ -190,8 +190,6 @@ protected:
    std::ofstream fDebugFile;
    std::string fDebugFileName;
 
-   std::ofstream fDebugFile_DriftTime;
-   std::string fDebugFileName_DriftTime;
 
    // ================================
    // Tracking

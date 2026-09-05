@@ -273,13 +273,6 @@ void FilterTimeFrameSliceByTrack::InitTask()
    }
    #endif
 
-   #if FILEOUT_DRIFTTIME
-   fDebugFileName_DriftTime = "./fileout/tracking/FilterTimeFrameSliceByTrack_debug_drifttime.txt";
-   fDebugFile_DriftTime.open(fDebugFileName_DriftTime, std::ios::out);
-   if (!fDebugFile_DriftTime.is_open()) {
-      std::cerr << funcname << "Failed to open drift time debug file: " << fDebugFileName_DriftTime << std::ios::endl;
-   }
-   #endif
 } // void FilterTimeFrameSliceByTrack::InitTask()
 
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
