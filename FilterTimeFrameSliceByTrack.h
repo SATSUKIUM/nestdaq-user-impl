@@ -122,7 +122,7 @@ public:
       this->resize(npp);
    }
 private:
-   const int npp;
+   int npp;
 }; // class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer
 
 
