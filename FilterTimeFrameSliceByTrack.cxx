@@ -923,8 +923,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
    for(const auto& calib : fTemporaryDCTdcCalibs){
       // calib -> local variables
       int detectorId = calib.detectoridentifier;
-      int wireId = calib.wireidentifier; // 1-indexed
-      double offset = calib.offset;
+      int wireId = calib.wireidentifier - 1; // convert to 0-index
+      double offset = calib.offset + 1000.0; // もともとのコードではUTOF Lを1000 nsにしているので、それに準ずる。
       double scale = calib.scale;
 
       // prepare channel map information
