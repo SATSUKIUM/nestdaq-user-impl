@@ -52,6 +52,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    std::cout << std::endl << funcname << "Function called" << std::endl;
    #endif
    fDoCheck = fKTimer[0].Check();
+   fDoCheck = false;
    
    // clear the time frame of previous cycle
    for (auto& tf : fTFs) {
