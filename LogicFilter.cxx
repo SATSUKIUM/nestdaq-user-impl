@@ -1250,7 +1250,7 @@ bool LogicFilter::ConditionalRun()
 		}
 		#endif
 
-		#if 1
+		#if 0
 		if (totalhits > 0) {
 			std::cout << "#D TotalHits: " << std::setw(4) << totalhits << " :";
 			for (int i = 0 ; i < totalhits / 50 ; i++) std::cout << ".";
