@@ -27,6 +27,6 @@ public:
 
 
 
-} // class nestdaq::DCLTrackHit
+}; // class nestdaq::DCLTrackHit
 
 #endif // DCLTrackHit_h
