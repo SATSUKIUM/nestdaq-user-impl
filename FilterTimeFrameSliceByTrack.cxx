@@ -647,7 +647,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       return false;
    }
 
-   #if 1
+   #if 0 // check index generation for combinatorial search
    std::cout << funcname;
    for(size_t ipp=0; ipp<npp; ++ipp){
       std::cout << "nCombi[" << ipp << "] = " << nCombi[ipp] << ", ";
@@ -662,8 +662,6 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       std::cout << std::endl;
    }
    #endif
-
-
    // ================================
    // Track making, fitting, and selection(minimum number of hits and chi-square)
    // ================================
