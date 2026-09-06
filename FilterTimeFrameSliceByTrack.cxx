@@ -999,6 +999,11 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
          int ChannelNumber = wireId - 1; // wireId is 1-indexed, ChannelNumber is 0-indexed
          uint32_t dopeKey_DETtoFE;
          bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, ChannelName, static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE);
+         #if 1
+         if(found_DETtoFE){
+            std::cout << funcname << "Found dopeKey_DETtoFE for KLDC detector ID: " << detectorId << ", Plane: " << PlaneName << ", Segment: " << static_cast<int>(SegmentNumber) << ", Channel: " << ChannelNumber << std::endl;
+         }
+         #endif
          if(found_DETtoFE){
             chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
             uint32_t dopeKeyFEtoDET;
