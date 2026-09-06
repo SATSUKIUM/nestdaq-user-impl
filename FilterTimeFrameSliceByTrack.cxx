@@ -1343,7 +1343,7 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
    return true;
 } // bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHit>& HC1, const std::vector<DCHit>& HC2, double cellSize, std::vector<DCPairHitCluster*>& Cont)
 
-std::vector<std::vector<int>> FilterTimeFrameSliceByTrack::makeindex(int npp, const int* nCombi) {
+std::vector<std::vector<int>> FilterTimeFrameSliceByTrack::makeindex(int npp, const int* index1) {
    if(npp == 1){
       std::vector< std::vector<int> > index2;
       for( int i=-1; i<index1[0]; ++i ){
@@ -1354,7 +1354,7 @@ std::vector<std::vector<int>> FilterTimeFrameSliceByTrack::makeindex(int npp, co
    }
 
    std::vector< std::vector<int> > 
-   index2=makeindex( ndim-1, index1+1 );
+   index2=makeindex( npp-1, index1+1 );
 
    std::vector< std::vector<int> > index;
    int n2=index2.size();
@@ -1373,4 +1373,4 @@ std::vector<std::vector<int>> FilterTimeFrameSliceByTrack::makeindex(int npp, co
    }
 
    return index;
-} // std::vector<std::vector<int>> FilterTimeFrameSliceByTrack::makeindex(int npp, const int* nCombi)
+} // std::vector<std::vector<int>> FilterTimeFrameSliceByTrack::makeindex(int npp, const int* index1)
