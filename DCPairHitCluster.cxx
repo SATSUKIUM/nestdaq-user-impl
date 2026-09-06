@@ -6,6 +6,8 @@
 
 #include "DCPairHitCluster.h"
 
+using nestdaq::DCPairHitCluster;
+
 DCPairHitCluster::DCPairHitCluster( DCLTrackHit *hitA, DCLTrackHit *hitB )
   : hitA_(hitA), hitB_(hitB), nhits_(0)
 {
