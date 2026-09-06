@@ -7,7 +7,7 @@ namespace nestdaq{
     class DCHit;
     class DCLTrackHit{
     public:
-        DCLTrackHit(const DCHit* parent_, int nth_, double w_, int leftright) : parent(parent_), nth(nth_), w(w_), leftright(leftright);
+        DCLTrackHit(const DCHit* parent_, int nth_, double w_, int leftright) : parent(parent_), nth(nth_), w(w_), leftright(leftright){};
         ~DCLTrackHit() = default;
 
     private:
