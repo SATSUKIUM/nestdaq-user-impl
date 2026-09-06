@@ -1,4 +1,7 @@
 #include "DCHit.h"
+#include "DCConstants.h"
+
+using nestdaq::DCHit;
 
 bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::DCHit::CalcDriftTimes] ";
@@ -54,24 +57,41 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
    return this->CalcDriftLengths();
 } // bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftTimes(double standardTime)
 
+bool DCHit::IsValidDriftLength(double min, double max, double dl){
+    if(dl < min || dl > max){
+        return false;
+    }
+    else{
+        return true;
+    }
+} // bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::IsValidDriftLength(double min, double max)
+
 bool DCHit::CalcDriftLengths(){
-   if(detid == nullptr){
-      return false;
-   }
-   else{
-      if(detid->detconf == nullptr){
-         return false;
-      }
-      else{
-         const chmap::CalibrationItem_DCDriftLength* calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detid->detconf->membername_calib_dcdriftlen.get());
-         if(calibitem_dcdriftlen == nullptr){
+    if(detid == nullptr){
+        return false;
+    }
+    else{
+        // catching max, min drift length values from DCConstants.h
+        const chmap::DETIdItem* detid = this->GetDETIdItem();
+        int iplane = 4 * static_cast<int>(detid->segment) + static_cast<int>(detid->plane);
+        double min_drift_length = DCConstants::fMinDLKLDC[iplane];
+        double max_drift_length = DCConstants::fMaxDLKLDC[iplane];
+
+        if(detid->detconf == nullptr){
             return false;
-         }
-         for(const auto& driftTime : DriftTimes){
-            double driftLength = calibitem_dcdriftlen->GetDriftLength(driftTime);
-            DriftLengths.push_back(driftLength);
-         } // for(const auto& driftTime : driftTimes)
-      } // if(detid->detconf == nullptr)
+        }
+        else{
+            const chmap::CalibrationItem_DCDriftLength* calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detid->detconf->membername_calib_dcdriftlen.get());
+            if(calibitem_dcdriftlen == nullptr){
+            return false;
+            }
+            for(const auto& driftTime : DriftTimes){
+                double driftLength = calibitem_dcdriftlen->GetDriftLength(driftTime);
+                if(this->IsValidDriftLength(min_drift_length, max_drift_length, driftLength)){
+                    DriftLengths.push_back(driftLength);
+                }
+            } // for(const auto& driftTime : driftTimes)
+        } // if(detid->detconf == nullptr)
    } // if(detid == nullptr)
    return true;
 } // bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftLengths()
@@ -95,3 +115,12 @@ double DCHit::GetGlobalZ() const{
       } // if(detid->detconf == nullptr)
    }
 } // double nestdaq::FilterTimeFrameSliceByTrack::DCHit::GetGlobalZ() const
+
+// void DCHit::SetStatusDLRange(double min, double max){ // input unit: mm
+//     for(size_t i=0; i<DriftLengths.size(); ++i){
+//         double dl = DriftLengths[i];
+//         if(dl < DCConstants::DRIFTLENGTH_MIN || dl > DCConstants::DRIFTLENGTH_MAX){
+//             DriftLengths[i] = -1.0; // mark as invalid
+//         }
+//     } // void nestdaq::FilterTimeFrameSliceByTrack::DCHit::SetStatusDLRange()
+}

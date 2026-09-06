@@ -592,6 +592,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       fKLDCHitContainer.SetStandardTime(standardTime, fDCTimeRange);
    } // for(int i=0; i<nStandardTime; ++i)
 
+
    // ================================
    // clustering
    // ================================
@@ -1179,13 +1180,7 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
             int multi1 = hit1->GetDriftLengthSize();
             int multi2 = hit2->GetDriftLengthSize();
             for (int m1=0; m1<multi1; m1++) {
-               if( !(hit1->rangecheck(m1)) ){
-                  continue;
-               } // for (int m1=0; m1<multi1; m1++)
                for (int m2=0; m2<multi2; m2++) {
-                  if( !(hit2->rangecheck(m2)) ){
-                  continue;
-                  }
                   #if CHECK_COUT_DUPLICATE
                   if( multi1>0 && multi2>0 )
                   std::cout << "\ti1: " << i1 << ", i2: " << i2 << ", multi1: " << multi1 << ", multi2: " << multi2 << std::endl;
@@ -1215,7 +1210,6 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
       if(!flag){
          int multi1 = hit1->GetDriftLengthSize();
          for (int m1=0; m1<multi1; m1++) {
-            if( !(hit1->rangecheck(m1)) ) continue;
             #if CHECK_COUT_DUPLICATE
             if( multi1>0 )
             std::cout << "\ti1: " << i1 << ", multi1: " << multi1 << std::endl;
@@ -1234,7 +1228,6 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
          const DCHit *hit2=&HC2[i2];
          int multi2 = hit2->GetDriftLengthSize();
          for (int m2=0; m2<multi2; m2++) {
-            if( !(hit2->rangecheck(m2)) ) continue;
             #if CHECK_COUT_DUPLICATE
             if( multi2>0 )
             std::cout << "\ti2: " << i2 << ", multi2: " << multi2 << std::endl;

@@ -56,6 +56,9 @@ namespace nestdaq {
     double GetWireAngle() const { return wireAngle; };
     double GetDriftLength(int nth) const { return DriftLengths[nth]; };
     double GetGlobalZ() const;
+    int GetNumMultiHit() const { return DriftLengths.size(); };
+    bool IsValidDriftLength(double min, double max, double dl); // input unit: mm
+    bool RangeCheck(int nth) const { return (nth >= 0 && nth < DriftLengths.size()); };
 
     void RegisterHits( DCLTrackHit* hit) const { // このヒットがどのDCLTrackHitに属するかを登録する
         Cont_.push_back(hit);

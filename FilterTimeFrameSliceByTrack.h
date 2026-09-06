@@ -69,7 +69,7 @@ public:
       }
       this->std::vector<std::vector<DCHit>>::clear();
       this->resize(npairplane);
-   }
+   };
 private:
    int npairplane{0};
 }; // class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer
