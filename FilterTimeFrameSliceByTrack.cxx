@@ -603,11 +603,14 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       int plane1 = ppindex.first;
       int plane2 = ppindex.second;
       bool result = MakePairPlaneHitCluster(fKLDCHitContainer[plane1], fKLDCHitContainer[plane2], fKLDCCellSize, CandCont[i]);
+      #if 1
+      std::cout << funcname << "ipp: " << i << ", plane1: " << plane1 << ", plane2: " << plane2 << std::endl;
+      std::cout << "\tfKDLCHitContainer[" << plane1 << "].size() = " << fKLDCHitContainer[plane1].size() << std::endl;
+      std::cout << "\tfKDLCHitContainer[" << plane2 << "].size() = " << fKLDCHitContainer[plane2].size() << std::endl;
+      std::cout << "\tCandCont[" << i << "].size() = " << CandCont[i].size() << std::endl;
+      #endif
    } // for(size_t i=0; i<npp; ++i)
 
-   for(size_t i=0; i<npp; ++i){
-      std::cout << funcname << "Pair plane " << i << " has " << CandCont[i].size() << " clusters." << std::endl;
-   }
 
    
 
