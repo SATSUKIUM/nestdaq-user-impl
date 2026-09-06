@@ -1159,7 +1159,7 @@ void KLDCHitContainer::Reset(){
          dchit.Clear();
       }
       std_vector_dchit.clear();
-      this->.clear();
+      this->clear();
       this->resize(npairplane);
    }
 } // void KLDCHitContainer::Reset()
