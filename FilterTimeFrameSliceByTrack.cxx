@@ -486,7 +486,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    const uint8_t vp_plane_index = 0x04; // (std::string)"Vp"
 
    // clear fKLDCHitContainer before filling it with new hits
-   fKLDCHitContainer.reset();
+   fKLDCHitContainer.Reset();
    for(auto& hit : kldcRawHits){
       const chmap::DETIdItem* detiditem = hit.detid;
       uint8_t segment = detiditem->segment;
