@@ -1,6 +1,8 @@
 #ifndef DCHit_h
 #define DCHit_h 1
 
+#include "FilterTimeFrameSliceByTrack.h"
+
 namespace nestdaq {
     class DCLTrackHit;
     class DCHit {
