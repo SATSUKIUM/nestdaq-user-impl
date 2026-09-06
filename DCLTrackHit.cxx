@@ -1,4 +1,5 @@
 #include "DCLTrackHit.h"
+#include "DCHit.h"
 
 using nestdaq::DCLTrackHit;
 
