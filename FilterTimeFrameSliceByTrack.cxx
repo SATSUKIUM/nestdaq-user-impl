@@ -1168,12 +1168,12 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
    std::vector<int> UsedFlag(nh2,0);
 
    for( int i1=0; i1<nh1; ++i1 ){
-      DCHit *hit1=&HC1[i1];
+      const DCHit *hit1=&HC1[i1];
 
       double wp1=hit1->GetWirePosition();
       bool flag=false;
       for( int i2=0; i2<nh2; ++i2 ){
-         DCHit *hit2=&HC2[i2];
+         const DCHit *hit2=&HC2[i2];
          double wp2=hit2->GetWirePosition();
          if( fabs(wp1-wp2)<CellSize ){
             int multi1 = hit1->GetDriftLengthSize();
@@ -1231,7 +1231,7 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
    #if 1
    for( int i2=0; i2<nh2; ++i2 ){
       if( UsedFlag[i2]==0 ) {
-         DCHit *hit2=&HC2[i2];
+         const DCHit *hit2=&HC2[i2];
          int multi2 = hit2->GetDriftLengthSize();
          for (int m2=0; m2<multi2; m2++) {
             if( !(hit2->rangecheck(m2)) ) continue;
