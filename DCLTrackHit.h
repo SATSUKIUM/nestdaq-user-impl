@@ -1,8 +1,6 @@
 #ifndef DCLTrackHit_h
 #define DCLTrackHit_h 1
 
-#include "DCHit.h"
-
 namespace nestdaq{
     class DCHit;
     class DCLTrackHit{
@@ -17,11 +15,11 @@ namespace nestdaq{
         int leftright; // -1, 1
 
     public:
-        double GetWirePosition() const { return parent->GetWirePos(); };
-        double GetWireAngle() const { return parent->GetWireAngle(); };
-        double GetDriftLength() const { return parent->GetDriftLength(nth); };
+        double GetWirePosition() const;
+        double GetWireAngle() const;
+        double GetDriftLength() const;
 
-        double GetGlobalZ() const{ return parent->GetGlobalZ(); };
+        double GetGlobalZ() const;
 
 
 
