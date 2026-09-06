@@ -200,6 +200,13 @@ foreach(lvar IN ITEMS
   add_executable(${EXEC} 
     ${EXEC}.cxx;
   )
+  # Add source files for specific executables
+  if(${EXEC} STREQUAL "FilterTimeFrameSliceByTrack")
+      target_sources(${EXEC} PRIVATE
+          DCHit.cxx
+          DCPairHitCluster.cxx
+      )
+  endif()
 
   target_include_directories(${EXEC} PUBLIC 
     ${Boost_INCLUDE_DIRS};  
