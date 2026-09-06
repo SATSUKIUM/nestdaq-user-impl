@@ -624,13 +624,49 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       int plane1 = ppindex.first;
       int plane2 = ppindex.second;
       bool result = MakePairPlaneHitCluster(fKLDCHitContainer[plane1], fKLDCHitContainer[plane2], fKLDCCellSize, CandCont[i]);
-      #if 1
+      #if 0
       std::cout << funcname << "ipp: " << i << ", plane1: " << plane1 << ", plane2: " << plane2 << std::endl;
       std::cout << "\tfKDLCHitContainer[" << plane1 << "].size() = " << fKLDCHitContainer[plane1].size() << std::endl;
       std::cout << "\tfKDLCHitContainer[" << plane2 << "].size() = " << fKLDCHitContainer[plane2].size() << std::endl;
       std::cout << "\tCandCont[" << i << "].size() = " << CandCont[i].size() << std::endl;
       #endif
    } // for(size_t i=0; i<npp; ++i)
+ 
+   // prepare for combinatorial search
+   std::vector<int> nCombi(npp);
+   for(int ipp=0; ipp<npp; ++ipp){
+      nCombi[ipp] = CandCont[ipp].size();
+      if(nCombi[ipp] > fMaxCandPerPairPlane){
+         nCombi[ipp] = 0; // T103のKLDCの読み出しボードのクロストークによって計算量が莫大になることを避けるための措置
+      }
+   }
+
+   std::vector<std::vector<int>> CombiIndex = makeindex(npp, &nCombi[0]);
+   int nnCombi = CombiIndex.size();
+   if(nnCombi > fMaxCandCombi){
+      return false;
+   }
+
+   #if 1
+   std::cout << funcname;
+   for(size_t ipp=0; ipp<npp; ++ipp){
+      std::cout << "nCombi[" << ipp << "] = " << nCombi[ipp] << ", ";
+   }
+   std::cout << std::endl;
+   std::cout << funcname << "nnCombi = " << nnCombi << ", and its content: " << std::endl;
+   for(size_t i=0; i<CombiIndex.size(); ++i){
+      std::cout << "\t";
+      for(size_t j=0; j<CombiIndex[i].size(); ++j){
+         std::cout << CombiIndex[i][j] << " ";
+      }
+      std::cout << std::endl;
+   }
+   #endif
+
+
+   // ================================
+   // Track making, fitting, and selection(minimum number of hits and chi-square)
+   // ================================
 
 
    
@@ -1307,3 +1343,34 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
    return true;
 } // bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHit>& HC1, const std::vector<DCHit>& HC2, double cellSize, std::vector<DCPairHitCluster*>& Cont)
 
+std::vector<std::vector<int>> FilterTimeFrameSliceByTrack::makeindex(int npp, const int* nCombi) {
+   if(npp == 1){
+      std::vector< std::vector<int> > index2;
+      for( int i=-1; i<index1[0]; ++i ){
+         std::vector <int> elem(1,i);
+         index2.push_back(elem);
+      }
+      return index2;
+   }
+
+   std::vector< std::vector<int> > 
+   index2=makeindex( ndim-1, index1+1 );
+
+   std::vector< std::vector<int> > index;
+   int n2=index2.size();
+   for( int j=0; j<n2; ++j ){
+      for( int i=-1; i<index1[0]; ++i ){
+         std::vector <int> elem;
+         int n3=index2[j].size();
+         elem.reserve(n3+1);
+         elem.push_back(i);
+         for( int k=0; k<n3; ++k ){
+            elem.push_back(index2[j][k]);
+         }
+         index.push_back(elem);
+         int size1=index.size();
+      }
+   }
+
+   return index;
+} // std::vector<std::vector<int>> FilterTimeFrameSliceByTrack::makeindex(int npp, const int* nCombi)
