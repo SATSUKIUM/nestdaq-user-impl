@@ -123,4 +123,3 @@ double DCHit::GetGlobalZ() const{
 //             DriftLengths[i] = -1.0; // mark as invalid
 //         }
 //     } // void nestdaq::FilterTimeFrameSliceByTrack::DCHit::SetStatusDLRange()
-}
