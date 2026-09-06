@@ -2,10 +2,10 @@
 #define DCHit_h 1
 
 #include "FilterTimeFrameSliceByTrack.h"
+#include "DCTimeRange.h"
 
 namespace nestdaq {
     class DCLTrackHit;
-    class FilterTimeFrameSliceByTrack;
     class DCHit {
     public:
     DCHit(){};
