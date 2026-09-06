@@ -12,7 +12,7 @@ namespace nestdaq{
         ~DCLTrackHit() = default;
 
     private:
-        DCHit* parent;
+        const DCHit* parent;
         int nth;
         double w; // 測定軸方向の座標, ヒット位置
         int leftright; // -1, 1
