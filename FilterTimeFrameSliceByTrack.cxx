@@ -215,11 +215,21 @@ void FilterTimeFrameSliceByTrack::InitTask()
          else{
             std::cout << "\t" << "-> not found detector configuration for kldc 1 U 63." << std::endl;
          }
+
+         const chmap::CalibrationItem_DCTdcCalib* retrieved_calibitem_dctdccalib = dynamic_cast<const chmap::CalibrationItem_DCTdcCalib*>(detiditem.detconf->membername_calib_dctdccalib.get());
+         if(retrieved_calibitem_dctdccalib != nullptr){
+            std::cout << "\t" << "-> found TDC calibration for kldc 1 U 63." << std::endl;
+         }
+         else{
+            std::cout << "\t" << "-> not found TDC calibration for kldc 1 U 63." << std::endl;
+         }
       } // if(_FOUND_FEtoDET == true)
    } // if(_FOUND_DETtoFE == true)
    else{
       std::cout << "\t" << "-> not found." << std::endl;
    }
+
+
    // plane name index check
    const std::string test_planename_up = "Up";
    uint8_t test_planename_up_index = 0;
@@ -1005,7 +1015,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
             bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
             if(found_FEtoDET){
                bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
-               #if 1
+               #if 0
                if(registered){
                   std::cout << funcname << "Registered TDC calibration for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
                }
