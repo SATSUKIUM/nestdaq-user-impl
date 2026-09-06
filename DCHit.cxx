@@ -95,7 +95,7 @@ bool DCHit::CalcDriftLengths(){
     else{
         // catching max, min drift length values from DCConstants.h
         const chmap::DETIdItem* detid = this->GetDETIdItem();
-        int iplane = 4 * static_cast<int>(detid->segment) + static_cast<int>(detid->plane);
+        int iplane = 4 * static_cast<int>(detid->segment - 1) + static_cast<int>(detid->plane);
         double min_drift_length = DCConstants::fMinDLKLDC[iplane];
         double max_drift_length = DCConstants::fMaxDLKLDC[iplane];
 
