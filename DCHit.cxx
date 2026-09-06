@@ -1,36 +1,40 @@
 #include "DCHit.h"
 #include "DCConstants.h"
+#include "FilterTimeFrameSliceByTrackDebugger.h"
 
 using nestdaq::DCHit;
 
 bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
-   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::DCHit::CalcDriftTimes] ";
-   int dctdc_min = DCTimeRange.lower_bound;
-   int dctdc_max = DCTimeRange.upper_bound;
-   int dctot_min = DCTimeRange.tot_min;
+    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::DCHit::CalcDriftTimes] ";
+    #if CHECK_COUT_MAKEPAIRPLANEHITCLUSTER
+    std::cout << funcname << "TDCs.size(): " << TDCs.size() << ", TOTs.size(): " << TOTs.size() << std::endl;
+    #endif
+    int dctdc_min = DCTimeRange.lower_bound;
+    int dctdc_max = DCTimeRange.upper_bound;
+    int dctot_min = DCTimeRange.tot_min;
 
-   if(detid == nullptr){
-      return false;
-   }
-   else{
-      if(detid->detconf == nullptr){
-         return false;
-      }
-      else{
-         const chmap::CalibrationItem_DCTdcCalib* calibitem_dctdccalib = dynamic_cast<const chmap::CalibrationItem_DCTdcCalib*>(detid->detconf->membername_calib_dctdccalib.get());
-         if(calibitem_dctdccalib == nullptr){
+    if(detid == nullptr){
+        return false;
+    }
+    else{
+        if(detid->detconf == nullptr){
             return false;
-         }
-         double offset = calibitem_dctdccalib->GetOffset();
-         double scale = calibitem_dctdccalib->GetScale();
-         #if CHECK_COUT_DRIFTTIME
-         std::cout << funcname << "offset: " << offset << ", scale: " << scale << std::endl;
-         #endif
+        }
+        else{
+            const chmap::CalibrationItem_DCTdcCalib* calibitem_dctdccalib = dynamic_cast<const chmap::CalibrationItem_DCTdcCalib*>(detid->detconf->membername_calib_dctdccalib.get());
+            if(calibitem_dctdccalib == nullptr){
+            return false;
+            }
+            double offset = calibitem_dctdccalib->GetOffset();
+            double scale = calibitem_dctdccalib->GetScale();
+            #if CHECK_COUT_DRIFTTIME
+            std::cout << funcname << "offset: " << offset << ", scale: " << scale << std::endl;
+            #endif
 
-         if(TDCs.size() == 0 || TOTs.size() == 0){
+            if(TDCs.size() == 0 || TOTs.size() == 0){
             return false;
-         }
-         for(size_t i=0; i<TDCs.size(); ++i){ // already ensured that TDCs.size() == TOTs.size()
+            }
+            for(size_t i=0; i<TDCs.size(); ++i){ // already ensured that TDCs.size() == TOTs.size()
             uint32_t tdc = TDCs[i];
             uint32_t tot = TOTs[i];
             #if !FILEOUT_DRIFTTIME
@@ -38,23 +42,26 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
             #else
             if(tot > dctot_min){
             #endif
-               double driftTime = scale * (tdc - standardTime) + offset;
-               #if CHECK_COUT_DRIFTTIME
-               std::cout << "\tdriftTime = scale * (tdc - standardTime) + offset = " << scale << " * (" << tdc << " - " << standardTime << ") + " << offset << " = " << driftTime << std::endl;
-               #endif
-               DriftTimes.push_back(driftTime);         
-               #if FILEOUT_DRIFTTIME
-               int plane = static_cast<int>(detid->plane);
-               int segment = static_cast<int>(detid->segment);
-               int channel_number = static_cast<int>(detid->channel_number);
-               gDebugFile << segment << " " << plane << " " << channel_number << "  " << driftTime << std::endl;
-               #endif
+                double driftTime = scale * (tdc - standardTime) + offset;
+                #if CHECK_COUT_DRIFTTIME
+                std::cout << "\tdriftTime = scale * (tdc - standardTime) + offset = " << scale << " * (" << tdc << " - " << standardTime << ") + " << offset << " = " << driftTime << std::endl;
+                #endif
+                DriftTimes.push_back(driftTime);         
+                #if FILEOUT_DRIFTTIME
+                int plane = static_cast<int>(detid->plane);
+                int segment = static_cast<int>(detid->segment);
+                int channel_number = static_cast<int>(detid->channel_number);
+                gDebugFile << segment << " " << plane << " " << channel_number << "  " << driftTime << std::endl;
+                #endif
             }
-         } // for(const auto& tdc : tdcs)
-      } // if(detid->detconf == nullptr)
-   } // if(detid == nullptr)
+            } // for(const auto& tdc : tdcs)
+        } // if(detid->detconf == nullptr)
+    } // if(detid == nullptr)
 
-   return this->CalcDriftLengths();
+    #if CHECK_COUT_MAKEPAIRPLANEHITCLUSTER
+    std::cout << "\tDriftTimes.size(): " << DriftTimes.size() << std::endl;
+    #endif
+    return this->CalcDriftLengths();
 } // bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftTimes(double standardTime)
 
 bool DCHit::IsValidDriftLength(double min, double max, double dl){
@@ -92,7 +99,10 @@ bool DCHit::CalcDriftLengths(){
                 }
             } // for(const auto& driftTime : driftTimes)
         } // if(detid->detconf == nullptr)
-   } // if(detid == nullptr)
+    } // if(detid == nullptr)
+    #if CHECK_COUT_MAKEPAIRPLANEHITCLUSTER
+    std::cout << "\tDriftLengths.size(): " << DriftLengths.size() << std::endl;
+    #endif
    return true;
 } // bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftLengths()
 
