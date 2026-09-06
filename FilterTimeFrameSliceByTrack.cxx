@@ -1160,7 +1160,7 @@ void KLDCHitContainer::SetStandardTime(double standardTime, const DCTimeRange& D
    }
 } // void nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer::SetStandardTime(int standardTime)
 
-bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHit>& HC1, const std::vector<DCHit>& HC2, double cellSize, std::vector<DCPairHitCluster*>& Cont)
+bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHit>& HC1, const std::vector<DCHit>& HC2, double CellSize, std::vector<DCPairHitCluster*>& Cont)
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster] ";
 
@@ -1170,11 +1170,11 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
    for( int i1=0; i1<nh1; ++i1 ){
       const DCHit *hit1=&HC1[i1];
 
-      double wp1=hit1->GetWirePosition();
+      double wp1=hit1->GetWirePos();
       bool flag=false;
       for( int i2=0; i2<nh2; ++i2 ){
          const DCHit *hit2=&HC2[i2];
-         double wp2=hit2->GetWirePosition();
+         double wp2=hit2->GetWirePos();
          if( fabs(wp1-wp2)<CellSize ){
             int multi1 = hit1->GetDriftLengthSize();
             int multi2 = hit2->GetDriftLengthSize();
@@ -1240,7 +1240,7 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
             std::cout << "\ti2: " << i2 << ", multi2: " << multi2 << std::endl;
             #endif
 
-            double wp=hit2->GetWirePosition();
+            double wp=hit2->GetWirePos();
             // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2,wp: " << wp << ", lr: " << +1 << ", m2: " << m2 << ") ) );" << std::endl;
             // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2,wp: " << wp << ", lr: " << -1 << ", m2: " << m2 << ") ) );" << std::endl;
             Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2,wp, +1,m2) ) );
