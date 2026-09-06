@@ -4,7 +4,7 @@
 #include "DCHit.h"
 
 namespace nestdaq{
-    class nestdaq::DCLTrackHit{
+    class DCLTrackHit{
     public:
         DCLTrackHit(DCHit* parent_, int nth_, double w_, int leftright) : parent(parent_), nth(nth_), w(w_), leftright(leftright) {
             parent->RegisterHits(this);

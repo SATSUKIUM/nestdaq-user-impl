@@ -2,7 +2,7 @@
 #define DCHit_h 1
 
 namespace nestdaq {
-    class nestdaq::DCHit {
+    class DCHit {
     public:
     DCHit(){};
     DCHit(double wirePos, double wireAngle, const chmap::DETIdItem* detid) {

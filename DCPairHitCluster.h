@@ -10,7 +10,7 @@
 #include "DCLTrackHit.h"
 
 namespace nestdaq {
-    class nestdaq::DCPairHitCluster
+    class DCPairHitCluster
     {
     public:
     DCPairHitCluster( DCLTrackHit *hitA, DCLTrackHit *hitB=0 );
