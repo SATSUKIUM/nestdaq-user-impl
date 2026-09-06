@@ -40,12 +40,6 @@ namespace nestdaq {
    struct temporary_dcdriftparam;
 }
 
-struct nestdaq::DCTimeRange {
-   int lower_bound;
-   int upper_bound;
-   int tot_min;
-}; // struct nestdaq::FilterTimeFrameSliceByTrack::DCTimeRange
-
 struct nestdaq::DCRawHit {
    DCRawHit(chmap::DETIdItem* detid, uint32_t tdc, uint32_t tot) : detid(detid), tdc(tdc), tot(tot) {};
    const chmap::DETIdItem* detid;
