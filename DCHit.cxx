@@ -58,7 +58,7 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
                 #if 1
                 std::cout << "\t\tout of range:" << std::endl;
                 std::cout << "\t\t\ttot condition: " << (tot > dctot_min ? "true" : "false") << ", tdc condition: " << ((tdc - standardTime >= dctdc_min) && (tdc - standardTime <= dctdc_max) ? "true" : "false") << std::endl;
-                std::cout << "\t\t\ttdc: " << tdc << ", standardTime: " << standardTime << ", dctdc_min: " << dctdc_min << ", dctdc_max: " << dctdc_max << ", tot: " << tot << ", dctot_min: " << dctot_min << std::endl;
+                std::cout << "\t\t\tscale(tdc - standardTime) + offset = " << scale << " * (" << tdc << " - " << standardTime << ") + " << offset << " = " << scale * (tdc - standardTime) + offset << std::endl;
                 #endif
             }
             } // for(const auto& tdc : tdcs)
