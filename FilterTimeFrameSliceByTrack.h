@@ -161,7 +161,7 @@ protected:
       945, 1200, 55 // KLDC TDC cut, lower_bound, upper_bound, tot_min, unit: ns
    };
    const double fKLDCCellSize = 9.007; // KLDC cell size, unit: mm
-   static constexpr std::vector<std::pair<int,int>> fKLDCPairPlaneInfo = {
+   const std::vector<std::pair<int,int>> fKLDCPairPlaneInfo = {
       {0,1}, // KLDC1 UU'
       {2,3}, // KLDC1 VV'
       {4,5}, // KLDC2 UU'
