@@ -1201,6 +1201,9 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
          if( fabs(wp1-wp2)<CellSize ){
             int multi1 = hit1->GetNumMultiHit();
             int multi2 = hit2->GetNumMultiHit();
+            #if CHECK_COUT_MAKEPAIRPLANEHITCLUSTER
+            std::cout << "\tMultiHit condition: multi1: " << multi1 << ", multi2: " << multi2 << std::endl;
+            #endif
             for (int m1=0; m1<multi1; m1++) {
                for (int m2=0; m2<multi2; m2++) {
                   #if CHECK_COUT_DUPLICATE
