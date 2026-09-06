@@ -60,16 +60,7 @@ public:
       this->resize(npairplane);
    };
    void SetStandardTime(double standardTime, const DCTimeRange& timeRange);
-   void reset(){
-      for(auto& std_vector_dchit : *this){
-         for(auto& dchit : std_vector_dchit){
-            dchit.Clear();
-         }
-         std_vector_dchit.clear();
-      }
-      this->std::vector<std::vector<DCHit>>::clear();
-      this->resize(npairplane);
-   };
+   void reset();
 private:
    int npairplane{0};
 }; // class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer

@@ -1153,6 +1153,17 @@ std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)
     return std::make_unique<FilterTimeFrameSliceByTrack>();
 }
 
+void KLDCHitContainer::Reset(){
+   for(auto& std_vector_dchit : *this){
+      for(auto& dchit : std_vector_dchit){
+         dchit.Clear();
+      }
+      std_vector_dchit.clear();
+      this->std::vector<std::vector<DCHit>>.clear();
+      this->resize(npairplane);
+   }
+} // void KLDCHitContainer::Reset()
+
 void KLDCHitContainer::SetStandardTime(double standardTime, const DCTimeRange& DCTimeRange){
    for(auto& std_vector_dchit : *this){
       for(auto& dchit : std_vector_dchit){
