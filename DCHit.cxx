@@ -95,7 +95,16 @@ bool DCHit::CalcDriftLengths(){
             for(const auto& driftTime : DriftTimes){
                 double driftLength = calibitem_dcdriftlen->GetDriftLength(driftTime);
                 if(this->IsValidDriftLength(min_drift_length, max_drift_length, driftLength)){
+                    #if CHECK_COUT_MAKEPAIRPLANEHITCLUSTER
+                    std::cout << "\trange check: valid" << std::endl;
+                    #endif
                     DriftLengths.push_back(driftLength);
+                }
+                else{
+                    #if CHECK_COUT_MAKEPAIRPLANEHITCLUSTER
+                    std::cout << "\trange check: invalid" << std::endl;
+                    std::cout << "\t\tdriftLength: " << driftLength << ", min_drift_length: " << min_drift_length << ", max_drift_length: " << max_drift_length << std::endl;
+                    #endif
                 }
             } // for(const auto& driftTime : driftTimes)
         } // if(detid->detconf == nullptr)
