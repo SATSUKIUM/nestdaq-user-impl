@@ -205,6 +205,7 @@ foreach(lvar IN ITEMS
       target_sources(${EXEC} PRIVATE
           DCHit.cxx
           DCPairHitCluster.cxx
+          DCLTrackHit.cxx
       )
   endif()
 
