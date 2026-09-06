@@ -1194,6 +1194,10 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
       for( int i2=0; i2<nh2; ++i2 ){
          const DCHit *hit2=&HC2[i2];
          double wp2=hit2->GetWirePos();
+         #if CHECK_COUT_MAKEPAIRPLANEHITCLUSTER
+         std::cout << funcname << "i1: " << i1 << ", i2: " << i2 << ", fabs(wp1-wp2) = |" << wp1 << " - " << wp2 << "| = " << fabs(wp1-wp2) << ", CellSize: " << CellSize << std::endl;
+         std::cout << "\tCellSize condition: " << (fabs(wp1-wp2)<CellSize ? "true" : "false") << std::endl;
+         #endif
          if( fabs(wp1-wp2)<CellSize ){
             int multi1 = hit1->GetNumMultiHit();
             int multi2 = hit2->GetNumMultiHit();
