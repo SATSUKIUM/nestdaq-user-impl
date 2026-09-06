@@ -636,7 +636,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    std::vector<int> nCombi(npp);
    for(int ipp=0; ipp<npp; ++ipp){
       nCombi[ipp] = CandCont[ipp].size();
-      if(nCombi[ipp] > fMaxCandPerPairPlane){
+      if(nCombi[ipp] > fMaxNumClusters){
          nCombi[ipp] = 0; // T103のKLDCの読み出しボードのクロストークによって計算量が莫大になることを避けるための措置
       }
    }
