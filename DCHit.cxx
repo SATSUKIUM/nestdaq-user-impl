@@ -54,6 +54,13 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
                 gDebugFile << segment << " " << plane << " " << channel_number << "  " << driftTime << std::endl;
                 #endif
             }
+            else{
+                #if 1
+                std::cout << "\t\tout of range:" << std::endl;
+                std::cout << "\t\t\ttot condition: " << (tot > dctot_min ? "true" : "false") << ", tdc condition: " << ((tdc - standardTime >= dctdc_min) && (tdc - standardTime <= dctdc_max) ? "true" : "false") << std::endl;
+                std::cout << "\t\t\ttdc: " << tdc << ", standardTime: " << standardTime << ", dctdc_min: " << dctdc_min << ", dctdc_max: " << dctdc_max << ", tot: " << tot << ", dctot_min: " << dctot_min << std::endl;
+                #endif
+            }
             } // for(const auto& tdc : tdcs)
         } // if(detid->detconf == nullptr)
     } // if(detid == nullptr)
