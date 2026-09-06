@@ -606,9 +606,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    } // for(size_t i=0; i<npp; ++i)
 
    for(size_t i=0; i<npp; ++i){
-      for(auto& cluster : CandCont[i]){
-         std::cout << funcname << "CandCont[i].size() = " << CandCont[i].size() << std::endl;
-      }
+      std::cout << funcname << "Pair plane " << i << " has " << CandCont[i].size() << " clusters." << std::endl;
    }
 
    
