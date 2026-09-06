@@ -208,6 +208,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
          detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
          detiditem.decode();
          // check detector configuration for kldc 1 U 63
+         // geometry
          const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
          if(retrieved_geomitemdc != nullptr){
             std::cout << "\t" << "-> found detector configuration for kldc 1 U 63." << std::endl;
@@ -216,6 +217,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
             std::cout << "\t" << "-> not found detector configuration for kldc 1 U 63." << std::endl;
          }
 
+         // TDC calibration
          const chmap::CalibrationItem_DCTdcCalib* retrieved_calibitem_dctdccalib = dynamic_cast<const chmap::CalibrationItem_DCTdcCalib*>(detiditem.detconf->membername_calib_dctdccalib.get());
          if(retrieved_calibitem_dctdccalib != nullptr){
             std::cout << "\t" << "-> found TDC calibration for kldc 1 U 63." << std::endl;
@@ -1107,8 +1109,16 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
                uint32_t dopeKeyFEtoDET;
                bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
                if(found_FEtoDET){
-                  fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCDriftLength>(dopeKeyFEtoDET, std::move(calibitem_dcdriftlength), &chmap::DETConfItem::membername_calib_dcdriftlen);
+                  bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCDriftLength>(dopeKeyFEtoDET, std::move(calibitem_dcdriftlength), &chmap::DETConfItem::membername_calib_dcdriftlen);
                   registered_count_geomitemdc_kldc++;
+                  #if 1
+                  if(registered){
+                     std::cout << funcname << "Registered drift parameter for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
+                  }
+                  else{
+                     std::cout << funcname << "Failed to register drift parameter for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
+                  }
+                  #endif
                } // if(found_FEtoDET)
                else{
                   ++missing_count_DETIdItem;
