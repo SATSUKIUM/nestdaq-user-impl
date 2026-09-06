@@ -28,6 +28,7 @@
 #include "DCHit.h"
 #include "DCLTrackHit.h"
 #include "DCTimeRange.h"
+#include "DCPairHitCluster.h"
 
 namespace nestdaq {
    class FilterTimeFrameSliceByTrack;
