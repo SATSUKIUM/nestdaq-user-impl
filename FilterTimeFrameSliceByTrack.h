@@ -60,7 +60,7 @@ public:
       this->resize(npairplane);
    };
    void SetStandardTime(double standardTime, const DCTimeRange& timeRange);
-   void reset();
+   void Reset();
 private:
    int npairplane{0};
 }; // class nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer
