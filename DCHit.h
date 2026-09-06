@@ -1,6 +1,8 @@
 #ifndef DCHit_h
 #define DCHit_h 1
 
+#include "DCLTrackHit.h"
+
 namespace nestdaq {
     class DCHit {
     public:
