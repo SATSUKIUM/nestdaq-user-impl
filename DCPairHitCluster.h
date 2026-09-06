@@ -10,28 +10,25 @@
 #include "DCLTrackHit.h"
 
 namespace nestdaq {
-   class DCPairHitCluster;
-}
+    class nestdaq::DCPairHitCluster
+    {
+    public:
+    DCPairHitCluster( DCLTrackHit *hitA, DCLTrackHit *hitB=0 );
+    ~DCPairHitCluster();
 
-class nestdaq::DCPairHitCluster
-{
-public:
-  DCPairHitCluster( DCLTrackHit *hitA, DCLTrackHit *hitB=0 );
-  ~DCPairHitCluster();
+    private:
+    DCLTrackHit *hitA_, *hitB_;
+    int nhits_;
 
-private:
-  DCLTrackHit *hitA_, *hitB_;
-  int nhits_;
+    public:
+    int NumberOfHits( void ) const { return nhits_; }
+    DCLTrackHit *GetHit( int i ) const
+    {
+        if(i==0)      return hitA_;
+        else if(i==1) return hitB_;
+        else          return 0;
+    }
 
-public:
-  int NumberOfHits( void ) const { return nhits_; }
-  DCLTrackHit *GetHit( int i ) const
-  {
-    if(i==0)      return hitA_;
-    else if(i==1) return hitB_;
-    else          return 0;
-  }
-
-};
-
+    };
+} // namespace nestdaq
 #endif // DCPairHitCluster_h

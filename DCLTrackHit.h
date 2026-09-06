@@ -3,32 +3,30 @@
 
 #include "DCHit.h"
 
-namespace nestdaq {
-   class DCLTrackHit;
-}
+namespace nestdaq{
+    class nestdaq::DCLTrackHit{
+    public:
+        DCLTrackHit(DCHit* parent_, int nth_, double w_, int leftright) : parent(parent_), nth(nth_), w(w_), leftright(leftright) {
+            parent->RegisterHits(this);
+        };
+        ~DCLTrackHit() = default;
 
-class nestdaq::DCLTrackHit{
-public:
-    DCLTrackHit(DCHit* parent_, int nth_, double w_, int leftright) : parent(parent_), nth(nth_), w(w_), leftright(leftright) {
-        parent->RegisterHits(this);
-    };
-    ~DCLTrackHit() = default;
+    private:
+        DCHit* parent;
+        int nth;
+        double w; // 測定軸方向の座標, ヒット位置
+        int leftright; // -1, 1
 
-private:
-    DCHit* parent;
-    int nth;
-    double w; // 測定軸方向の座標, ヒット位置
-    int leftright; // -1, 1
+    public:
+        double GetWirePosition() const { return parent->GetWirePos(); };
+        double GetWireAngle() const { return parent->GetWireAngle(); };
+        double GetDriftLength() const { return parent->GetDriftLength(nth); };
 
-public:
-    double GetWirePosition() const { return parent->GetWirePos(); };
-    double GetWireAngle() const { return parent->GetWireAngle(); };
-    double GetDriftLength() const { return parent->GetDriftLength(nth); };
-
-    double GetGlobalZ() const{ return parent->GetGlobalZ(); };
+        double GetGlobalZ() const{ return parent->GetGlobalZ(); };
 
 
 
-}; // class nestdaq::DCLTrackHit
+    }; // class nestdaq::DCLTrackHit
+} // namespace nestdaq
 
 #endif // DCLTrackHit_h
