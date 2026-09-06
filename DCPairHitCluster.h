@@ -9,9 +9,9 @@
 
 #include "DCLTrackHit.h"
 
-class DCLTrackHit;
+class nestdaq::DCLTrackHit;
 
-class DCPairHitCluster
+class nestdaq::DCPairHitCluster
 {
 public:
   DCPairHitCluster( DCLTrackHit *hitA, DCLTrackHit *hitB=0 );

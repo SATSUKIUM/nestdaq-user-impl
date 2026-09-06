@@ -1,8 +1,6 @@
 #ifndef DCHit_h
 #define DCHit_h 1
 
-using nestdaq::DCHit;
-
 class nestdaq::DCHit {
 public:
    DCHit(){};
