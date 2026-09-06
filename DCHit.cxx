@@ -74,6 +74,7 @@ bool DCHit::IsValidDriftLength(double min, double max, double dl){
 } // bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::IsValidDriftLength(double min, double max)
 
 bool DCHit::CalcDriftLengths(){
+    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::DCHit::CalcDriftLengths] ";
     if(detid == nullptr){
         return false;
     }
@@ -90,7 +91,9 @@ bool DCHit::CalcDriftLengths(){
         else{
             const chmap::CalibrationItem_DCDriftLength* calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detid->detconf->membername_calib_dcdriftlen.get());
             if(calibitem_dcdriftlen == nullptr){
-            return false;
+                std::cout << funcname << "Error: calibitem_dcdriftlen is nullptr for detid: ";
+                detid->decode();
+                return false;
             }
             for(const auto& driftTime : DriftTimes){
                 double driftLength = calibitem_dcdriftlen->GetDriftLength(driftTime);
