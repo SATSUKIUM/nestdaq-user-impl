@@ -643,7 +643,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
    std::vector<std::vector<int>> CombiIndex = makeindex(npp, &nCombi[0]);
    int nnCombi = CombiIndex.size();
-   if(nnCombi > fMaxCandCombi){
+   if(nnCombi > fMaxCombi){
       return false;
    }
 
