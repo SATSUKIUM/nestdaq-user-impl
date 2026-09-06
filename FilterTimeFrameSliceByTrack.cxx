@@ -1119,7 +1119,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
                if(found_FEtoDET){
                   bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCDriftLength>(dopeKeyFEtoDET, std::move(calibitem_dcdriftlength), &chmap::DETConfItem::membername_calib_dcdriftlen);
                   registered_count_geomitemdc_kldc++;
-                  #if 1
+                  #if 0
                   if(registered){
                      std::cout << funcname << "Registered drift parameter for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
                   }
