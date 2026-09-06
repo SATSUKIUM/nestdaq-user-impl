@@ -225,6 +225,15 @@ void FilterTimeFrameSliceByTrack::InitTask()
          else{
             std::cout << "\t" << "-> not found TDC calibration for kldc 1 U 63." << std::endl;
          }
+
+         // Drift Length calibration
+         const chmap::CalibrationItem_DCDriftLength* retrieved_calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detiditem.detconf->membername_calib_dcdriftlen.get());
+         if(retrieved_calibitem_dcdriftlen != nullptr){
+            std::cout << "\t" << "-> found Drift Length calibration for kldc 1 U 63." << std::endl;
+         }
+         else{
+            std::cout << "\t" << "-> not found Drift Length calibration for kldc 1 U 63." << std::endl;
+         }
       } // if(_FOUND_FEtoDET == true)
    } // if(_FOUND_DETtoFE == true)
    else{
