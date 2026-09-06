@@ -46,6 +46,12 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
                 #if CHECK_COUT_DRIFTTIME
                 std::cout << "\tdriftTime = scale * (tdc - standardTime) + offset = " << scale << " * (" << tdc << " - " << standardTime << ") + " << offset << " = " << driftTime << std::endl;
                 #endif
+                #if 1
+                std::cout << "\t\tin range:" << std::endl;
+                std::cout << "\t\t\ttot condition: " << (tot > dctot_min ? "true" : "false") << ", tdc condition: " << ((tdc - standardTime >= dctdc_min) && (tdc - standardTime <= dctdc_max) ? "true" : "false") << std::endl;
+                std::cout << "\t\t\tscale(tdc - standardTime) + offset = " << scale << " * (" << tdc << " - " << standardTime << ") + " << offset << " = " << scale * (tdc - standardTime) + offset << std::endl;
+                std::cout << "\t\t\t\tlower_bound: " << dctdc_min << ", upper_bound: " << dctdc_max << std::endl;
+                #endif
                 DriftTimes.push_back(driftTime);         
                 #if FILEOUT_DRIFTTIME
                 int plane = static_cast<int>(detid->plane);
@@ -59,6 +65,7 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
                 std::cout << "\t\tout of range:" << std::endl;
                 std::cout << "\t\t\ttot condition: " << (tot > dctot_min ? "true" : "false") << ", tdc condition: " << ((tdc - standardTime >= dctdc_min) && (tdc - standardTime <= dctdc_max) ? "true" : "false") << std::endl;
                 std::cout << "\t\t\tscale(tdc - standardTime) + offset = " << scale << " * (" << tdc << " - " << standardTime << ") + " << offset << " = " << scale * (tdc - standardTime) + offset << std::endl;
+                std::cout << "\t\t\t\tlower_bound: " << dctdc_min << ", upper_bound: " << dctdc_max << std::endl;
                 #endif
             }
             } // for(const auto& tdc : tdcs)
