@@ -1,5 +1,5 @@
-#ifndef DCHit_h
-#define DCHit_h 1
+#ifndef DCHIT_H_
+#define DCHIT_H_ 1
 
 #include "FilterTimeFrameSliceByTrack.h"
 #include "DCTimeRange.h"
@@ -65,4 +65,4 @@ namespace nestdaq {
     }
     }; // class nestdaq::FilterTimeFrameSliceByTrack::DCHit
 } // namespace nestdaq
-#endif // DCHit_h
+#endif // DCHIT_H_
