@@ -25,8 +25,6 @@
 #include <chmap/channel_map_dopeness.hpp>
 #include <chmap/item.hpp>
 
-#include "DCLTrackHit.h"
-
 namespace nestdaq {
    class FilterTimeFrameSliceByTrack;
    struct DCRawHit;
@@ -37,6 +35,8 @@ namespace nestdaq {
    struct temporary_dctdccalib;
    struct temporary_dcdriftparam;
 }
+
+#include "DCLTrackHit.h"
 
 struct nestdaq::DCTimeRange {
    int lower_bound;
