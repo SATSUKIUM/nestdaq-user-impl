@@ -150,7 +150,7 @@ protected:
    static constexpr int nplanes = 8;
    KLDCHitContainer fKLDCHitContainer{nplanes};
    const DCTimeRange fDCTimeRange{
-      945, 1200, 55 // KLDC TDC cut, lower_bound, upper_bound, tot_min, unit: ns
+      945-1000, 1200-1000, 55 // KLDC TDC cut, lower_bound, upper_bound, tot_min, unit: ns
    };
    const double fKLDCCellSize = 9.007; // KLDC cell size, unit: mm
    const std::vector<std::pair<int,int>> fKLDCPairPlaneInfo = {
