@@ -5,6 +5,7 @@
 
 namespace nestdaq {
     class DCLTrackHit;
+    class FilterTimeFrameSliceByTrack;
     class DCHit {
     public:
     DCHit(){};
