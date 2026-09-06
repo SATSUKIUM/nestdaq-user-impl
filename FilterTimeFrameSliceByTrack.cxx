@@ -496,84 +496,115 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       double wirePos = 0.0;
       double wireAngle = 0.0;
 
-      if(detiditem->segment == 1){ // KLDC1
-         if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
-            if(!(fKLDCHitContainer[0].empty()) && fKLDCHitContainer[0].back().GetDETIdItem()->channel_number == wireNumber){
-               fKLDCHitContainer[0].back().AddHit(tdc, tot);
+      int planeNumber = 4 * (segment - 1) + (detiditem->plane - 1); // planeNumber = 1~8
+      // 0: KLDC1 U, 1: KLDC1 Up, 2: KLDC1 V, 3: KLDC1 Vp, 4: KLDC2 U, 5: KLDC2 Up, 6: KLDC2 V, 7: KLDC2 Vp
+      if(!(fKLDCHitContainer[planeNumber].empty()) && fKLDCHitContainer[planeNumber].back().GetDETIdItem()->channel_number == wireNumber){
+         fKLDCHitContainer[planeNumber].back().AddHit(tdc, tot);
+      }
+      else{
+         if(detiditem->detconf != nullptr){
+            const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
+            if(geomitemdc != nullptr){
+               wirePos = geomitemdc->GetWirePosition();
+               wireAngle = geomitemdc->GetTiltAngle();
             }
-            else{
-               if(detiditem->detconf != nullptr){
-                  const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
-                  if(geomitemdc != nullptr){
-                     wirePos = geomitemdc->GetWirePosition();
-                     wireAngle = geomitemdc->GetTiltAngle();
-                  }
-                  DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
-                  fKLDCHitContainer[0].push_back(h);
-               } // if(detiditem->detconf != nullptr)
-            }
-         } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
-         else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
-            if(!(fKLDCHitContainer[1].empty()) && fKLDCHitContainer[1].back().GetDETIdItem()->channel_number == wireNumber){
-               fKLDCHitContainer[1].back().AddHit(tdc, tot);
-            }
-            else{
-               if(detiditem->detconf != nullptr){
-                  const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
-                  if(geomitemdc != nullptr){
-                     wirePos = geomitemdc->GetWirePosition();
-                     wireAngle = geomitemdc->GetTiltAngle();
-                  }
-                  DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
-                  fKLDCHitContainer[1].push_back(h);
-               } // if(detiditem->detconf != nullptr)
-            }
-         } // if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index)
-      } // if(detiditem->segment == 1)
-      else if(detiditem->segment == 2){ // KLDC2
-         if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
-            if(!(fKLDCHitContainer[2].empty()) && fKLDCHitContainer[2].back().GetDETIdItem()->channel_number == wireNumber){
-               fKLDCHitContainer[2].back().AddHit(tdc, tot);
-            }
-            else{
-               if(detiditem->detconf != nullptr){
-                  const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
-                  if(geomitemdc != nullptr){
-                     wirePos = geomitemdc->GetWirePosition();
-                     wireAngle = geomitemdc->GetTiltAngle();
-                  }
-                  DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
-                  fKLDCHitContainer[2].push_back(h);
-               } // if(detiditem->detconf != nullptr)
-            }
-         } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
-         else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
-            if(!(fKLDCHitContainer[3].empty()) && fKLDCHitContainer[3].back().GetDETIdItem()->channel_number == wireNumber){
-               fKLDCHitContainer[3].back().AddHit(tdc, tot);
-            }
-            else{
-               if(detiditem->detconf != nullptr){
-                  const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
-                  if(geomitemdc != nullptr){
-                     wirePos = geomitemdc->GetWirePosition();
-                     wireAngle = geomitemdc->GetTiltAngle();
-                  }
-                  DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
-                  fKLDCHitContainer[3].push_back(h);
-               } // if(detiditem->detconf != nullptr)
-            }
-         } // if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index)
-      } // if(detiditem->segment == 2)
+            DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
+            fKLDCHitContainer[planeNumber].push_back(h);
+         } // if(detiditem->detconf != nullptr)
+      }
+
+      // if(detiditem->segment == 1){ // KLDC1
+      //    if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
+      //       if(!(fKLDCHitContainer[0].empty()) && fKLDCHitContainer[0].back().GetDETIdItem()->channel_number == wireNumber){
+      //          fKLDCHitContainer[0].back().AddHit(tdc, tot);
+      //       }
+      //       else{
+      //          if(detiditem->detconf != nullptr){
+      //             const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
+      //             if(geomitemdc != nullptr){
+      //                wirePos = geomitemdc->GetWirePosition();
+      //                wireAngle = geomitemdc->GetTiltAngle();
+      //             }
+      //             DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
+      //             fKLDCHitContainer[0].push_back(h);
+      //          } // if(detiditem->detconf != nullptr)
+      //       }
+      //    } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
+      //    else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
+      //       if(!(fKLDCHitContainer[1].empty()) && fKLDCHitContainer[1].back().GetDETIdItem()->channel_number == wireNumber){
+      //          fKLDCHitContainer[1].back().AddHit(tdc, tot);
+      //       }
+      //       else{
+      //          if(detiditem->detconf != nullptr){
+      //             const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
+      //             if(geomitemdc != nullptr){
+      //                wirePos = geomitemdc->GetWirePosition();
+      //                wireAngle = geomitemdc->GetTiltAngle();
+      //             }
+      //             DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
+      //             fKLDCHitContainer[1].push_back(h);
+      //          } // if(detiditem->detconf != nullptr)
+      //       }
+      //    } // if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index)
+      // } // if(detiditem->segment == 1)
+      // else if(detiditem->segment == 2){ // KLDC2
+      //    if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
+      //       if(!(fKLDCHitContainer[2].empty()) && fKLDCHitContainer[2].back().GetDETIdItem()->channel_number == wireNumber){
+      //          fKLDCHitContainer[2].back().AddHit(tdc, tot);
+      //       }
+      //       else{
+      //          if(detiditem->detconf != nullptr){
+      //             const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
+      //             if(geomitemdc != nullptr){
+      //                wirePos = geomitemdc->GetWirePosition();
+      //                wireAngle = geomitemdc->GetTiltAngle();
+      //             }
+      //             DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
+      //             fKLDCHitContainer[2].push_back(h);
+      //          } // if(detiditem->detconf != nullptr)
+      //       }
+      //    } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
+      //    else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
+      //       if(!(fKLDCHitContainer[3].empty()) && fKLDCHitContainer[3].back().GetDETIdItem()->channel_number == wireNumber){
+      //          fKLDCHitContainer[3].back().AddHit(tdc, tot);
+      //       }
+      //       else{
+      //          if(detiditem->detconf != nullptr){
+      //             const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
+      //             if(geomitemdc != nullptr){
+      //                wirePos = geomitemdc->GetWirePosition();
+      //                wireAngle = geomitemdc->GetTiltAngle();
+      //             }
+      //             DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
+      //             fKLDCHitContainer[3].push_back(h);
+      //          } // if(detiditem->detconf != nullptr)
+      //       }
+      //    } // if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index)
+      // } // if(detiditem->segment == 2)
    } // for(auto& hit : kldcRawHits)
 
    // ================================
-   // tracking for each UTOF hit
+   // calculate drift length
    // ================================
    // std::cout << funcname << "Number of UTOF left hits: " << nStandardTime << std::endl;
    for(int i=0; i<nStandardTime; ++i){
       double standardTime = utof_left_times[i];
       fKLDCHitContainer.SetStandardTime(standardTime, fDCTimeRange);
-   }
+   } // for(int i=0; i<nStandardTime; ++i)
+
+   // ================================
+   // clustering
+   // ================================
+   std::vector< std::vector<DCPairHitCluster*> > CandCont;
+   CandCont.resize(npp);
+   for(size_t i=0; i<npp; ++i){
+      std::pair<int, int> ppindex = fKLDCPairPlaneInfo[i];
+      int plane1 = ppindex.first;
+      int plane2 = ppindex.second;
+      bool result = MakePairPlaneHitCluster(fKLDCHitContainer[plane1], fKLDCHitContainer[plane2], fKLDCCellSize, CandCont[i]);
+   } // for(size_t i=0; i<npp; ++i)
+
+   
 
 #if 0
    int doKeep = false;
@@ -1204,4 +1235,117 @@ bool DCHit::CalcDriftLengths(){
    } // if(detid == nullptr)
    return true;
 } // bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftLengths()
+
+double DCHit::GetGlobalZ() const{
+   if(detid == nullptr){
+      return 0.0;
+   }
+   else{
+      if(detid->detconf == nullptr){
+         return 0.0;
+      }
+      else{
+         const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detid->detconf->membername_geom.get());
+         if(geomitemdc == nullptr){
+            return 0.0;
+         }
+         else{
+            return geomitemdc->GetGlobalZ();
+         } // if(geomitemdc == nullptr)
+      } // if(detid->detconf == nullptr)
+   }
+} // double nestdaq::FilterTimeFrameSliceByTrack::DCHit::GetGlobalZ() const
+
+bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHit>& HC1, const std::vector<DCHit>& HC2, double cellSize, std::vector<DCPairHitCluster*>& Cont)
+{
+   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster] ";
+
+   int nh1=HC1.size(), nh2=HC2.size();
+   std::vector<int> UsedFlag(nh2,0);
+
+   for( int i1=0; i1<nh1; ++i1 ){
+      DCHit *hit1=HC1[i1];
+
+      double wp1=hit1->GetWirePosition();
+      bool flag=false;
+      for( int i2=0; i2<nh2; ++i2 ){
+         DCHit *hit2=HC2[i2];
+         double wp2=hit2->GetWirePosition();
+         if( fabs(wp1-wp2)<CellSize ){
+            int multi1 = hit1->GetDriftLengthSize();
+            int multi2 = hit2->GetDriftLengthSize();
+            for (int m1=0; m1<multi1; m1++) {
+               if( !(hit1->rangecheck(m1)) ){
+                  continue;
+               } // for (int m1=0; m1<multi1; m1++)
+               for (int m2=0; m2<multi2; m2++) {
+                  if( !(hit2->rangecheck(m2)) ){
+                  continue;
+                  }
+                  #if CHECK_COUT_DUPLICATE
+                  if( multi1>0 && multi2>0 )
+                  std::cout << "\ti1: " << i1 << ", i2: " << i2 << ", multi1: " << multi1 << ", multi2: " << multi2 << std::endl;
+                  #endif
+                  double x1,x2;
+                  int lr1, lr2;
+                  if( wp1<wp2 ){
+                     x1=wp1;
+                     lr1 = +1;
+                     x2=wp2;
+                     lr2 = -1;
+                  } // if( wp1<wp2 )
+                  else {
+                     x1=wp1;
+                     lr1 = -1;
+                     x2=wp2;
+                     lr2 = +1;
+                  }
+                  //  std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1,wp1: " << wp1 << ", lr1: " << lr1 << ", m1: " << m1 << "), new DCLTrackHit(hit2,wp2: " << wp2 << ", lr2: " << lr2 << ", m2: " << m2 << ") ) );" << std::endl;
+                  Cont.push_back( new DCPairHitCluster(new DCLTrackHit(hit1,x1, lr1,m1), new DCLTrackHit(hit2,x2, lr2,m2)));
+                  flag=true; ++UsedFlag[i2];
+               } // for (int m2=0; m2<multi2; m2++)
+            } // for (int m1=0; m1<multi1; m1++)
+         } // if( fabs(wp1-wp2)<CellSize )
+      } // for( int i2=0; i2<nh2; ++i2 )
+      #if 1
+      if(!flag){
+         int multi1 = hit1->GetDriftLengthSize();
+         for (int m1=0; m1<multi1; m1++) {
+            if( !(hit1->rangecheck(m1)) ) continue;
+            #if CHECK_COUT_DUPLICATE
+            if( multi1>0 )
+            std::cout << "\ti1: " << i1 << ", multi1: " << multi1 << std::endl;
+            #endif
+            // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1,wp1: " << wp1 << ", lr: " << +1 << ", m1: " << m1 << ") ) );" << std::endl;
+            // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1,wp1: " << wp1 << ", lr: " << -1 << ", m1: " << m1 << ") ) );" << std::endl;
+            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1,wp1, +1,m1) ) );
+            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1,wp1, -1,m1) ) );
+         } // for (int m1=0; m1<multi1; m1++)
+      } // if(!flag)
+      #endif
+   } // for( int i1=0; i1<nh1; ++i1 )
+   #if 1
+   for( int i2=0; i2<nh2; ++i2 ){
+      if( UsedFlag[i2]==0 ) {
+         DCHit *hit2=HC2[i2];
+         int multi2 = hit2->GetDriftLengthSize();
+         for (int m2=0; m2<multi2; m2++) {
+            if( !(hit2->rangecheck(m2)) ) continue;
+            #if CHECK_COUT_DUPLICATE
+            if( multi2>0 )
+            std::cout << "\ti2: " << i2 << ", multi2: " << multi2 << std::endl;
+            #endif
+
+            double wp=hit2->GetWirePosition();
+            // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2,wp: " << wp << ", lr: " << +1 << ", m2: " << m2 << ") ) );" << std::endl;
+            // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2,wp: " << wp << ", lr: " << -1 << ", m2: " << m2 << ") ) );" << std::endl;
+            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2,wp, +1,m2) ) );
+            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2,wp, -1,m2) ) );
+         } // for (int m2=0; m2<multi2; m2++)
+      } // if( UsedFlag[i2]==0 )
+   } // for( int i2=0; i2<nh2; ++i2 )
+   #endif
+
+   return true;
+} // bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHit>& HC1, const std::vector<DCHit>& HC2, double cellSize, std::vector<DCPairHitCluster*>& Cont)
 

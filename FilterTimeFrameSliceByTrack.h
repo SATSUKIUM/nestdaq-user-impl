@@ -25,6 +25,8 @@
 #include <chmap/channel_map_dopeness.hpp>
 #include <chmap/item.hpp>
 
+#include "DCLTrackHit.h"
+
 namespace nestdaq {
    class FilterTimeFrameSliceByTrack;
    struct DCRawHit;
@@ -71,28 +73,6 @@ public:
    };
    ~DCHit() = default;
 
-   void AddHit(uint32_t tdc, uint32_t tot){
-      TDCs.push_back(tdc);
-      TOTs.push_back(tot);
-      return;
-   }
-
-   const chmap::DETIdItem* GetDETIdItem() const { return detid; };
-   int Clear(){
-      int n = TDCs.size();
-      TDCs.clear();
-      DriftTimes.clear();
-      DriftLengths.clear();
-      return n;
-   };
-
-   bool CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange);
-   bool CalcDriftLengths();
-
-   double GetWirePos() const { return wirePos; };
-   double GetWireAngle() const { return wireAngle; };
-   double GetDriftLength(int nth) const { return DriftLengths[nth]; };
-
 private:
    double wirePos;
    double wireAngle;
@@ -102,6 +82,34 @@ private:
    std::vector<double> DriftTimes;
    std::vector<double> DriftLengths;
    const chmap::DETIdItem* detid;
+
+   mutable std::vector< DCLTrackHit* > Cont_; // このヒットがどのDCLTrackHitに属するかを登録する
+
+public:
+   void AddHit(uint32_t tdc, uint32_t tot){
+      TDCs.push_back(tdc);
+      TOTs.push_back(tot);
+      return;
+   }
+   const chmap::DETIdItem* GetDETIdItem() const { return detid; };
+   int Clear(){
+      int n = TDCs.size();
+      TDCs.clear();
+      DriftTimes.clear();
+      DriftLengths.clear();
+      return n;
+   };
+   bool CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange);
+   bool CalcDriftLengths();
+
+   double GetWirePos() const { return wirePos; };
+   double GetWireAngle() const { return wireAngle; };
+   double GetDriftLength(int nth) const { return DriftLengths[nth]; };
+   double GetGlobalZ() const;
+
+   void RegisterHits( DCLTrackHit* hit) const { // このヒットがどのDCLTrackHitに属するかを登録する
+      Cont_.push_back(hit);
+   }
 }; // class nestdaq::FilterTimeFrameSliceByTrack::DCHit
 
 class nestdaq::KLDCHitContainer : public std::vector<std::vector<DCHit>> {
@@ -189,7 +197,7 @@ protected:
 
    bool RegisterDetectorConfig_Geometry();
    bool RegisterDetectorConfig_DCTdcCalib();
-   bool RegisterDetectorConfig_DCDriftParam(); 
+   bool RegisterDetectorConfig_DCDriftParam();
 
    // ================================
    // TDC value calculation
@@ -207,11 +215,21 @@ protected:
    // Tracking
    // ================================
    static constexpr int npp = 4; // KLDC1 UU', KLDC1 VV', KLDC2 UU', KLDC2 VV'
-   KLDCHitContainer fKLDCHitContainer{npp};
+   static constexpr int nplanes = 8;
+   KLDCHitContainer fKLDCHitContainer{nplanes};
    const DCTimeRange fDCTimeRange{
       945, 1200, 55 // KLDC TDC cut, lower_bound, upper_bound, tot_min, unit: ns
    };
    const double fKLDCCellSize = 9.007; // KLDC cell size, unit: mm
+   static constexpr std::vector<std::pair<int,int>> fKLDCPairPlaneInfo = {
+      {0,1}, // KLDC1 UU'
+      {2,3}, // KLDC1 VV'
+      {4,5}, // KLDC2 UU'
+      {6,7}  // KLDC2 VV'
+   };
+
+   bool MakePairPlaneHitCluster(const std::vector<DCHit>& HC1, const std::vector<DCHit>& HC2, double cellSize, std::vector<DCPairHitCluster*>& Cont);
+   
 
 
 }; // class nestdaq::FilterTimeFrameSliceByTrack
