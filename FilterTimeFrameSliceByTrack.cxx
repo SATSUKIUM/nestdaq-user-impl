@@ -999,17 +999,20 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
          int ChannelNumber = wireId - 1; // wireId is 1-indexed, ChannelNumber is 0-indexed
          uint32_t dopeKey_DETtoFE;
          bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, ChannelName, static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE);
-         #if 1
-         if(found_DETtoFE){
-            std::cout << funcname << "Found dopeKey_DETtoFE for KLDC detector ID: " << detectorId << ", Plane: " << PlaneName << ", Segment: " << static_cast<int>(SegmentNumber) << ", Channel: " << ChannelNumber << std::endl;
-         }
-         #endif
          if(found_DETtoFE){
             chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
             uint32_t dopeKeyFEtoDET;
             bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
             if(found_FEtoDET){
-               fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
+               bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
+               #if 1
+               if(registered){
+                  std::cout << funcname << "Registered TDC calibration for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
+               }
+               else{
+                  std::cout << funcname << "Failed to register TDC calibration for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
+               }
+               #endif
                registered_count_dctdccalib_kldc++;
             } // if(found_FEtoDET)
             else{
