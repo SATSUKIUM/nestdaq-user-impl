@@ -1,6 +1,10 @@
 #ifndef DCHit_h
 #define DCHit_h 1
 
+namespace nestdaq {
+   class DCHit;
+}
+
 class nestdaq::DCHit {
 public:
    DCHit(){};

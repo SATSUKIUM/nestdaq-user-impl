@@ -9,7 +9,9 @@
 
 #include "DCLTrackHit.h"
 
-class nestdaq::DCLTrackHit;
+namespace nestdaq {
+   class DCPairHitCluster;
+}
 
 class nestdaq::DCPairHitCluster
 {
