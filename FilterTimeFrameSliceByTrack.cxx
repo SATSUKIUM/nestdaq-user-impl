@@ -1086,9 +1086,6 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
 
       // prepare channel map information
       std::string ChannelName = std::string("0");
-
-      // Create CalibrationItem_DCDriftLength and set its properties
-      std::unique_ptr<chmap::CalibrationItem_DCDriftLength> calibitem_dcdriftlength = std::make_unique<chmap::CalibrationItem_DCDriftLength>();
 /* CLASS DEFINITION
     class CalibrationItem_DCDriftLength : public CalibrationItem {
         public:
@@ -1103,13 +1100,15 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
             // dLen(t) = coeffs[0] + coeffs[1]*t + coeffs[2]*t^2 + ... + coeffs[n]*t^n
     };
 */
-      calibitem_dcdriftlength->SetApproximation(approxOrder, coefficients);
 
       int missing_count_FEAddrItem = 0;
       int missing_count_DETIdItem = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
          for(int i=0+32; i<128-32; ++i){
+            // Create CalibrationItem_DCDriftLength and set its properties
+            std::unique_ptr<chmap::CalibrationItem_DCDriftLength> calibitem_dcdriftlength = std::make_unique<chmap::CalibrationItem_DCDriftLength>();
+            calibitem_dcdriftlength->SetApproximation(approxOrder, coefficients);
             int ChannelNumber = i;
             uint32_t dopeKey_DETtoFE;
             bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
