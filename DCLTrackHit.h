@@ -1,9 +1,10 @@
 #ifndef DCLTrackHit_h
 #define DCLTrackHit_h 1
 
-#include "FilterTimeFrameSliceByTrack.h"
+#include "DCHit.h"
 
 using nestdaq::DCHit;
+using nestdaq::DCLTrackHit;
 
 class DCLTrackHit{
 public:
