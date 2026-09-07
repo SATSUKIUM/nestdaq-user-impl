@@ -1372,3 +1372,37 @@ std::vector<std::vector<int>> FilterTimeFrameSliceByTrack::makeindex(int npp, co
 
    return index;
 } // std::vector<std::vector<int>> FilterTimeFrameSliceByTrack::makeindex(int npp, const int* index1)
+
+DCLocalTrack* FilterTimeFrameSliceByTrack::MakeTrack(const std::vector<std::vector<DCPairHitCluster*>> &CandCont, const int *combination )
+{
+   static const std::string funcname = "[MakeTrack]";
+   
+   DCLocalTrack *tp=new DCLocalTrack();
+   if(!tp){
+      std::cerr << funcname << ": new fail" << std::endl;
+      return 0;
+   }    
+   
+   int n=CandCont.size();
+   
+   for( int i=0; i<n; ++i ){
+      int m=combination[i];
+      DCPairHitCluster *cluster=0;
+      if(m>=0) cluster=CandCont[i][m];
+#if 0
+      std::cout << funcname << ":" << std::setw(3)
+                << i << std::setw(3) << m  << " "
+                << CandCont[i][m] << std::endl; 
+#endif
+      
+      if(cluster){
+         int mm=cluster->NumberOfHits();
+         for(int j=0; j<mm; ++j ){
+            DCLTrackHit *hitp=cluster->GetHit(j);
+            if(hitp) tp->AddHit( hitp );
+         }
+      }
+   }
+   
+   return tp;
+} // DCLocalTrack* FilterTimeFrameSliceByTrack::MakeTrack(const std::vector<std::vector<DCPairHitCluster*>> &CandCont, const int *combination )

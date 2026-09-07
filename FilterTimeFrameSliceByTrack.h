@@ -27,6 +27,7 @@
 
 #include "DCHit.h"
 #include "DCLTrackHit.h"
+#include "DCLocalTrack.h"
 #include "DCTimeRange.h"
 #include "DCPairHitCluster.h"
 
@@ -165,6 +166,8 @@ protected:
    static constexpr int fMaxNumClusters = 20; // number of clusters in each pair plane should be less than this
    std::vector<std::vector<int>> makeindex(int npp, const int* nCombi);
    static constexpr double fMaxCombi = 1.0e6; // maximum number of combinations of clusters in all pair planes
+
+   DCLocalTrack *MakeTrack( const std::vector < std::vector <DCPairHitCluster *> > &CandCont, const int *combination );
    
 
 
