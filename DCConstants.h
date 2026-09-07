@@ -11,6 +11,8 @@ namespace DCConstants{
         4.8, 4.8, 4.8, 4.8,
         4.8, 4.8, 4.8, 4.8
     };
+
+    static constexpr int DCLocalMinNHits   = 6;
 } // namespace DCConstants
 
 #endif // DCCONSTANTS_H
