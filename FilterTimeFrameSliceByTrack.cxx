@@ -33,6 +33,9 @@
 // for debugging
 #include "FilterTimeFrameSliceByTrackDebugger.h"
 
+// for tracking
+#include "DCConstants.h"
+
 #define DEBUG 0
 
 using nestdaq::FilterTimeFrameSliceByTrack;
@@ -665,6 +668,35 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    // ================================
    // Track making, fitting, and selection(minimum number of hits and chi-square)
    // ================================
+   for(int inCombi=0; inCombi<nnCombi; ++inCombi){
+      DCLocalTrack* track = MakeTrack(CandCont, &((CombiIndex[inCombi])[0]));
+      if(track == nullptr) continue;
+
+      #if 0
+      bool isBelowMaxChiSquare_beforeAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
+      double chiSquare_beforeAngleCorrection = track->GetChiSquare();
+      bool isBelowMaxChiSquare_afterAngleCorrection = false;
+      #endif
+      if(track->GetNHits() >= DCLocalMinNHits && track->DoFit()){
+         for(int i=0; i<nanglecor; ++i){
+            if(!track->AngleCorrection()) break;
+         }
+         #if 0
+         isBelowMaxChiSquare_afterAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
+         if(isBelowMaxChiSquare_afterAngleCorrection == true && isBelowMaxChiSquare_beforeAngleCorrection == false){
+            std::cout << "[LocalTrackSearch_AngleCorrection] Track improved after angle correction:" << std::endl;
+            std::cout << "\tBefore: " << chiSquare_beforeAngleCorrection << ", After: " << track->GetChiSquare() << std::endl;
+         }
+         #endif
+
+         if(track->GetChiSquare() < fMaxChisquare){
+            TrackCont.push_back(track);
+         }
+         else{
+            delete track;
+         }
+      }
+   } // for(int inCombi=0; inCombi<nnCombi; ++inCombi)
 
 
    
