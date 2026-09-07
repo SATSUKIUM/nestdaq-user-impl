@@ -2,6 +2,7 @@
 #include "DCLTrackHit.h"
 #include "DCMathConstants.h"
 #include "DCMathTools.h"
+#include "DCConstants.h"
 
 using namedaq::DCLocalTrack;
 
@@ -16,7 +17,7 @@ DCLTrackHit* DCLocalTrack::GetHit(std::size_t iHit) const {
 
 bool DCLocalTrack::DoFit(){
 // True/False condition
-// 1. Number of hits >= DCLocalMinNHits
+// 1. Number of hits >= DCLocalMinNHits(⇦comes from DCConstants.h)
 // 2. later....
     const std::string_view funcname = "[nestdaq::DCLocalTrack::DoFit] ";
 

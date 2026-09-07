@@ -40,7 +40,6 @@ namespace nestdaq{
 
         private: // constants
             static constexpr int ReservedNumOfHits = 16;
-            static constexpr int DCLocalMinNHits   = 6;
 
     }; // class nestdaq::DCLocalTrack
 
@@ -50,8 +49,8 @@ namespace nestdaq{
     bool operator()( const DCLocalTrack * const p1, 
             const DCLocalTrack * const p2 ) const
     {
-        int n1=p1->GetNHit(), n2=p2->GetNHit();
-        double chi1=p1->GetChiSquare(),chi2=p2->GetChiSquare();
+        int n1=p1->GetNHits(), n2=p2->GetNHits();
+        double chi1=p1->GetChiSqr(),chi2=p2->GetChiSqr();
         if( (n1>n2+1) ){
         return true;
         }
@@ -70,11 +69,11 @@ namespace nestdaq{
     bool operator()( const DCLocalTrack * const p1, 
             const DCLocalTrack * const p2 ) const
     {
-        int n1=p1->GetNHit(), n2=p2->GetNHit();
+        int n1=p1->GetNHits(), n2=p2->GetNHits();
         if(n1>n2) return true;
         else if(n2>n1) return false;
         else
-        return (p1->GetChiSquare())<=(p2->GetChiSquare());
+        return (p1->GetChiSqr())<=(p2->GetChiSqr());
     }
     };
 
@@ -84,11 +83,11 @@ namespace nestdaq{
     bool operator()( const DCLocalTrack * const p1, 
             const DCLocalTrack * const p2 ) const
     {
-        int n1=p1->GetNHit(), n2=p2->GetNHit();
+        int n1=p1->GetNHits(), n2=p2->GetNHits();
         if(n1<n2) return true;
         else if(n2<n1) return false;
         else
-        return (p1->GetChiSquare())<=(p2->GetChiSquare());
+        return (p1->GetChiSqr())<=(p2->GetChiSqr());
     }
     };
 
@@ -98,8 +97,8 @@ namespace nestdaq{
     bool operator()( const DCLocalTrack * const p1, 
             const DCLocalTrack * const p2 ) const
     {
-        int n1=p1->GetNHit(), n2=p2->GetNHit();
-        double chi1=p1->GetChiSquare(),chi2=p2->GetChiSquare();
+        int n1=p1->GetNHits(), n2=p2->GetNHits();
+        double chi1=p1->GetChiSqr(),chi2=p2->GetChiSqr();
         double a1=fabs(1.-chi1),a2=fabs(1.-chi2);
         if(a1<a2) return true;
         else if(a2<a1) return false;
@@ -114,8 +113,8 @@ namespace nestdaq{
     bool operator()( const DCLocalTrack * const p1, 
             const DCLocalTrack * const p2 ) const
     {
-        int n1=p1->GetNHit(), n2=p2->GetNHit();
-        double chi1=p1->GetChiSquare(),chi2=p2->GetChiSquare();
+        int n1=p1->GetNHits(), n2=p2->GetNHits();
+        double chi1=p1->GetChiSqr(),chi2=p2->GetChiSqr();
         //if( (n1>n2+1) ){
         //    if( (n1>n2+1) && (fabs(chi1-chi2)<5.) ){
         if( (n1>n2+1) && (fabs(chi1-chi2)<2.) ){
