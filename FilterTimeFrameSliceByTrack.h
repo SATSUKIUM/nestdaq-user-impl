@@ -152,7 +152,7 @@ protected:
    const DCTimeRange fDCTimeRange{
       945-1000, 1200-1000, 55 // KLDC TDC cut, lower_bound, upper_bound, tot_min, unit: ns
    };
-   const double fKLDCCellSize = 9.007; // KLDC cell size, unit: mm
+   const double fKLDCCellSize = 9.007; // KLDC cell size, unit: mm, assumed to be 10.4(diagonal length) * sqrt(3)/2
    const std::vector<std::pair<int,int>> fKLDCPairPlaneInfo = {
       {0,1}, // KLDC1 UU'
       {2,3}, // KLDC1 VV'
