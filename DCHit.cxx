@@ -152,6 +152,26 @@ double DCHit::GetGlobalZ() const{
    }
 } // double nestdaq::FilterTimeFrameSliceByTrack::DCHit::GetGlobalZ() const
 
+double DCHit::GetResolution() const{
+    if(detid == nullptr){
+        return 0.0;
+    }
+    else{
+        if(detid->detconf == nullptr){
+            return 0.0;
+        }
+        else{
+            const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detid->detconf->membername_geom.get());
+            if(geomitemdc == nullptr){
+                return 0.0;
+            }
+            else{
+                return geomitemdc->GetResolutionX(); // 実は現状、resolutionZ, resolutionX, resolutionYには同じ値を登録している
+            } // if(geomitemdc == nullptr)
+        } // if(detid->detconf == nullptr)
+    }
+}
+
 // void DCHit::SetStatusDLRange(double min, double max){ // input unit: mm
 //     for(size_t i=0; i<DriftLengths.size(); ++i){
 //         double dl = DriftLengths[i];
