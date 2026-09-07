@@ -216,7 +216,7 @@ bool DCLocalTrack::DoFit(){
     for( std::size_t i=0; i<nn; ++i ){
         DCLTrackHit *dclthit = dclthits[i];
         if(dclthit != nullptr){
-            dclthit->SetCalPosition(CalcX(dclthit->GetGlobalZ()), CalcY(dclthit->GetGlobalZ()), u0_, v0_);
+            dclthit->SetCalPosition(CalcX(dclthit->GetGlobalZ()), CalcY(dclthit->GetGlobalZ()));
         }
     } // for( std::size_t i=0; i<nn; ++i )
 
