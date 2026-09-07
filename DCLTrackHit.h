@@ -27,6 +27,7 @@ namespace nestdaq{
         double GetWirePosition() const;
         double GetWireAngle() const;
         double GetDriftLength() const;
+        double GetResolution() const;
         int GetLeftRight() const { return leftright; };
 
         double GetGlobalZ() const;

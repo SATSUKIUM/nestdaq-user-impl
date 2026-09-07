@@ -10,4 +10,5 @@ DCLTrackHit::DCLTrackHit(const DCHit* parent_, int nth_, double w_, int leftrigh
 double DCLTrackHit::GetWirePosition() const { return parent->GetWirePos(); };
 double DCLTrackHit::GetWireAngle() const { return parent->GetWireAngle(); };
 double DCLTrackHit::GetDriftLength() const { return parent->GetDriftLength(nth); };
+double DCLTrackHit::GetResolution() const { return parent->GetResolution(); };
 double DCLTrackHit::GetGlobalZ() const{ return parent->GetGlobalZ(); };
