@@ -7,8 +7,8 @@
 using nestdaq::DCLocalTrack;
 
 DCLTrackHit* DCLocalTrack::GetHit(std::size_t iHit) const {
-    if(iHit < hits.size()){
-        return hits[iHit];
+    if(iHit < dclthits.size()){
+        return dclthits[iHit];
     }
     else{
         return nullptr;
