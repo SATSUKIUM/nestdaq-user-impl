@@ -616,7 +616,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          }
          #endif
 
-         if(track->GetChiSqr() < fMaxChisquare){
+         if(track->GetChiSqr() < fMaxChiSqr){
             fTrackCont.push_back(track);
          }
          else{
@@ -1272,12 +1272,12 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
    std::vector<int> UsedFlag(nh2,0);
 
    for( int i1=0; i1<nh1; ++i1 ){
-      const DCHit *hit1=&HC1[i1];
+      DCHit *hit1=&HC1[i1];
 
       double wp1=hit1->GetWirePos();
       bool flag=false;
       for( int i2=0; i2<nh2; ++i2 ){
-         const DCHit *hit2=&HC2[i2];
+         DCHit *hit2=&HC2[i2];
          double wp2=hit2->GetWirePos();
          #if CHECK_COUT_MAKEPAIRPLANEHITCLUSTER && 0
          std::cout << funcname << "i1: " << i1 << ", i2: " << i2 << ", fabs(wp1-wp2) = |" << wp1 << " - " << wp2 << "| = " << fabs(wp1-wp2) << ", CellSize: " << CellSize << std::endl;
