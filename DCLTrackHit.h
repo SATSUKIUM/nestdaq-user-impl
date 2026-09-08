@@ -5,14 +5,14 @@ namespace nestdaq{
     class DCHit;
     class DCLTrackHit{
     public:
-        DCLTrackHit(const DCHit* parent_, int nth_, double w_, int leftright);
+        DCLTrackHit(const DCHit* acutualhit, int nth_, double w_, int leftright);
         ~DCLTrackHit() = default;
 
     private:
-        const DCHit* parent;
-        int nth;
-        double w; // 測定軸方向の座標, ヒット位置
-        int leftright; // -1, 1
+        const DCHit* actualhit{nullptr}; // pointer to the actual DCHit object
+        int nth{0};
+        double w{0.0}; // 測定軸方向の座標, ヒット位置
+        int leftright{0}; // -1, 1
 
     private:
         // position and slope calculated with the track fit result
@@ -31,6 +31,11 @@ namespace nestdaq{
         int GetLeftRight() const { return leftright; };
 
         double GetGlobalZ() const;
+
+        // トラックに属するかどうかのフラグを管理
+        void clearFlag() { actualhit->clearFlag(nth); };
+        void setFlag() { actualhit->setFlag(nth); };
+        bool showFlag() const { return actualhit->showFlag(nth); };
 
 
 

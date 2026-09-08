@@ -116,6 +116,7 @@ bool DCHit::CalcDriftLengths(){
                     std::cout << "\trange check: valid" << std::endl;
                     #endif
                     DriftLengths.push_back(driftLength);
+                    IsBelongTrack.push_back(false); // initialize as false
                 }
                 else{
                     #if CHECK_COUT_MAKEPAIRPLANEHITCLUSTER

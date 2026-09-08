@@ -168,7 +168,9 @@ protected:
    static constexpr double fMaxCombi = 1.0e6; // maximum number of combinations of clusters in all pair planes
    static constexpr double fMaxChiSqr = 1000.0;
 
-   DCLocalTrack *MakeTrack( const std::vector < std::vector <DCPairHitCluster *> > &CandCont, const int *combination );
+   DCLocalTrack* MakeTrack( const std::vector < std::vector <DCPairHitCluster *> > &CandCont, const int *combination );
+
+   std::vector<DCLocalTrack*> fTrackCont;
    
 
 

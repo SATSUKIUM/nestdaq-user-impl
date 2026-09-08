@@ -35,6 +35,7 @@
 
 // for tracking
 #include "DCConstants.h"
+#include <algorithm>
 
 #define DEBUG 0
 
@@ -690,13 +691,58 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          #endif
 
          if(track->GetChiSquare() < fMaxChisquare){
-            TrackCont.push_back(track);
+            fTrackCont.push_back(track);
          }
          else{
             delete track;
          }
       }
    } // for(int inCombi=0; inCombi<nnCombi; ++inCombi)
+
+   // ================================
+   // Clear Flags
+   // ================================
+   int ntr = fTrackCont.size();
+   for(int i=0; i<ntr; ++i){
+      DCLocalTrack* tp = fTrackCont[i];
+      tp->ClearFlags();
+   } // for(int i=0; i<ntr; ++i)
+
+   #if CHECK_COUT_DUPLICATE
+   std::cout << funcname << ": Before Sorting. #Tracks = " << fTrackCont.size() << std::endl;
+   for(int i=0; i<fTrackCont.size(); ++i){
+      DCLocalTrack* tp = fTrackCont[i];
+      std::cout << "\tTrack " << i << ": #Hits = " << tp->GetNHits() << ", ChiSquare = " << tp->GetChiSqr() << ", dx/dz = " << tp->GetU0() << ", dy/dz = " << tp->GetV0() << std::endl;
+   }
+   #endif
+
+   // ヒット数, ChiSquareの順でソートする。現状、partial_sortで全ての要素がソートされている。
+   std::partial_sort(fTrackCont.begin(), fTrackCont.end(), fTrackCont.end(), DCLTrackComp1());
+
+   #if CHECK_COUT_DUPLICATE
+   std::cout << funcname << ": After Sorting. #Tracks = " << fTrackCont.size() << std::endl;
+   for(int i=0; i<fTrackCont.size(); ++i){
+      DCLocalTrack* tp = fTrackCont[i];
+      std::cout << "\tTrack " << i << ": #Hits = " << tp->GetNHits() << ", ChiSquare = " << tp->GetChiSqr() << ", dx/dz = " << tp->GetU0() << ", dy/dz = " << tp->GetV0() << std::endl;
+   }
+   #endif
+
+   // Delete Duplicated Tracks
+   for( int i=0; i<int(fTrackCont.size()); ++i ){
+      DCLocalTrack *tp=fTrackCont[i];
+      int nh=tp->GetNHits();
+      tp->SetFlags();
+      
+      for( int i2=fTrackCont.size()-1; i2>i; --i2 ){
+         DCLocalTrack *tp2=fTrackCont[i2];
+         int nh2=tp2->GetNHits(), flag=0;
+         flag = tp->GetNumOfTrueFlags();
+         if(flag > 0){
+            delete tp2;
+            fTrackCont.erase(fTrackCont.begin()+i2);
+         }
+      } // for( int i2=fTrackCont.size()-1; i2>i; --i2 )  
+   } // for( int i=0; i<int(fTrackCont.size()); ++i )
 
 
    

@@ -33,6 +33,28 @@ namespace nestdaq{
             double CalcX(double z) const { return x0 + u0 * z; }
             double CalcY(double z) const { return y0 + v0 * z; }
 
+            // トラックに属するヒットのフラグを管理する
+            void SetFlags(){
+                for(auto hit : dclthits){
+                    hit->setFlag();
+                } // set the flag for each hit
+            }
+            void ClearFlags(){
+                for(auto hit : dclthits){
+                    hit->clearFlag();
+                } // clear the flag for each hit
+            }
+            bool showFlag(int idclthit) const { return dclthits[idclthit]->showFlag(); }
+            int GetNumOfTrueFlags() const {
+                int count = 0;
+                for(auto hit : dclthits){
+                    if(hit->showFlag() == true){
+                        ++count;
+                    }
+                }
+                return count;
+            }
+
         private: // fit info
             bool status; // fit?
             double x0{0.0}, y0{0.0}, u0{0.0}, v0{0.0}; // position, position, slope, slope
@@ -66,14 +88,14 @@ namespace nestdaq{
     struct DCLTrackComp1 
     : public std::binary_function <DCLocalTrack *, DCLocalTrack *, bool>
     {
-    bool operator()( const DCLocalTrack * const p1, 
-            const DCLocalTrack * const p2 ) const
+    bool operator()( const DCLocalTrack * const left, 
+            const DCLocalTrack * const right ) const
     {
-        int n1=p1->GetNHits(), n2=p2->GetNHits();
+        int n1=left->GetNHits(), n2=right->GetNHits();
         if(n1>n2) return true;
         else if(n2>n1) return false;
         else
-        return (p1->GetChiSqr())<=(p2->GetChiSqr());
+        return (left->GetChiSqr()) < (right->GetChiSqr());
     }
     };
 
