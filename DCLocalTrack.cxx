@@ -24,7 +24,7 @@ bool DCLocalTrack::DoFit(){
     const std::string_view funcname = "[nestdaq::DCLocalTrack::DoFit] ";
 
     std::size_t nHits = dclthits.size();
-    if(nHits < DCLocalMinNHits){
+    if(nHits < DCConstants::DCLocalMinNHits){
         status = false;
         return status;
     }
