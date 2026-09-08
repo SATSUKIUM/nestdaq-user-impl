@@ -509,6 +509,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
    // distribute the KLDC hits to its container
    // clear fKLDCHitContainer before filling it with new hits
+   #if DEBUG_KLDC_TRACK_SEARCH
+   std::cout << funcname << "Before fKLDCHitContainer.Reset()" << std::endl;
+   #endif
    fKLDCHitContainer.Reset();
    for(auto& hit : kldcRawHits){
       const chmap::DETIdItem* detiditem = hit.detid;
@@ -536,6 +539,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          } // if(detiditem->detconf != nullptr)
       }
    } // for(auto& hit : kldcRawHits)
+   #if DEBUG_KLDC_TRACK_SEARCH
+   std::cout << funcname << "After distributing raw hits to fKLDCHitContainer" << std::endl;
+   #endif
 
    // ================================
    // calculate drift length
