@@ -172,7 +172,7 @@ bool nestdaq::DCMathTools::InterpolateRatio( int n, const double *xa, const doub
 #ifdef ERROROUT
         std::cerr << funcname << ": Error" << std::endl;
 #endif
-        y=Infinity; dy=Infinity; return false;
+        y=nestdaq::DCMath::Infinity; dy=nestdaq::DCMath::Infinity; return false;
       }
       dd=w/dd; w2[i-1]=w1[i]*dd; w1[i-1]=t*dd;
     }
@@ -210,7 +210,7 @@ bool nestdaq::DCMathTools::InterpolatePol( int n, const double *xa, const double
 #ifdef ERROROUT
 	std::cerr << funcname << ": Error" << std::endl;
 #endif
-	y=Infinity; dy=Infinity; return false;
+	y=nestdaq::DCMath::Infinity; dy=nestdaq::DCMath::Infinity; return false;
       }
       den=w/den;
       w2[i-1]=hp*den; w1[i-1]=ho*den;
