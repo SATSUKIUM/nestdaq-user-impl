@@ -193,7 +193,7 @@ protected:
       {4,5}, // KLDC2 UU'
       {6,7}  // KLDC2 VV'
    };
-   static constexpr int fNumAngleCorrectionIteration = 1;
+   static constexpr int fNumAngleCorrectionIteration = 0;
 
    bool MakePairPlaneHitCluster(std::vector<DCHit>& HC1, std::vector<DCHit>& HC2, double cellSize, std::vector<DCPairHitCluster*>& Cont);
 
