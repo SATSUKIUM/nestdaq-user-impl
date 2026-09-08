@@ -38,6 +38,9 @@
 #include <algorithm>
 #include "FilterTimeFrameSliceTempleteLib.h"
 
+// for measuring throughput
+#include <chrono>
+
 #define DEBUG 0
 
 using nestdaq::FilterTimeFrameSliceByTrack;
@@ -306,6 +309,11 @@ void FilterTimeFrameSliceByTrack::InitTask()
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::ProcessSlice] ";
+   #if CHECK_COUT_ELAPSED_TIME
+   std::chrono::high_resolution_clock::time_point start_time, end_time;
+   start_time = std::chrono::high_resolution_clock::now();
+   #endif
+
    #if DEBUG_LFTDC
    std::cout << funcname << "Function called" << std::endl;
    std::cout << "\tchecking TLF TDC 4ns unit: " << std::dec << std::setw(10) << fLFTDC4n << " -> " << std::setw(10) << fLFTDC4n * 4 << " [ns]" << std::endl;
@@ -703,7 +711,12 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    }
 
    int ntr_after = fTrackCont.size();
-   std::cout << funcname << "Number of tracks after filtering: " << ntr_after << std::endl;
+   #if CHECK_COUT_ELAPSED_TIME
+   end_time = std::chrono::high_resolution_clock::now();
+      auto elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+      std::cout << funcname << "Number of tracks after filtering: " << ntr_after << std::endl;
+      std::cout << "\tElapsed time: " << elapsed_time << " microseconds" << std::endl;
+   #endif
 
 #if 0
    int doKeep = false;
