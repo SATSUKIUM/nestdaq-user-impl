@@ -63,8 +63,8 @@ namespace nestdaq {
         bool IsValidDriftLength(double min, double max, double dl); // input unit: mm
         bool RangeCheck(int nth) const { return (nth >= 0 && nth < DriftLengths.size()); };
 
-        void RegisterHits( DCLTrackHit* hit) const {
-            Cont_.push_back(hit);
+        void RegisterHits( DCLTrackHit* virtualhit) const {
+            Cont_.push_back(virtualhit);
         }
         void clearFlag(int nth) { IsBelongToGoodTrack[nth] = false; }
         void setFlag(int nth) { IsBelongToGoodTrack[nth] = true; }
