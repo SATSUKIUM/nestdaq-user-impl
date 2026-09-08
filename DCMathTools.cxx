@@ -16,9 +16,8 @@
 #define ERROROUT 1 
 //#define DebugPrint 1
 
-using nestdaq::DCMathTools;
 
-bool DCMathTools::GaussElim( double **a, int n, double *b, int *indx, int *ipiv )
+bool nestdaq::DCMathTools::GaussElim( double **a, int n, double *b, int *indx, int *ipiv )
 {
   static const std::string funcname = "[DCMathTools::GaussElim]";
   double big,c,pivinv,sum,c2;
@@ -75,7 +74,7 @@ bool DCMathTools::GaussElim( double **a, int n, double *b, int *indx, int *ipiv 
   return true;
 }
 
-bool DCMathTools::GaussJordan( double **a, int n, double *b, 
+bool nestdaq::DCMathTools::GaussJordan( double **a, int n, double *b, 
 			     int *indxr, int *indxc, int *ipiv )
 {
   static const std::string funcname = "[DCMathTools::GaussJordan]";
@@ -149,7 +148,7 @@ bool DCMathTools::GaussJordan( double **a, int n, double *b,
 }
 
 
-bool DCMathTools::InterpolateRatio( int n, const double *xa, const double *ya, 
+bool nestdaq::DCMathTools::InterpolateRatio( int n, const double *xa, const double *ya, 
 				  double *w1, double *w2,
 				  double x, double &y, double &dy )
 {
@@ -188,7 +187,7 @@ bool DCMathTools::InterpolateRatio( int n, const double *xa, const double *ya,
   return true;
 }
 
-bool DCMathTools::InterpolatePol( int n, const double *xa, const double *ya,
+bool nestdaq::DCMathTools::InterpolatePol( int n, const double *xa, const double *ya,
 				double *w1, double *w2, 
 				double x, double &y, double &dy )
 {
@@ -224,7 +223,7 @@ bool DCMathTools::InterpolatePol( int n, const double *xa, const double *ya,
 }
 
 
-bool DCMathTools::SVDksb( double **u, const double *w, double **v,
+bool nestdaq::DCMathTools::SVDksb( double **u, const double *w, double **v,
 			int m, int n, const double *b, double *x, double *wv )
 {
   static const std::string funcname = "[DCMathTools::SVDksb]";
@@ -261,7 +260,7 @@ inline double pythag( double a, double b )
  
  
 
-bool DCMathTools::SVDcmp( double **a, int m, int n, double *w, 
+bool nestdaq::DCMathTools::SVDcmp( double **a, int m, int n, double *w, 
 			double **v, double *wv )
 {
   static const std::string funcname = "[DCMathTools::SVDcmp]";
