@@ -117,7 +117,7 @@ bool DCLocalTrack::DoFit(){
     if( DCMathTools::GaussJordan(mtp,4,fitp,&indxc[0],
                     &indxd[0],&ipiv[0])==false ){
         std::cerr << funcname << ": Fitting fails" << std::endl;
-        return status_=false;
+        return status=false;
     }
     x0=fitp[0]; y0=fitp[2]; u0=fitp[1]; v0=fitp[3];
 
@@ -225,7 +225,7 @@ bool DCLocalTrack::DoFit(){
         }
     } // for( std::size_t i=0; i<nn; ++i )
 
-    return status_=true;
+    return status=true;
 } // bool nestdaq::DCLocalTrack::DoFit()
 
 bool DCLocalTrack::AngleCorrection( void )
@@ -347,10 +347,10 @@ bool DCLocalTrack::AngleCorrection( void )
         Org_vec[i]=fitp[i];
     }
 
-    if( MathTools::GaussJordan(mtp,4,fitp,&indxc[0],
+    if( DCMathTools::GaussJordan(mtp,4,fitp,&indxc[0],
                     &indxd[0],&ipiv[0])==false ){
         std::cerr << funcname << ": Fitting fails" << std::endl;
-        return status_=false;
+        return status=false;
     }
     x0=fitp[0]; y0=fitp[2]; u0=fitp[1]; v0=fitp[3];
 
@@ -468,7 +468,7 @@ bool DCLocalTrack::AngleCorrection( void )
 
     // std::cout << "***********************************************************" << std::endl;
 
-    return status_=true;
+    return status=true;
 } // bool DCLocalTrack::AngleCorrection( void )
 
 void DCLocalTrack::CalcHitPositions(){
