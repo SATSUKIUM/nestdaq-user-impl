@@ -604,7 +604,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       double chiSquare_beforeAngleCorrection = track->GetChiSquare();
       bool isBelowMaxChiSquare_afterAngleCorrection = false;
       #endif
-      if(track->GetNHits() >= DCLocalMinNHits && track->DoFit()){
+      if(track->GetNHits() >= DCConstants::DCLocalMinNHits && track->DoFit()){
          for(int i=0; i<fNumAngleCorrectionIteration; ++i){
             if(!track->AngleCorrection()) break;
          }
@@ -616,7 +616,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          }
          #endif
 
-         if(track->GetChiSquare() < fMaxChisquare){
+         if(track->GetChiSqr() < fMaxChisquare){
             fTrackCont.push_back(track);
          }
          else{
@@ -681,8 +681,8 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       for_each(CandCont[i].begin(), CandCont[i].end(), DeleteObject());
    }
 
-   int ntr = fTrackCont.size();
-   std::cout << funcname << "Number of tracks after filtering: " << ntr << std::endl;
+   int ntr_after = fTrackCont.size();
+   std::cout << funcname << "Number of tracks after filtering: " << ntr_after << std::endl;
 
 #if 0
    int doKeep = false;
