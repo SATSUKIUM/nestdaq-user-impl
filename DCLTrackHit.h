@@ -10,7 +10,7 @@ namespace nestdaq{
 
     private:
         const DCHit* actualhit{nullptr}; // pointer to the actual DCHit object
-        int nth{0};
+        int nth{0}; // トラックに属する「ヒット」がacutualhitのTDC/TOTの何番目かを示すインデックス
         double w{0.0}; // 測定軸方向の座標, ヒット位置
         int leftright{0}; // -1, 1
 
