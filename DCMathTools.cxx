@@ -3,7 +3,7 @@
 
 */
 
-#include "DCMathTools.hh"
+#include "DCMathTools.h"
 #include "DCMathConstants.h"
 
 #include <string>
