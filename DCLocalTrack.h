@@ -67,13 +67,13 @@ namespace nestdaq{
 
     }; // class nestdaq::DCLocalTrack
 
-    struct DCLTrackComp 
-    : public std::binary_function <DCLocalTrack *, DCLocalTrack *, bool>
+    class DCLTrackComp
     {
-    bool operator()( const DCLocalTrack * const p1, 
-            const DCLocalTrack * const p2 ) const
-    {
-        int n1=p1->GetNHits(), n2=p2->GetNHits();
+    public:
+        bool operator()( const DCLocalTrack * const p1, 
+                const DCLocalTrack * const p2 ) const
+        {
+            int n1=p1->GetNHits(), n2=p2->GetNHits();
         double chi1=p1->GetChiSqr(),chi2=p2->GetChiSqr();
         if( (n1>n2+1) ){
         return true;
@@ -87,27 +87,27 @@ namespace nestdaq{
     }
     };
 
-    struct DCLTrackComp1 
-    : public std::binary_function <DCLocalTrack *, DCLocalTrack *, bool>
+    class DCLTrackComp1
     {
-    bool operator()( const DCLocalTrack * const left, 
-            const DCLocalTrack * const right ) const
-    {
-        int n1=left->GetNHits(), n2=right->GetNHits();
-        if(n1>n2) return true;
-        else if(n2>n1) return false;
-        else
-        return (left->GetChiSqr()) < (right->GetChiSqr());
+    public:
+        bool operator()( const DCLocalTrack * const left, 
+                const DCLocalTrack * const right ) const
+        {
+            int n1=left->GetNHits(), n2=right->GetNHits();
+            if(n1>n2) return true;
+            else if(n2>n1) return false;
+            else
+            return (left->GetChiSqr()) < (right->GetChiSqr());
     }
     };
 
-    struct DCLTrackComp2 
-    : public std::binary_function <DCLocalTrack *, DCLocalTrack *, bool>
+    class DCLTrackComp2
     {
-    bool operator()( const DCLocalTrack * const p1, 
-            const DCLocalTrack * const p2 ) const
-    {
-        int n1=p1->GetNHits(), n2=p2->GetNHits();
+    public:
+        bool operator()( const DCLocalTrack * const p1, 
+                const DCLocalTrack * const p2 ) const
+        {
+            int n1=p1->GetNHits(), n2=p2->GetNHits();
         if(n1<n2) return true;
         else if(n2<n1) return false;
         else
@@ -115,12 +115,12 @@ namespace nestdaq{
     }
     };
 
-    struct DCLTrackComp3 
-    : public std::binary_function <DCLocalTrack *, DCLocalTrack *, bool>
+    class DCLTrackComp3
     {
-    bool operator()( const DCLocalTrack * const p1, 
-            const DCLocalTrack * const p2 ) const
-    {
+    public:
+        bool operator()( const DCLocalTrack * const p1, 
+                const DCLocalTrack * const p2 ) const
+        {
         int n1=p1->GetNHits(), n2=p2->GetNHits();
         double chi1=p1->GetChiSqr(),chi2=p2->GetChiSqr();
         double a1=fabs(1.-chi1),a2=fabs(1.-chi2);
@@ -131,12 +131,12 @@ namespace nestdaq{
     }
     };
 
-    struct DCLTrackComp4 
-    : public std::binary_function <DCLocalTrack *, DCLocalTrack *, bool>
+    class DCLTrackComp4
     {
-    bool operator()( const DCLocalTrack * const p1, 
-            const DCLocalTrack * const p2 ) const
-    {
+    public:
+        bool operator()( const DCLocalTrack * const p1, 
+                const DCLocalTrack * const p2 ) const
+        {
         int n1=p1->GetNHits(), n2=p2->GetNHits();
         double chi1=p1->GetChiSqr(),chi2=p2->GetChiSqr();
         //if( (n1>n2+1) ){
