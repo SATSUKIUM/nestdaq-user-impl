@@ -3,8 +3,8 @@
 */
 
 
-#ifndef MATHTOOLS_H
-#define MATHTOOLS_H 1
+#ifndef DCMATHTOOLS_H
+#define DCMATHTOOLS_H 1
 
 namespace nestdaq::DCMathTools {
     bool GaussElim( double **a, int n, double *b, int *indx, int *ipiv );
@@ -22,4 +22,4 @@ namespace nestdaq::DCMathTools {
             double *wv );
 } // namespace nestdaq::DCMathTools
 
-#endif // MATHTOOLS_H
+#endif // DCMATHTOOLS_H

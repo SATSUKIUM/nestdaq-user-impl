@@ -16,7 +16,8 @@
 #define ERROROUT 1 
 //#define DebugPrint 1
 
-using namespace nestdaq::DCMathTools;
+using nestdaq::DCMathTools;
+
 bool DCMathTools::GaussElim( double **a, int n, double *b, int *indx, int *ipiv )
 {
   static const std::string funcname = "[DCMathTools::GaussElim]";
