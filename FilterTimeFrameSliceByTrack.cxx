@@ -810,6 +810,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    }
    fRootTree2->Fill();
    #endif
+   }
 
 #if 0
    int doKeep = false;
