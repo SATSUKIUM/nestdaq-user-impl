@@ -1309,8 +1309,9 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
                      lr2 = +1;
                   }
                   //  std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1,wp1: " << wp1 << ", lr1: " << lr1 << ", m1: " << m1 << "), new DCLTrackHit(hit2,wp2: " << wp2 << ", lr2: " << lr2 << ", m2: " << m2 << ") ) );" << std::endl;
-                  Cont.push_back( new DCPairHitCluster(new DCLTrackHit(hit1,x1, lr1,m1), new DCLTrackHit(hit2,x2, lr2,m2)));
-                  flag=true; ++UsedFlag[i2];
+                  Cont.push_back( new DCPairHitCluster(new DCLTrackHit(hit1, m1, x1, lr1), new DCLTrackHit(hit2, m2, x2, lr2)) );
+                  flag=true;
+                  ++UsedFlag[i2];
                } // for (int m2=0; m2<multi2; m2++)
             } // for (int m1=0; m1<multi1; m1++)
          } // if( fabs(wp1-wp2)<CellSize )
@@ -1325,8 +1326,8 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
             #endif
             // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1,wp1: " << wp1 << ", lr: " << +1 << ", m1: " << m1 << ") ) );" << std::endl;
             // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1,wp1: " << wp1 << ", lr: " << -1 << ", m1: " << m1 << ") ) );" << std::endl;
-            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1,wp1, +1,m1) ) );
-            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1,wp1, -1,m1) ) );
+            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1, m1, wp1, +1) ) );
+            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1, m1, wp1, -1) ) );
          } // for (int m1=0; m1<multi1; m1++)
       } // if(!flag)
       #endif
@@ -1345,8 +1346,8 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHi
             double wp=hit2->GetWirePos();
             // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2,wp: " << wp << ", lr: " << +1 << ", m2: " << m2 << ") ) );" << std::endl;
             // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2,wp: " << wp << ", lr: " << -1 << ", m2: " << m2 << ") ) );" << std::endl;
-            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2,wp, +1,m2) ) );
-            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2,wp, -1,m2) ) );
+            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2, m2, wp, +1) ) );
+            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2, m2, wp, -1) ) );
          } // for (int m2=0; m2<multi2; m2++)
       } // if( UsedFlag[i2]==0 )
    } // for( int i2=0; i2<nh2; ++i2 )
