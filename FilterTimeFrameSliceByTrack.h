@@ -146,6 +146,9 @@ protected:
    std::ofstream fDebugFile;
    std::string fDebugFileName;
 
+   std::ofstream fThroughputFile;
+   std::string fThroughputFileName;
+
 
    // ================================
    // Tracking

@@ -304,12 +304,20 @@ void FilterTimeFrameSliceByTrack::InitTask()
    }
    #endif
 
+   #if FILEOUT_ELAPSED_TIME
+   fThroughputFileName = "./fileout/tracking/FilterTimeFrameSliceByTrack_throughput.txt";
+   fThroughputFile.open(fThroughputFileName, std::ios::out);
+   if (!fThroughputFile.is_open()) {
+      std::cerr << funcname << "Failed to open throughput file: " << fThroughputFileName << std::endl;
+   }
+   #endif
+
 } // void FilterTimeFrameSliceByTrack::InitTask()
 
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::ProcessSlice] ";
-   #if CHECK_COUT_ELAPSED_TIME
+   #if CHECK_COUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME
    std::chrono::high_resolution_clock::time_point start_time, end_time;
    start_time = std::chrono::high_resolution_clock::now();
    #endif
@@ -722,6 +730,16 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          std::cout << "\ttTrack " << i << ": #Hits = " << tp->GetNHits() << ", ChiSquare = " << tp->GetChiSqr() << ", x0 = " << tp->GetX0() << ", y0 = " << tp->GetY0() << ", dx/dz = " << tp->GetU0() << ", dy/dz = " << tp->GetV0() << std::endl;
       }
    #endif
+   #if FILEOUT_ELAPSED_TIME
+      end_time = std::chrono::high_resolution_clock::now();
+      auto elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+      fThroughputFile << ntr_after << " " << elapsed_time << std::endl;
+      for(int i=0; i<ntr_after; ++i){
+         DCLocalTrack *tp = fTrackCont[i];
+         fThroughputFile << tp->GetNHits() << " " << tp->GetChiSqr() << " " << tp->GetX0() << " " << tp->GetY0() << " " << tp->GetU0() << " " << tp->GetV0() << std::endl;
+      }
+   #endif
+
    }
 
 #if 0
