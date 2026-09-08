@@ -593,12 +593,8 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
    #if DEBUG_KLDC_TRACK_SEARCH
    std::cout << funcname << "After clustering, nnCombi = " << nnCombi << std::endl;
-   for(int i=0; i<nnCombi; ++i){
-      std::cout << "\tCombiIndex[" << i << "] = ";
-      for(int j=0; j<npp; ++j){
-         std::cout << CombiIndex[i][j] << " ";
-      }
-      std::cout << std::endl;
+   for(size_t ipp=0; ipp<npp; ++ipp){
+      std::cout << "\tnCombi[" << ipp << "] = " << nCombi[ipp] << std::endl;
    }
    #endif
 
