@@ -3,7 +3,10 @@
 #include "DCMathConstants.h"
 #include "DCMathTools.h"
 #include "DCConstants.h"
+// string_view
 #include <string>
+// cerr
+#include <iostream>
 
 using nestdaq::DCLocalTrack;
 using nestdaq::DCLTrackHit;
