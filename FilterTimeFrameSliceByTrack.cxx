@@ -59,7 +59,7 @@ FilterTimeFrameSliceByTrack::FilterTimeFrameSliceByTrack()
 {
 }
 
-FilterTimeFrameSliceByTrack::~FilterTimeFrameSliceByTrack()
+FilterTimeFrameSliceByTrack::ResetTask()
 {
    std::cerr << "fRootFile  = " << fRootFile << std::endl;
    std::cerr << "fRootTree1 = " << fRootTree1 << std::endl;
@@ -91,7 +91,7 @@ FilterTimeFrameSliceByTrack::~FilterTimeFrameSliceByTrack()
       fRootTree1 = nullptr;
       fRootTree2 = nullptr;
    }
-}
+} // FilterTimeFrameSliceByTrack::ResetTask()
 
 void FilterTimeFrameSliceByTrack::InitTask()
 {
