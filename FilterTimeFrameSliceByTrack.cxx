@@ -36,6 +36,7 @@
 // for tracking
 #include "DCConstants.h"
 #include <algorithm>
+#include "FilterTimeFrameSliceTempleteLib.h"
 
 #define DEBUG 0
 
