@@ -28,7 +28,7 @@ bool nestdaq::DCMathTools::GaussElim( double **a, int n, double *b, int *indx, i
     big=0.0;
     for(int j=0; j<n; ++j){
       if(!ipiv[j]){
-        if((c=fabs(a[j][i]))>=big){ big=c; irow=j; }
+        if((c=std::fabs(a[j][i]))>=big){ big=c; irow=j; }
       }
       else if(ipiv[j]>1){
 #ifdef ERROROUT
@@ -87,8 +87,8 @@ bool nestdaq::DCMathTools::GaussJordan( double **a, int n, double *b,
       if( ipiv[j]!=1 )
 	for( int k=0; k<n; ++k ){
 	  if( ipiv[k]==0 ){
-	    if( fabs(a[j][k])>=big ){
-	      big=fabs(a[j][k]);
+	    if( std::fabs(a[j][k])>=big ){
+	      big=std::fabs(a[j][k]);
 	      irow=j; icol=k;
 	    }
 	  }
@@ -156,9 +156,9 @@ bool nestdaq::DCMathTools::InterpolateRatio( int n, const double *xa, const doub
   int i, m, ns=1;
   double w, t, hh, h, dd;
 
-  hh=fabs(x-xa[0]);
+  hh=std::fabs(x-xa[0]);
   for(i=1; i<=n; ++i){
-    h=fabs(x-xa[i-1]);
+    h=std::fabs(x-xa[i-1]);
     if(h==0.0) { y=ya[i-1]; dy=0.0; return true; }
     else if(h<hh){ ns=i; hh=h; } 
     w1[i-1]=ya[i-1]; w2[i-1]=ya[i-1]*(1.+nestdaq::DCMath::TINY);
@@ -195,9 +195,9 @@ bool nestdaq::DCMathTools::InterpolatePol( int n, const double *xa, const double
   int i, m, ns=1;
   double den, dif, dift, ho, hp, w;
 
-  dif=fabs(x-xa[0]);
+  dif=std::fabs(x-xa[0]);
   for(i=1; i<=n; ++i){
-    if( (dift=fabs(x-xa[i-1]))<dif ){ ns=i; dif=dift; }
+    if( (dift=std::fabs(x-xa[i-1]))<dif ){ ns=i; dif=dift; }
     w1[i-1]=w2[i-1]=ya[i-1];
   }
   y=ya[ns-1]; --ns;
@@ -249,7 +249,7 @@ bool nestdaq::DCMathTools::SVDksb( double **u, const double *w, double **v,
 
 inline double pythag( double a, double b )
 {
-  double aa=fabs(a), ab=fabs(b);
+  double aa=std::fabs(a), ab=std::fabs(b);
   if( aa>ab ) 
     return aa*sqrt(1.+(ab/aa)*(ab/aa));
   else if( ab!=0. )
@@ -321,7 +321,7 @@ bool nestdaq::DCMathTools::SVDcmp( double **a, int m, int n, double *w,
     wv[i]=scale*g;
     g = scale = 0.0;
     if( i<m ){
-      for( int k=i; k<m; ++k ) scale += fabs(a[k][i]);
+      for( int k=i; k<m; ++k ) scale += std::fabs(a[k][i]);
       if( scale!=0. ){
 	s = 0;
 	for( int k=i; k<m; ++k ){
@@ -345,7 +345,7 @@ bool nestdaq::DCMathTools::SVDcmp( double **a, int m, int n, double *w,
     g = s = scale = 0.0;
 
     if( i<m && i!=n-1 ){
-      for( int k=i+1; k<n; ++k ) scale += fabs(a[i][k]);
+      for( int k=i+1; k<n; ++k ) scale += std::fabs(a[i][k]);
       if( scale!=0.0 ){
 	for( int k=i+1; k<n; ++k ){
 	  a[i][k] /= scale;
@@ -364,7 +364,7 @@ bool nestdaq::DCMathTools::SVDcmp( double **a, int m, int n, double *w,
 	for( int k=i+1; k<n; ++k ) a[i][k] *= scale;
       }
     }   /* if( i<m && i!=n-1 ) */
-    double tmp=fabs(w[i])+fabs(wv[i]);
+    double tmp=std::fabs(w[i]) + std::fabs(wv[i]);
     if( tmp>anorm ) anorm = tmp;
   }     /* for( int i ... ) */
 
@@ -539,10 +539,10 @@ bool nestdaq::DCMathTools::SVDcmp( double **a, int m, int n, double *w,
       int flag=1; nm=ll;
       for( ll=k; ll>=0; --ll ){
 	nm=ll-1;
-	if( fabs(wv[ll])+anorm == anorm ){
+	if( std::fabs(wv[ll])+anorm == anorm ){
 	  flag=0; break;
 	}
-	if( fabs(w[nm])+anorm == anorm )
+	if( std::fabs(w[nm])+anorm == anorm )
 	  break;
       }
 

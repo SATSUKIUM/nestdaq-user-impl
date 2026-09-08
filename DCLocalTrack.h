@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "DCLTrackHit.h"
+#include <cmath>
 
 namespace nestdaq{
     class DCLTrackHit;
@@ -123,7 +124,7 @@ namespace nestdaq{
         {
         int n1=p1->GetNHits(), n2=p2->GetNHits();
         double chi1=p1->GetChiSqr(),chi2=p2->GetChiSqr();
-        double a1=fabs(1.-chi1),a2=fabs(1.-chi2);
+        double a1=std::fabs(1.-chi1), a2=std::fabs(1.-chi2);
         if(a1<a2) return true;
         else if(a2<a1) return false;
         else
@@ -140,13 +141,13 @@ namespace nestdaq{
         int n1=p1->GetNHits(), n2=p2->GetNHits();
         double chi1=p1->GetChiSqr(),chi2=p2->GetChiSqr();
         //if( (n1>n2+1) ){
-        //    if( (n1>n2+1) && (fabs(chi1-chi2)<5.) ){
-        if( (n1>n2+1) && (fabs(chi1-chi2)<2.) ){
+        //    if( (n1>n2+1) && (std::fabs(chi1-chi2)<5.) ){
+        if( (n1>n2+1) && (std::fabs(chi1-chi2)<2.) ){
         return true;
         }
         //else if( (n2>n1+1)  ){
-        //    else if( (n2>n1+1) && (fabs(chi1-chi2)<5.) ){
-        else if( (n2>n1+1) && (fabs(chi1-chi2)<2.) ){
+        //    else if( (n2>n1+1) && (std::fabs(chi1-chi2)<5.) ){
+        else if( (n2>n1+1) && (std::fabs(chi1-chi2)<2.) ){
         return false;
         }
         else{
