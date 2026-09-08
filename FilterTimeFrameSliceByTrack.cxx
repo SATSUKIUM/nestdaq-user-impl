@@ -61,23 +61,32 @@ FilterTimeFrameSliceByTrack::FilterTimeFrameSliceByTrack()
 
 FilterTimeFrameSliceByTrack::~FilterTimeFrameSliceByTrack()
 {
-
    if(fDebugFile.is_open()){
       fDebugFile.close();
    }
+
    if(fThroughputFile.is_open()){
       fThroughputFile.close();
    }
+
    if(fRootFile != nullptr){
-      fRootTree1->Write();
-      fRootTree2->Write();
-      fRootTree1 = nullptr;
-      fRootTree2 = nullptr;
-      fRootFile->Write();
-      fRootFile->Flush();
+      fRootFile->cd();
+
+      if(fRootTree1 != nullptr){
+         fRootTree1->Write();
+      }
+
+      if(fRootTree2 != nullptr){
+         fRootTree2->Write();
+      }
+
       fRootFile->Close();
+
       delete fRootFile;
       fRootFile = nullptr;
+
+      fRootTree1 = nullptr;
+      fRootTree2 = nullptr;
    }
 }
 
