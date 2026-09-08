@@ -3,7 +3,7 @@
 
 using nestdaq::DCLTrackHit;
 
-DCLTrackHit::DCLTrackHit(const DCHit* actualhit, int nth_, double w_, int leftright) : actualhit(actualhit), nth(nth_), w(w_), leftright(leftright) {
+DCLTrackHit::DCLTrackHit(DCHit* actualhit, int nth_, double w_, int leftright) : actualhit(actualhit), nth(nth_), w(w_), leftright(leftright) {
     actualhit->RegisterHits(this);
 };
 
