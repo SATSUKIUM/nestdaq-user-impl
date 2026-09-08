@@ -44,6 +44,8 @@ using nestdaq::FilterTimeFrameSliceByTrack;
 using nestdaq::DCRawHit;
 using nestdaq::DCHit;
 using nestdaq::KLDCHitContainer;
+using nestdaq::DCLocalTrack;
+using nestdaq::DCLTrackHit;
 namespace bpo = boost::program_options;
 
 namespace{ // unnamed namespace(can be seen only in this translation unit)
