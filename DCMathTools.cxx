@@ -161,7 +161,7 @@ bool nestdaq::DCMathTools::InterpolateRatio( int n, const double *xa, const doub
     h=fabs(x-xa[i-1]);
     if(h==0.0) { y=ya[i-1]; dy=0.0; return true; }
     else if(h<hh){ ns=i; hh=h; } 
-    w1[i-1]=ya[i-1]; w2[i-1]=ya[i-1]*(1.+TINY);
+    w1[i-1]=ya[i-1]; w2[i-1]=ya[i-1]*(1.+nestdaq::DCMath::TINY);
   }
   y=ya[ns-1]; ns--;
   for(m=1; m<n; ++m){
