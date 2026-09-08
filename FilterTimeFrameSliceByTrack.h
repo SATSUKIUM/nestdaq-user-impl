@@ -166,7 +166,7 @@ protected:
    };
    static constexpr int fNumAngleCorrectionIteration = 1;
 
-   bool MakePairPlaneHitCluster(const std::vector<DCHit>& HC1, const std::vector<DCHit>& HC2, double cellSize, std::vector<DCPairHitCluster*>& Cont);
+   bool MakePairPlaneHitCluster(std::vector<DCHit>& HC1, std::vector<DCHit>& HC2, double cellSize, std::vector<DCPairHitCluster*>& Cont);
 
    static constexpr int fMaxNumClusters = 20; // number of clusters in each pair plane should be less than this
    std::vector<std::vector<int>> makeindex(int npp, const int* nCombi);

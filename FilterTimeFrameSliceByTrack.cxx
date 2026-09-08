@@ -1264,7 +1264,7 @@ void KLDCHitContainer::SetStandardTime(double standardTime, const DCTimeRange& D
    }
 } // void nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer::SetStandardTime(int standardTime)
 
-bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHit>& HC1, const std::vector<DCHit>& HC2, double CellSize, std::vector<DCPairHitCluster*>& Cont)
+bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(std::vector<DCHit>& HC1, std::vector<DCHit>& HC2, double CellSize, std::vector<DCPairHitCluster*>& Cont)
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster] ";
 
