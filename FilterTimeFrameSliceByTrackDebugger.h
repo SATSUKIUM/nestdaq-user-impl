@@ -21,7 +21,8 @@
 
 #define CHECK_COUT_UTOF_TIMING 1
 #define DEBUG_KLDC_TRACK_SEARCH 0
-#define CHECK_COUT_ELAPSED_TIME 1
+#define CHECK_COUT_ELAPSED_TIME 0
+#define FILEOUT_ELAPSED_TIME 1
 // ================================
 
 
