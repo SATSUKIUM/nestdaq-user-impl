@@ -2,6 +2,7 @@
 #define DCLOCALTRACK_H_ 1
 
 #include <vector>
+#include "DCLTrackHit.h"
 
 namespace nestdaq{
     class DCLTrackHit;
