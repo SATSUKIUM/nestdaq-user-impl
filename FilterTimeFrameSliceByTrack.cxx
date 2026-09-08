@@ -505,11 +505,6 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    #endif
 
    // distribute the KLDC hits to its container
-   const uint8_t u_plane_index = 0x01; // (std::string)"U"
-   const uint8_t v_plane_index = 0x03; // (std::string)"V"
-   const uint8_t up_plane_index = 0x02; // (std::string)"Up"
-   const uint8_t vp_plane_index = 0x04; // (std::string)"Vp"
-
    // clear fKLDCHitContainer before filling it with new hits
    fKLDCHitContainer.Reset();
    for(auto& hit : kldcRawHits){
@@ -537,75 +532,6 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             fKLDCHitContainer[planeNumber].push_back(h);
          } // if(detiditem->detconf != nullptr)
       }
-
-      // if(detiditem->segment == 1){ // KLDC1
-      //    if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
-      //       if(!(fKLDCHitContainer[0].empty()) && fKLDCHitContainer[0].back().GetDETIdItem()->channel_number == wireNumber){
-      //          fKLDCHitContainer[0].back().AddHit(tdc, tot);
-      //       }
-      //       else{
-      //          if(detiditem->detconf != nullptr){
-      //             const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
-      //             if(geomitemdc != nullptr){
-      //                wirePos = geomitemdc->GetWirePosition();
-      //                wireAngle = geomitemdc->GetTiltAngle();
-      //             }
-      //             DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
-      //             fKLDCHitContainer[0].push_back(h);
-      //          } // if(detiditem->detconf != nullptr)
-      //       }
-      //    } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
-      //    else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
-      //       if(!(fKLDCHitContainer[1].empty()) && fKLDCHitContainer[1].back().GetDETIdItem()->channel_number == wireNumber){
-      //          fKLDCHitContainer[1].back().AddHit(tdc, tot);
-      //       }
-      //       else{
-      //          if(detiditem->detconf != nullptr){
-      //             const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
-      //             if(geomitemdc != nullptr){
-      //                wirePos = geomitemdc->GetWirePosition();
-      //                wireAngle = geomitemdc->GetTiltAngle();
-      //             }
-      //             DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
-      //             fKLDCHitContainer[1].push_back(h);
-      //          } // if(detiditem->detconf != nullptr)
-      //       }
-      //    } // if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index)
-      // } // if(detiditem->segment == 1)
-      // else if(detiditem->segment == 2){ // KLDC2
-      //    if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index){
-      //       if(!(fKLDCHitContainer[2].empty()) && fKLDCHitContainer[2].back().GetDETIdItem()->channel_number == wireNumber){
-      //          fKLDCHitContainer[2].back().AddHit(tdc, tot);
-      //       }
-      //       else{
-      //          if(detiditem->detconf != nullptr){
-      //             const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
-      //             if(geomitemdc != nullptr){
-      //                wirePos = geomitemdc->GetWirePosition();
-      //                wireAngle = geomitemdc->GetTiltAngle();
-      //             }
-      //             DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
-      //             fKLDCHitContainer[2].push_back(h);
-      //          } // if(detiditem->detconf != nullptr)
-      //       }
-      //    } // if(detiditem->plane == u_plane_index || detiditem->plane == up_plane_index)
-      //    else if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index){
-      //       if(!(fKLDCHitContainer[3].empty()) && fKLDCHitContainer[3].back().GetDETIdItem()->channel_number == wireNumber){
-      //          fKLDCHitContainer[3].back().AddHit(tdc, tot);
-      //       }
-      //       else{
-      //          if(detiditem->detconf != nullptr){
-      //             const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
-      //             if(geomitemdc != nullptr){
-      //                wirePos = geomitemdc->GetWirePosition();
-      //                wireAngle = geomitemdc->GetTiltAngle();
-      //             }
-      //             DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
-      //             fKLDCHitContainer[3].push_back(h);
-      //          } // if(detiditem->detconf != nullptr)
-      //       }
-      //    } // if(detiditem->plane == v_plane_index || detiditem->plane == vp_plane_index)
-      // } // if(detiditem->segment == 2)
    } // for(auto& hit : kldcRawHits)
 
    // ================================

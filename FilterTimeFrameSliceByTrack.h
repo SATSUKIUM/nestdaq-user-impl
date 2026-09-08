@@ -149,7 +149,11 @@ protected:
    // ================================
    static constexpr int npp = 4; // KLDC1 UU', KLDC1 VV', KLDC2 UU', KLDC2 VV'
    static constexpr int nplanes = 8;
-   KLDCHitContainer fKLDCHitContainer{nplanes};
+   static constexpr uint8_t u_plane_index = 0x01; // (std::string)"U"
+   static constexpr uint8_t v_plane_index = 0x03; // (std::string)"V"
+   static constexpr uint8_t up_plane_index = 0x02; // (std::string)"Up"
+   static constexpr uint8_t vp_plane_index = 0x04; // (std::string)"Vp"
+   KLDCHitContainer fKLDCHitContainer{nplanes}; // accessed by fKLDCHitContainer[ 4 * (segment_number-1) + (plane_index - 1) ]
    const DCTimeRange fDCTimeRange{
       945-1000, 1200-1000, 55 // KLDC TDC cut, lower_bound, upper_bound, tot_min, unit: ns
    };
