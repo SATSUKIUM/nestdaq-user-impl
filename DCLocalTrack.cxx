@@ -465,4 +465,11 @@ bool DCLocalTrack::AngleCorrection( void )
     // std::cout << "***********************************************************" << std::endl;
 
     return status_=true;
-}
+} // bool DCLocalTrack::AngleCorrection( void )
+
+void DCLocalTrack::CalcHitPositions(){
+    for(auto hit : dclthits){
+        double z = hit->GetGlobalZ();
+        hit->SetCalPosition(CalcX(z), CalcY(z));
+    }
+} // void DCLocalTrack::CalcHitPositions()

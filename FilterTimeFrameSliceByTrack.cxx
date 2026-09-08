@@ -744,8 +744,18 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       } // for( int i2=fTrackCont.size()-1; i2>i; --i2 )  
    } // for( int i=0; i<int(fTrackCont.size()); ++i )
 
+   // Calculate hit position
+   for(int i=0; i<int(fTrackCont.size()); ++i){
+      DCLocalTrack *tp = fTrackCont[i];
+      tp->CalcHitPositions();
+   } // for(int i=0; i<int(fTrackCont.size()); ++i)
 
-   
+   // Delete Objects
+   for(int i=0; i<npp; ++i){
+      for_each(CandCont[i].begin(), CandCont[i].end(), DeleteObject());
+   }
+
+   int ntr = fTrackCont.size();
 
 #if 0
    int doKeep = false;

@@ -54,6 +54,7 @@ namespace nestdaq{
                 }
                 return count;
             }
+            void CalcHitPositions();
 
         private: // fit info
             bool status; // fit?
