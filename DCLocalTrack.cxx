@@ -4,7 +4,7 @@
 #include "DCMathTools.h"
 #include "DCConstants.h"
 
-using namedaq::DCLocalTrack;
+using nestdaq::DCLocalTrack;
 
 DCLTrackHit* DCLocalTrack::GetHit(std::size_t iHit) const {
     if(iHit < hits.size()){
