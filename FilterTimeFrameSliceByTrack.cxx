@@ -1336,7 +1336,7 @@ bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(std::vector<DCHit>& HC
    #if 1
    for( int i2=0; i2<nh2; ++i2 ){
       if( UsedFlag[i2]==0 ) {
-         const DCHit *hit2=&HC2[i2];
+         DCHit *hit2=&HC2[i2];
          int multi2 = hit2->GetNumMultiHit();
          for (int m2=0; m2<multi2; m2++) {
             #if CHECK_COUT_DUPLICATE
