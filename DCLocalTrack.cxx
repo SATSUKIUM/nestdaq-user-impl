@@ -237,8 +237,8 @@ bool DCLocalTrack::AngleCorrection( void )
 
     std::size_t nHits = dclthits.size();
 
-    const double u0 = this->GetU0();
-    const double v0 = this->GetV0();
+    double u0 = this->GetU0();
+    double v0 = this->GetV0();
 
     std::vector <double> z, res, w, ct, st, scaleFactor;
     // z: global z position of the hit layer
