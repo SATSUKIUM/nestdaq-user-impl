@@ -48,11 +48,11 @@ void FilterTimeFrameSliceABC::PreRun()
 bool FilterTimeFrameSliceABC::ConditionalRun()
 {
    const std::string_view funcname = "[FilterTimeFrameSliceABC::ConditionalRun] ";
-   #if CHECK_COUT_LFTDC
+   #if 1
    std::cout << std::endl << funcname << "Function called" << std::endl;
    #endif
    fDoCheck = fKTimer[0].Check();
-   fDoCheck = false;
+   fDoCheck = false; // うるさいので暫定的に黙らせておく
    
    // clear the time frame of previous cycle
    for (auto& tf : fTFs) {
