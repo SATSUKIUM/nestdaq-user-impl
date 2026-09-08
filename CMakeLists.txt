@@ -206,6 +206,8 @@ foreach(lvar IN ITEMS
           DCHit.cxx
           DCPairHitCluster.cxx
           DCLTrackHit.cxx
+          DCMathTools.cxx
+          DCLocalTrack.cxx
       )
   endif()
 
