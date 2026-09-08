@@ -198,6 +198,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
          std::cout << "\t" << "utof left DETIdItem -> found." << std::endl;
          detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
          detiditem.decode();
+         fZPosUTOF = detiditem.detconf->membername_geom->GetGlobalZ();
       }
    }
    #endif
@@ -358,6 +359,8 @@ void FilterTimeFrameSliceByTrack::InitTask()
    fRootTree2->Branch("y0", &fTree_y0, "y0/D");
    fRootTree2->Branch("u0", &fTree_u0, "u0/D");
    fRootTree2->Branch("v0", &fTree_v0, "v0/D");
+   fRootTree2->Branch("xUTOF", &fTree_xUTOF, "xUTOF/D");
+   fRootTree2->Branch("yUTOF", &fTree_yUTOF, "yUTOF/D");
    #endif
 
 } // void FilterTimeFrameSliceByTrack::InitTask()
@@ -798,6 +801,8 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          fTree_y0 = tp->GetY0();
          fTree_u0 = tp->GetU0();
          fTree_v0 = tp->GetV0();
+         fTree_xUTOF = tp->CalcX( fZPosUTOF );
+         fTree_yUTOF = tp->CalcY( fZPosUTOF );
          fRootTree2->Fill();
       }
    #endif

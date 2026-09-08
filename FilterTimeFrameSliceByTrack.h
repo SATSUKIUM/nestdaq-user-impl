@@ -167,12 +167,15 @@ protected:
    double fTree_y0{0.0};
    double fTree_u0{0.0};
    double fTree_v0{0.0};
+   double fTree_xUTOF{0.0};
+   double fTree_yUTOF{0.0};
 
 
 
    // ================================
    // Tracking
    // ================================
+   double fZPosUTOF = 0.0; // UTOF L position, unit: mm
    static constexpr int npp = 4; // KLDC1 UU', KLDC1 VV', KLDC2 UU', KLDC2 VV'
    static constexpr int nplanes = 8;
    static constexpr uint8_t u_plane_index = 0x01; // (std::string)"U"
