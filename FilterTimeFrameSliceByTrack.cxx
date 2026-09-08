@@ -198,9 +198,8 @@ void FilterTimeFrameSliceByTrack::InitTask()
          std::cout << "\t" << "utof left DETIdItem -> found." << std::endl;
          detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
          detiditem.decode();
-         std::cout << "\n\nkokode otiru?" << std::endl;
-         fZPosUTOF = detiditem.detconf->membername_geom->GetGlobalZ();
-         std::cout << "\n\nkokode otiru?" << std::endl;
+         // fZPosUTOF = detiditem.detconf->membername_geom->GetGlobalZ();
+         fZPosUTOF = 0.0; // interim
       }
    }
    #endif
