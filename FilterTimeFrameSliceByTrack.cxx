@@ -711,12 +711,18 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    }
 
    int ntr_after = fTrackCont.size();
+   if(ntr_after > 0){
    #if CHECK_COUT_ELAPSED_TIME
    end_time = std::chrono::high_resolution_clock::now();
       auto elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
       std::cout << funcname << "Number of tracks after filtering: " << ntr_after << std::endl;
       std::cout << "\tElapsed time: " << elapsed_time << " microseconds" << std::endl;
+      for(int i=0; i<ntr_after; ++i){
+         DCLocalTrack *tp = fTrackCont[i];
+         std::cout << "\ttTrack " << i << ": #Hits = " << tp->GetNHits() << ", ChiSquare = " << tp->GetChiSqr() << ", x0 = " << tp->GetX0() << ", y0 = " << tp->GetY0() << ", dx/dz = " << tp->GetU0() << ", dy/dz = " << tp->GetV0() << std::endl;
+      }
    #endif
+   }
 
 #if 0
    int doKeep = false;
