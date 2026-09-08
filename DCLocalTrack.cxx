@@ -37,7 +37,6 @@ bool DCLocalTrack::DoFit(){
     st.reserve(nHits); // sin of wire angle
 
     // fill observables
-    size_t 
     for(std::size_t iHit=0; iHit<nHits; ++iHit){
         DCLTrackHit* dclhit = dclthits[iHit];
         if(dclhit != nullptr){
