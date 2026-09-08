@@ -17,9 +17,9 @@
 //#define DebugPrint 1
 
 using namespace nestdaq::DCMathTools;
-bool MathTools::GaussElim( double **a, int n, double *b, int *indx, int *ipiv )
+bool DCMathTools::GaussElim( double **a, int n, double *b, int *indx, int *ipiv )
 {
-  static const std::string funcname = "[MathTools::GaussElim]";
+  static const std::string funcname = "[DCMathTools::GaussElim]";
   double big,c,pivinv,sum,c2;
   int js,irow=0;
 
@@ -74,10 +74,10 @@ bool MathTools::GaussElim( double **a, int n, double *b, int *indx, int *ipiv )
   return true;
 }
 
-bool MathTools::GaussJordan( double **a, int n, double *b, 
+bool DCMathTools::GaussJordan( double **a, int n, double *b, 
 			     int *indxr, int *indxc, int *ipiv )
 {
-  static const std::string funcname = "[MathTools::GaussJordan]";
+  static const std::string funcname = "[DCMathTools::GaussJordan]";
 
   for( int j=0; j<n; ++j ) ipiv[j]=0;
   for( int i=0; i<n; ++i ){
@@ -148,11 +148,11 @@ bool MathTools::GaussJordan( double **a, int n, double *b,
 }
 
 
-bool MathTools::InterpolateRatio( int n, const double *xa, const double *ya, 
+bool DCMathTools::InterpolateRatio( int n, const double *xa, const double *ya, 
 				  double *w1, double *w2,
 				  double x, double &y, double &dy )
 {
-  static const std::string funcname = "[MathTools::InterpolateRatio]";
+  static const std::string funcname = "[DCMathTools::InterpolateRatio]";
   int i, m, ns=1;
   double w, t, hh, h, dd;
 
@@ -187,11 +187,11 @@ bool MathTools::InterpolateRatio( int n, const double *xa, const double *ya,
   return true;
 }
 
-bool MathTools::InterpolatePol( int n, const double *xa, const double *ya,
+bool DCMathTools::InterpolatePol( int n, const double *xa, const double *ya,
 				double *w1, double *w2, 
 				double x, double &y, double &dy )
 {
-  static const std::string funcname = "[MathTools::InterpolatePol]";
+  static const std::string funcname = "[DCMathTools::InterpolatePol]";
   int i, m, ns=1;
   double den, dif, dift, ho, hp, w;
 
@@ -223,10 +223,10 @@ bool MathTools::InterpolatePol( int n, const double *xa, const double *ya,
 }
 
 
-bool MathTools::SVDksb( double **u, const double *w, double **v,
+bool DCMathTools::SVDksb( double **u, const double *w, double **v,
 			int m, int n, const double *b, double *x, double *wv )
 {
-  static const std::string funcname = "[MathTools::SVDksb]";
+  static const std::string funcname = "[DCMathTools::SVDksb]";
 
   for( int j=0; j<n; ++j ){
     double s=0.0;
@@ -260,10 +260,10 @@ inline double pythag( double a, double b )
  
  
 
-bool MathTools::SVDcmp( double **a, int m, int n, double *w, 
+bool DCMathTools::SVDcmp( double **a, int m, int n, double *w, 
 			double **v, double *wv )
 {
-  static const std::string funcname = "[MathTools::SVDcmp]";
+  static const std::string funcname = "[DCMathTools::SVDcmp]";
 
   double g=0.0, scale=0.0, anorm=0.0;
   double s, f, h, c;
