@@ -697,10 +697,10 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       tp->CalcHitPositions();
    } // for(int i=0; i<int(fTrackCont.size()); ++i)
 
-   // // Delete Objects
-   // for(int i=0; i<npp; ++i){
-   //    for_each(CandCont[i].begin(), CandCont[i].end(), DeleteObject());
-   // }
+   // Delete Objects
+   for(int i=0; i<npp; ++i){
+      for_each(CandCont[i].begin(), CandCont[i].end(), DeleteObject());
+   }
 
    int ntr_after = fTrackCont.size();
    std::cout << funcname << "Number of tracks after filtering: " << ntr_after << std::endl;
@@ -731,7 +731,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       delete tp;
    }
    fTrackCont.clear();
-   
+
    return false;
 }
 

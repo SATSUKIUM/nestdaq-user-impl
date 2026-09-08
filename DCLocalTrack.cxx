@@ -25,7 +25,7 @@ bool DCLocalTrack::DoFit(){
 // 1. Number of hits >= DCLocalMinNHits(⇦comes from DCConstants.h)
 // 2. Gauss elimination is successful
     const std::string_view funcname = "[nestdaq::DCLocalTrack::DoFit] ";
-    #if 1
+    #if 0
     std::cout << funcname << "Function called" << std::endl;
     #endif
 
@@ -237,7 +237,7 @@ bool DCLocalTrack::AngleCorrection( void )
 // 1. Number of hits >= DCLocalMinNHits(⇦comes from DCConstants.h)
 // 2. Gauss elimination is successful
     const std::string funcname = "[DCLocalTrack::AngleCorrection()] ";
-    #if 1
+    #if 0
     std::cout << funcname << "Function called" << std::endl;
     #endif
 
