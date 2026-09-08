@@ -37,6 +37,9 @@ namespace nestdaq {
    class DCHit;
    class KLDCHitContainer;
    struct DCTimeRange;
+   class DCLTrackHit;
+   class DCLocalTrack;
+   class DCPairHitCluster;
    struct temporary_geometry;
    struct temporary_dctdccalib;
    struct temporary_dcdriftparam;
