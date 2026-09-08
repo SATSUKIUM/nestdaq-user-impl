@@ -104,7 +104,7 @@ public:
    };
 
    FilterTimeFrameSliceByTrack();
-   virtual ~FilterTimeFrameSliceByTrack() override = default;
+   virtual ~FilterTimeFrameSliceByTrack() override;
 
    void InitTask() override;
    virtual bool ProcessSlice(TTF& ) override;
