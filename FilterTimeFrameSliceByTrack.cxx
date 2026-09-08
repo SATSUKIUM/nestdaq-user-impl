@@ -605,7 +605,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       bool isBelowMaxChiSquare_afterAngleCorrection = false;
       #endif
       if(track->GetNHits() >= DCLocalMinNHits && track->DoFit()){
-         for(int i=0; i<nanglecor; ++i){
+         for(int i=0; i<fNumAngleCorrectionIteration; ++i){
             if(!track->AngleCorrection()) break;
          }
          #if 0
@@ -682,6 +682,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    }
 
    int ntr = fTrackCont.size();
+   std::cout << funcname << "Number of tracks after filtering: " << ntr << std::endl;
 
 #if 0
    int doKeep = false;
@@ -1393,9 +1394,9 @@ DCLocalTrack* FilterTimeFrameSliceByTrack::MakeTrack(const std::vector<std::vect
    static const std::string funcname = "[MakeTrack]";
    
    DCLocalTrack *tp=new DCLocalTrack();
-   if(!tp){
+   if(tp == nullptr){
       std::cerr << funcname << ": new fail" << std::endl;
-      return 0;
+      return nullptr;
    }    
    
    int n=CandCont.size();
