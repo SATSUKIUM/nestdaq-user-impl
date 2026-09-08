@@ -5,6 +5,7 @@
 #include "DCConstants.h"
 
 using nestdaq::DCLocalTrack;
+using nestdaq::DCLTrackHit;
 
 DCLTrackHit* DCLocalTrack::GetHit(std::size_t iHit) const {
     if(iHit < dclthits.size()){
