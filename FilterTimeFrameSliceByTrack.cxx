@@ -348,7 +348,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
    }
    #endif
 
-   #if FILEOUT_ELAPSED_TIME
+   #if FILEOUT_ELAPSED_TIME_TREE
    fRootFile = new TFile("./fileout/tracking/FilterTimeFrameSliceByTrack_throughput.root", "RECREATE");
    fRootTree1 = new TTree("tree1", "ProcessSlice() data");
    fRootTree1->Branch("nt", &fTree_nt, "nt/I");
@@ -369,7 +369,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::ProcessSlice] ";
-   #if CHECK_COUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME
+   #if CHECK_COUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME_TREE
    std::chrono::high_resolution_clock::time_point start_time, end_time;
    start_time = std::chrono::high_resolution_clock::now();
    #endif
@@ -782,33 +782,34 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          std::cout << "\ttTrack " << i << ": #Hits = " << tp->GetNHits() << ", ChiSquare = " << tp->GetChiSqr() << ", x0 = " << tp->GetX0() << ", y0 = " << tp->GetY0() << ", dx/dz = " << tp->GetU0() << ", dy/dz = " << tp->GetV0() << std::endl;
       }
    #endif
+   #if FILEOUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME_TREE
+      end_time = std::chrono::high_resolution_clock::now();   
+      double elapsed_time = std::chrono::duration<double, std::micro>(end_time - start_time).count();
+   #endif
    #if FILEOUT_ELAPSED_TIME
-      end_time = std::chrono::high_resolution_clock::now();
-      auto elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
       fThroughputFile << ntr_after << " " << elapsed_time << std::endl;
       for(int i=0; i<ntr_after; ++i){
          DCLocalTrack *tp = fTrackCont[i];
          fThroughputFile << tp->GetNHits() << " " << tp->GetChiSqr() << " " << tp->GetX0() << " " << tp->GetY0() << " " << tp->GetU0() << " " << tp->GetV0() << std::endl;
       }
-
-      fTree_nt = ntr_after;
-      fTree_elapsed_time = elapsed_time;
-      fRootTree1->Fill();
-      for(int i=0; i<ntr_after; ++i){
-         DCLocalTrack *tp = fTrackCont[i];
-         fTree_nHits = tp->GetNHits();
-         fTree_chiSqr = tp->GetChiSqr();
-         fTree_x0 = tp->GetX0();
-         fTree_y0 = tp->GetY0();
-         fTree_u0 = tp->GetU0();
-         fTree_v0 = tp->GetV0();
-         fTree_xUTOF = tp->CalcX( fZPosUTOF );
-         fTree_yUTOF = tp->CalcY( fZPosUTOF );
-         fRootTree2->Fill();
-      }
    #endif
-
+   #if FILEOUT_ELAPSED_TIME_TREE
+   fTree_nt = ntr_after;
+   fTree_elapsed_time = elapsed_time;
+   fRootTree1->Fill();
+   for(int i=0; i<ntr_after; ++i){
+      DCLocalTrack *tp = fTrackCont[i];
+      fTree_nHits = tp->GetNHits();
+      fTree_chiSqr = tp->GetChiSqr();
+      fTree_x0 = tp->GetX0();
+      fTree_y0 = tp->GetY0();
+      fTree_u0 = tp->GetU0();
+      fTree_v0 = tp->GetV0();
+      fTree_xUTOF = tp->CalcX( fZPosUTOF );
+      fTree_yUTOF = tp->CalcY( fZPosUTOF );
    }
+   fRootTree2->Fill();
+   #endif
 
 #if 0
    int doKeep = false;
