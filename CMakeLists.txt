@@ -178,12 +178,6 @@ endif()
 
 find_package(ROOT REQUIRED COMPONENTS RIO Tree)
 
-target_link_libraries(FilterTimeFrameSliceByTrack
-    PRIVATE
-    ROOT::RIO
-    ROOT::Tree
-)
-
 
 #==============================================================================
 # Sampler(for Emulator), Sink, FileSink, STFBuilder, TimeFrameBuilder
@@ -251,6 +245,8 @@ foreach(lvar IN ITEMS
       sqlite3;
       # custmized by user
       ChannelMap::ChannelMap;
+      ROOT::RIO
+      ROOT::Tree
     )
   elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
     AND (FairMQ_VERSION VERSION_LESS_EQUAL 1.4.56))
@@ -269,6 +265,8 @@ foreach(lvar IN ITEMS
       sqlite3;
       # custmized by user
       ChannelMap::ChannelMap;
+      ROOT::RIO
+      ROOT::Tree
     )
   elseif ((FairMQ_VERSION VERSION_EQUAL 1.10.0))
     target_link_libraries(${EXEC} PUBLIC 
@@ -284,6 +282,8 @@ foreach(lvar IN ITEMS
       sqlite3;
       # custmized by user
       ChannelMap::ChannelMap;
+      ROOT::RIO
+      ROOT::Tree
     )
   else()
     message(FATAL_ERROR "Unsupported FairMQ version ${FairMQ_VERSION}")
@@ -326,6 +326,8 @@ if ((FairMQ_VERSION VERSION_GREATER_EQUAL 1.8.0)
     sqlite3;
     # custmized by user
     ChannelMap::ChannelMap;
+    ROOT::RIO
+    ROOT::Tree
   )
 elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
   AND (FairMQ_VERSION VERSION_LESS_EQUAL 1.4.56))
@@ -339,6 +341,8 @@ elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
     sqlite3;
     # custmized by user
     ChannelMap::ChannelMap;
+    ROOT::RIO
+    ROOT::Tree
   )
 elseif((FairMQ_VERSION VERSION_EQUAL 1.10.0))
   target_link_libraries(AmQStrTdcSampler  PUBLIC
@@ -349,6 +353,8 @@ elseif((FairMQ_VERSION VERSION_EQUAL 1.10.0))
     sqlite3;
     # custmized by user
     ChannelMap::ChannelMap;
+    ROOT::RIO
+    ROOT::Tree
   )
 else()
     message(FATAL_ERROR "Unsupported FairMQ version ${FairMQ_VERSION}")
@@ -403,6 +409,8 @@ if ((FairMQ_VERSION VERSION_GREATER_EQUAL 1.8.0)
     ${REDIS_PLUS_PLUS_LIB};
     # custmized by user
     ChannelMap::ChannelMap;
+    ROOT::RIO
+    ROOT::Tree
   )
 elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
   AND (FairMQ_VERSION VERSION_LESS_EQUAL 1.4.56))
@@ -417,6 +425,8 @@ elseif (((FairMQ_VERSION VERSION_GREATER_EQUAL 1.4.55)
     ${REDIS_PLUS_PLUS_LIB};
     # custmized by user
     ChannelMap::ChannelMap;
+    ROOT::RIO
+    ROOT::Tree
   )
 elseif ((FairMQ_VERSION VERSION_EQUAL 1.10.0)) 
   target_link_libraries(${EXEC} PUBLIC 
@@ -428,6 +438,8 @@ elseif ((FairMQ_VERSION VERSION_EQUAL 1.10.0))
     ${REDIS_PLUS_PLUS_LIB};
     # custmized by user
     ChannelMap::ChannelMap
+    ROOT::RIO
+    ROOT::Tree
   )
 else()
     message(FATAL_ERROR "Unsupported FairMQ version ${FairMQ_VERSION}")
