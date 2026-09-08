@@ -176,6 +176,14 @@ else()
   message(STATUS "ChannelMap target does NOT exist")
 endif()
 
+find_package(ROOT REQUIRED COMPONENTS RIO Tree)
+
+target_link_libraries(FilterTimeFrameSliceByTrack
+    PRIVATE
+    ROOT::RIO
+    ROOT::Tree
+)
+
 
 #==============================================================================
 # Sampler(for Emulator), Sink, FileSink, STFBuilder, TimeFrameBuilder
