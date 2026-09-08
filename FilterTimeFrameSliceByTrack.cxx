@@ -59,6 +59,21 @@ FilterTimeFrameSliceByTrack::FilterTimeFrameSliceByTrack()
 {
 }
 
+FilterTimeFrameSliceByTrack::~FilterTimeFrameSliceByTrack()
+{
+   if(fDebugFile.is_open()){
+      fDebugFile.close();
+   }
+   if(fThroughputFile.is_open()){
+      fThroughputFile.close();
+   }
+   if(fRootFile != nullptr){
+      fRootFile->Close();
+      delete fRootFile;
+      fRootFile = nullptr;
+   }
+}
+
 void FilterTimeFrameSliceByTrack::InitTask()
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::InitTask] ";
@@ -310,6 +325,20 @@ void FilterTimeFrameSliceByTrack::InitTask()
    if (!fThroughputFile.is_open()) {
       std::cerr << funcname << "Failed to open throughput file: " << fThroughputFileName << std::endl;
    }
+   #endif
+
+   #if FILEOUT_ELAPSED_TIME
+   fRootFile = new TFile("./fileout/tracking/FilterTimeFrameSliceByTrack_throughput.root", "RECREATE");
+   fRootTree1 = new TTree("tree1", "ProcessSlice() data");
+   fRootTree1->Branch("nt", &fTree_nt, "ntr_after/I");
+   fRootTree1->Branch("elapsed_time", &fTree_elapsed_time, "elapsed_time/L");
+   fRootTree2 = new TTree("tree2", "Hit Data");
+   fRootTree2->Branch("nHits", &fTree_nHits, "nHits/I");
+   fRootTree2->Branch("chiSqr", &fTree_chiSqr, "chiSqr/D");
+   fRootTree2->Branch("x0", &fTree_x0, "x0/D");
+   fRootTree2->Branch("y0", &fTree_y0, "y0/D");
+   fRootTree2->Branch("u0", &fTree_u0, "u0/D");
+   fRootTree2->Branch("v0", &fTree_v0, "v0/D");
    #endif
 
 } // void FilterTimeFrameSliceByTrack::InitTask()
@@ -737,6 +766,20 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       for(int i=0; i<ntr_after; ++i){
          DCLocalTrack *tp = fTrackCont[i];
          fThroughputFile << tp->GetNHits() << " " << tp->GetChiSqr() << " " << tp->GetX0() << " " << tp->GetY0() << " " << tp->GetU0() << " " << tp->GetV0() << std::endl;
+      }
+
+      fTree_nt = ntr_after;
+      fTree_elapsed_time = elapsed_time;
+      fRootTree1->Fill();
+      for(int i=0; i<ntr_after; ++i){
+         DCLocalTrack *tp = fTrackCont[i];
+         fTree_nHits = tp->GetNHits();
+         fTree_chiSqr = tp->GetChiSqr();
+         fTree_x0 = tp->GetX0();
+         fTree_y0 = tp->GetY0();
+         fTree_u0 = tp->GetU0();
+         fTree_v0 = tp->GetV0();
+         fRootTree2->Fill();
       }
    #endif
 

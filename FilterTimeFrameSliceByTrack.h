@@ -31,6 +31,9 @@
 #include "DCTimeRange.h"
 #include "DCPairHitCluster.h"
 
+#include <TFile.h>
+#include <TTree.h>
+
 namespace nestdaq {
    class FilterTimeFrameSliceByTrack;
    struct DCRawHit;
@@ -148,6 +151,22 @@ protected:
 
    std::ofstream fThroughputFile;
    std::string fThroughputFileName;
+
+   // ================================
+   // ROOT TREE
+   // ================================
+   TFile* fRootFile{nullptr};
+   TTree* fRootTree1{nullptr};
+   TTree* fRootTree2{nullptr};
+   int fTree_nt{0};
+   double fTree_elapsed_time{0.0};
+   int fTree_nHits{0};
+   double fTree_chiSqr{0.0};
+   double fTree_x0{0.0};
+   double fTree_y0{0.0};
+   double fTree_u0{0.0};
+   double fTree_v0{0.0};
+
 
 
    // ================================
