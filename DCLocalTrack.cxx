@@ -422,11 +422,11 @@ bool DCLocalTrack::AngleCorrection( void )
 
     #endif
 
-    double chisqr=0.0;
+    double csr=0.0;
     for( std::size_t i=0; i<nn; ++i ){
         double res_ = res[i], zz=z[i];
         double scal=CalcX(zz)*ct[i]+CalcY(zz)*st[i];
-        chisqr += res_*(w[i]-scal)*(w[i]-scal);
+        csr += res_*(w[i]-scal)*(w[i]-scal);
 
     #if 0
         if(1){
@@ -442,21 +442,21 @@ bool DCLocalTrack::AngleCorrection( void )
         }
     #endif
     }
-    chisqr /= nn-4.;
+    csr /= nn-4.;
     /*  
-    if(chisqr<2){
+    if(csr<2){
         std::cout<<" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! "<<std::endl;
-        std::cout << "chisqr = " << chisqr << " nn-4 = " << nn-4 << std::endl;
+        std::cout << "csr = " << csr << " nn-4 = " << nn-4 << std::endl;
         std::cout<<" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! "<<std::endl;
     }
     */
-    chisqr_=chisqr;
+    chisqr = csr;
     for( std::size_t i=0; i<nn; ++i ){
         DCLTrackHit *hitp = dclthits[i];
         if( hitp ){
         double zz = hitp->GetGlobalZ();
         /*  
-        if(chisqr<2){
+        if(csr<2){
         std::cout<<std::setw(10)<<"z = "<< zz <<std::endl;
         std::cout<<std::setw(10)<<"X = "<< CalcX(zz)<<" Y = "<< CalcY(zz)<<std::endl;
         }
