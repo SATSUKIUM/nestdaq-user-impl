@@ -3,12 +3,15 @@
 
 using nestdaq::DCLTrackHit;
 
-DCLTrackHit::DCLTrackHit(const DCHit* parent_, int nth_, double w_, int leftright) : parent(parent_), nth(nth_), w(w_), leftright(leftright) {
-    parent->RegisterHits(this);
+DCLTrackHit::DCLTrackHit(const DCHit* actualhit, int nth_, double w_, int leftright) : actualhit(actualhit), nth(nth_), w(w_), leftright(leftright) {
+    actualhit->RegisterHits(this);
 };
 
-double DCLTrackHit::GetWirePosition() const { return parent->GetWirePos(); };
-double DCLTrackHit::GetWireAngle() const { return parent->GetWireAngle(); };
-double DCLTrackHit::GetDriftLength() const { return parent->GetDriftLength(nth); };
-double DCLTrackHit::GetResolution() const { return parent->GetResolution(); };
-double DCLTrackHit::GetGlobalZ() const{ return parent->GetGlobalZ(); };
+// ヒットごとに変わらない情報
+double DCLTrackHit::GetWirePosition() const { return actualhit->GetWirePos(); };
+double DCLTrackHit::GetWireAngle() const { return actualhit->GetWireAngle(); };
+double DCLTrackHit::GetResolution() const { return actualhit->GetResolution(); };
+double DCLTrackHit::GetGlobalZ() const{ return actualhit->GetGlobalZ(); };
+
+// ヒットごとに変わる情報
+double DCLTrackHit::GetDriftLength() const { return actualhit->GetDriftLength(nth); };
