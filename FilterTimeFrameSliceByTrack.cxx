@@ -61,6 +61,9 @@ FilterTimeFrameSliceByTrack::FilterTimeFrameSliceByTrack()
 
 FilterTimeFrameSliceByTrack::~FilterTimeFrameSliceByTrack()
 {
+   std::cerr << "fRootFile  = " << fRootFile << std::endl;
+   std::cerr << "fRootTree1 = " << fRootTree1 << std::endl;
+   std::cerr << "fRootTree2 = " << fRootTree2 << std::endl;
    if(fDebugFile.is_open()){
       fDebugFile.close();
    }
@@ -346,7 +349,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
    #if FILEOUT_ELAPSED_TIME
    fRootFile = new TFile("./fileout/tracking/FilterTimeFrameSliceByTrack_throughput.root", "RECREATE");
    fRootTree1 = new TTree("tree1", "ProcessSlice() data");
-   fRootTree1->Branch("nt", &fTree_nt, "ntr_after/I");
+   fRootTree1->Branch("nt", &fTree_nt, "nt/I");
    fRootTree1->Branch("elapsed_time", &fTree_elapsed_time, "elapsed_time/L");
    fRootTree2 = new TTree("tree2", "Hit Data");
    fRootTree2->Branch("nHits", &fTree_nHits, "nHits/I");
