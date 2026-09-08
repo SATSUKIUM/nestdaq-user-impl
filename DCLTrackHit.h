@@ -33,9 +33,9 @@ namespace nestdaq{
         double GetGlobalZ() const;
 
         // トラックに属するかどうかのフラグを管理
-        void clearFlag() { actualhit->clearFlag(nth); };
-        void setFlag() { actualhit->setFlag(nth); };
-        bool showFlag() const { return actualhit->showFlag(nth); };
+        void clearFlag();
+        void setFlag();
+        bool showFlag() const;
 
 
 

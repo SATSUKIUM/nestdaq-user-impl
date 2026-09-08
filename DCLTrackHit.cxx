@@ -15,3 +15,7 @@ double DCLTrackHit::GetGlobalZ() const{ return actualhit->GetGlobalZ(); };
 
 // ヒットごとに変わる情報
 double DCLTrackHit::GetDriftLength() const { return actualhit->GetDriftLength(nth); };
+
+void DCLTrackHit::clearFlag() { actualhit->clearFlag(nth); };
+void DCLTrackHit::setFlag() { actualhit->setFlag(nth); };
+bool DCLTrackHit::showFlag() const { return actualhit->showFlag(nth); };
