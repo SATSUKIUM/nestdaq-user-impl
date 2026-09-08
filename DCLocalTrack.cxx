@@ -193,7 +193,7 @@ bool DCLocalTrack::DoFit(){
     for( std::size_t i=0; i<nn; ++i ){
         double w_hat=w[i], z_=z[i];
         double scal=CalcX(z_)*ct[i]+CalcY(z_)*st[i];
-        csr += w_hat*(s[i]-scal)*(s[i]-scal);
+        csr += w_hat*(w[i]-scal)*(w[i]-scal);
 
 #if 0
     if(1){
@@ -202,8 +202,8 @@ bool DCLocalTrack::DoFit(){
       //     std::cout<<"y coordinate = "<<(y0+v0*z_)<<std::endl;
       std::cout<<std::setw(10)<<"layer = "<<i<<
 	std::setw(10)<<"scal = "<<scal<<
-	std::setw(10)<<"sdata = "<<s[i]<<std::endl;
-      std::cout<<std::setw(10)<<"Res = "<<s[i]-scal<<std::endl;
+	std::setw(10)<<"sdata = "<<w[i]<<std::endl;
+      std::cout<<std::setw(10)<<"Res = "<<w[i]-scal<<std::endl;
       std::cout<<std::setw(10)<<"X = "<< CalcX(z_)<<" Y = "<< CalcY(z_)<<std::endl;
       std::cout<<std::setw(10)<<"chisqr = "<<chisqr<<std::endl;
     }
