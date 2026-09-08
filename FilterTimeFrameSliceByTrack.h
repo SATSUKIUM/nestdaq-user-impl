@@ -40,6 +40,7 @@ namespace nestdaq {
    class DCLTrackHit;
    class DCLocalTrack;
    class DCPairHitCluster;
+   class DCMathTools;
    struct temporary_geometry;
    struct temporary_dctdccalib;
    struct temporary_dcdriftparam;
