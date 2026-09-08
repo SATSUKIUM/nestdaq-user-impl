@@ -509,7 +509,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
    // distribute the KLDC hits to its container
    // clear fKLDCHitContainer before filling it with new hits
-   #if DEBUG_KLDC_TRACK_SEARCH
+   #if DEBUG_KLDC_TRACK_SEARCH && 0
    std::cout << funcname << "Before fKLDCHitContainer.Reset()" << std::endl;
    #endif
    fKLDCHitContainer.Reset();
@@ -539,18 +539,23 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          } // if(detiditem->detconf != nullptr)
       }
    } // for(auto& hit : kldcRawHits)
-   #if DEBUG_KLDC_TRACK_SEARCH
+   #if DEBUG_KLDC_TRACK_SEARCH && 0
    std::cout << funcname << "After distributing raw hits to fKLDCHitContainer" << std::endl;
    #endif
 
    // ================================
    // calculate drift length
    // ================================
-   // std::cout << funcname << "Number of UTOF left hits: " << nStandardTime << std::endl;
+   #if DEBUG_KLDC_TRACK_SEARCH
+   std::cout << funcname << "Before calculating drift lengths" << std::endl;
+   #endif
    for(int i=0; i<nStandardTime; ++i){
       double standardTime = utof_left_times[i];
       fKLDCHitContainer.SetStandardTime(standardTime, fDCTimeRange);
    } // for(int i=0; i<nStandardTime; ++i)
+   #if DEBUG_KLDC_TRACK_SEARCH
+   std::cout << funcname << "After calculating drift lengths" << std::endl;
+   #endif
 
 
    // ================================
@@ -585,6 +590,10 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    if(nnCombi > fMaxCombi){
       return false;
    }
+
+   #if DEBUG_KLDC_TRACK_SEARCH
+   std::cout << funcname << "After clustering, nnCombi = " << nnCombi << std::endl;
+   #endif
 
    #if 0 // check index generation for combinatorial search
    std::cout << funcname;
