@@ -724,6 +724,14 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       return false;
    }
 #endif   
+
+   // clear fTrackCont
+   for(int i=0; i<int(fTrackCont.size()); ++i){
+      DCLocalTrack *tp = fTrackCont[i];
+      delete tp;
+   }
+   fTrackCont.clear();
+   
    return false;
 }
 
