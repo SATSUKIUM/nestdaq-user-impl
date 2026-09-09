@@ -62,14 +62,10 @@ FilterTimeFrameSliceByTrack::FilterTimeFrameSliceByTrack()
 void FilterTimeFrameSliceByTrack::ResetTask()
 {
    FilterTimeFrameSliceABC::ResetTask();
-   
-   std::cerr << "fRootFile  = " << fRootFile << std::endl;
-   std::cerr << "fRootTree1 = " << fRootTree1 << std::endl;
-   std::cerr << "fRootTree2 = " << fRootTree2 << std::endl;
+
    if(fDebugFile.is_open()){
       fDebugFile.close();
    }
-
    if(fThroughputFile.is_open()){
       fThroughputFile.close();
    }
@@ -80,18 +76,20 @@ void FilterTimeFrameSliceByTrack::ResetTask()
       if(fRootTree1 != nullptr){
          fRootTree1->Write();
       }
-
       if(fRootTree2 != nullptr){
          fRootTree2->Write();
+      }
+      if(fRootTree3 != nullptr){
+         fRootTree3->Write();
       }
 
       fRootFile->Close();
 
       delete fRootFile;
       fRootFile = nullptr;
-
       fRootTree1 = nullptr;
       fRootTree2 = nullptr;
+      fRootTree3 = nullptr;
    }
 } // FilterTimeFrameSliceByTrack::ResetTask()
 
@@ -396,6 +394,9 @@ void FilterTimeFrameSliceByTrack::InitTask()
    fRootTree2->Branch("y0", &fTree_y0, "y0/D");
    fRootTree2->Branch("u0", &fTree_u0, "u0/D");
    fRootTree2->Branch("v0", &fTree_v0, "v0/D");
+   fRootTree3->Branch("layer", &fTree_iLayer, "layer/I");
+   fRootTree3->Branch("wire", &fTree_iWire, "wire/I");
+   fRootTree3->Branch("residual", &fTree_Residual, "residual/D");
    #endif
 
 } // void FilterTimeFrameSliceByTrack::InitTask()
@@ -825,7 +826,47 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       fTree_y0 = tp->GetY0();
       fTree_u0 = tp->GetU0();
       fTree_v0 = tp->GetV0();
-   }
+      int nh = tp->GetNHits();
+      for(int j=0; j<nh; ++j){
+         auto& dclthit = tp->GetHit(j);
+         int layer;
+// 0: KLDC1V, 1: KLDC1Vp, 2: KLDC1Up, 3: KLDC1U, 4: KLDC2Up, 5: KLDC2U, 6: KLDC2V, 7: KLDC2Vp
+         const chmap::DETIdItem* detiditem = dclthit.GetDETIdItem();
+         if(detiditem->segment == 1){
+            if(detiditem->getDetectorPlane() == "U"){
+               layer = 3;
+            }
+            else if(detiditem->getDetectorPlane() == "Up"){
+               layer = 2;
+            }
+            else if(detiditem->getDetectorPlane() == "V"){
+               layer = 0;
+            }
+            else if(detiditem->getDetectorPlane() == "Vp"){
+               layer = 1;
+            }
+         }
+         else if(detiditem->segment == 2){
+            if(detiditem->getDetectorPlane() == "U"){
+               layer = 5;
+            }
+            else if(detiditem->getDetectorPlane() == "Up"){
+               layer = 4;
+            }
+            else if(detiditem->getDetectorPlane() == "V"){
+               layer = 6;
+            }
+            else if(detiditem->getDetectorPlane() == "Vp"){
+               layer = 7;
+            }
+         } // if(detiditem->segment == 1) ... else if(detiditem->segment == 2)
+         fTree_iLayer = layer;
+         fTree_iWire = detiditem->channel_number;
+         double residual = tp->GetResidual(j);
+         fTree_Residual = residual;
+         fRootTree3->Fill();
+      } // for(int j=0; j<nh; ++j)
+   } // for(int i=0; i<ntr_after; ++i)
    fRootTree2->Fill();
    #endif
    }

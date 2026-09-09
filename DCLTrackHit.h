@@ -34,6 +34,7 @@ namespace nestdaq{
         double GetDriftLength() const;
         double GetResolution() const;
         int GetLeftRight() const { return leftright; };
+        const chmap::DETIdItem* GetDETIdItem() const { return actualhit->GetDETIdItem(); };
 
         double GetGlobalZ() const;
 

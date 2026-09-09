@@ -157,16 +157,23 @@ protected:
    // ROOT TREE
    // ================================
    TFile* fRootFile{nullptr};
-   TTree* fRootTree1{nullptr};
-   TTree* fRootTree2{nullptr};
+   TTree* fRootTree1{nullptr}; // summary of ProcessSlice()
+   TTree* fRootTree2{nullptr}; // each track information
+   TTree* fRootTree3{nullptr}; // each hit information
+   // for fRootTree1
    int fTree_nt{0};
    double fTree_elapsed_time{0.0};
+   // for fRootTree2
    int fTree_nHits{0};
    double fTree_chiSqr{0.0};
    double fTree_x0{0.0};
    double fTree_y0{0.0};
    double fTree_u0{0.0};
    double fTree_v0{0.0};
+   // for fRootTree3
+   int fTree_iLayer{0}; // 0: KLDC1V, 1: KLDC1Vp, 2: KLDC1Up, 3: KLDC1U, 4: KLDC2Up, 5: KLDC2U, 6: KLDC2V, 7: KLDC2Vp
+   int fTree_iWire{0};
+   double fTree_Residual{0.0};
 
 
 

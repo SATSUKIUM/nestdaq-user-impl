@@ -57,6 +57,18 @@ namespace nestdaq{
                 return count;
             }
             void CalcHitPositions();
+            double GetResidual(std::size_t iHit) const {
+                if(iHit < dclthits.size()){
+                    DCLTrackHit* hit = dclthits[iHit];
+                    if(hit != nullptr){
+                        double z = hit->GetGlobalZ();
+                        double w = hit->GetWirePos() + hit->GetLeftRight() * hit->GetDriftLength();
+                        double scal = CalcX(z) * cos(DCMath::Deg2Rad * hit->GetWireAngle()) + CalcY(z) * sin(DCMath::Deg2Rad * hit->GetWireAngle());
+                        return w - scal;
+                    }
+                }
+                return 0.0; // Return 0.0 if the index is out of bounds or the hit is nullptr
+            }
 
         private: // fit info
             bool status; // fit?
