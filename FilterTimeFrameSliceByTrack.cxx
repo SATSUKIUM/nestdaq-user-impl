@@ -329,6 +329,31 @@ void FilterTimeFrameSliceByTrack::InitTask()
    }
    #endif
 
+   // z Position check for KLDC1(U,U',V,V') and KLDC2(U,U',V,V'), wire: 64
+   std::string_view PLANES[4] = {"U", "Up", "V", "Vp"};
+   for(int iseg=0; iseg<2; ++iseg){
+      for(int ipl=0; ipl<4; ++ipl){
+         const std::string_view plane_name = PLANES[ipl];
+         const uint8_t segment = iseg + 1;
+         _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE("kldc", plane_name, segment, "0", static_cast<uint16_t>(64), detiditem);
+         if(_FOUND_DETtoFE == true){
+            std::cout << "\t" << funcname << "-> found DETIdItem for kldc " << segment << " " << plane_name << std::endl;
+            detiditem.decode();
+            const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
+            if(geomitemdc != nullptr){
+               std::cout << "\t" << funcname << "-> found geometry configuration for kldc " << segment << " " << plane_name << std::endl;
+               std::cout << "\t\tZ position: " << geomitemdc->GetGlobalZ() << " [mm]" << std::endl;
+            }
+            else{
+               std::cout << "\t" << funcname << "-> not found geometry configuration for kldc " << segment << " " << plane_name << std::endl;
+            }
+         }
+         else{
+            std::cout << "\t" << funcname << "-> not found DETIdItem for kldc " << segment << " " << plane_name << std::endl;
+         }
+      }
+   }
+
    // ================================
    // File I/O for debugging
    // ================================
