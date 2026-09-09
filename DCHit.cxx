@@ -156,9 +156,6 @@ double DCHit::GetGlobalZ() const{
                 return 0.0;
             }
             else{
-                #if CHECK_COUT_GLOBALZ
-                std::cout << "[DCHit::GetGlobalZ] geomitemdc->GetGlobalZ(): " << geomitemdc->GetGlobalZ() << std::endl;
-                #endif
                 return geomitemdc->GetGlobalZ();
             } // if(geomitemdc == nullptr)
         } // if(detid->detconf == nullptr)
