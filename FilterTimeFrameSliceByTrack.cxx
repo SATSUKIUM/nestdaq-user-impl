@@ -593,75 +593,74 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          }
       }
 
-   std::vector<std::vector<int>> CombiIndex = makeindex(npp, &nCombi[0]);
-   int nnCombi = CombiIndex.size();
-   if(nnCombi > fMaxCombi){
-      return false;
-   }
+      std::vector<std::vector<int>> CombiIndex = makeindex(npp, &nCombi[0]);
+      int nnCombi = CombiIndex.size();
+      if(nnCombi > fMaxCombi){
+         return false;
+      }
 
-   #if DEBUG_KLDC_TRACK_SEARCH
-   std::cout << funcname << "After clustering, nnCombi = " << nnCombi << std::endl;
-   for(size_t ipp=0; ipp<npp; ++ipp){
-      std::cout << "\tnCombi[" << ipp << "] = " << nCombi[ipp] << std::endl;
-   }
-   #endif
+      #if DEBUG_KLDC_TRACK_SEARCH
+      std::cout << funcname << "After clustering, nnCombi = " << nnCombi << std::endl;
+      for(size_t ipp=0; ipp<npp; ++ipp){
+         std::cout << "\tnCombi[" << ipp << "] = " << nCombi[ipp] << std::endl;
+      }
+      #endif
 
-   #if 0 // check index generation for combinatorial search
-   std::cout << funcname;
-   for(size_t ipp=0; ipp<npp; ++ipp){
-      std::cout << "nCombi[" << ipp << "] = " << nCombi[ipp] << ", ";
-   }
-   std::cout << std::endl;
-   std::cout << funcname << "nnCombi = " << nnCombi << ", and its content: " << std::endl;
-   for(size_t i=0; i<CombiIndex.size(); ++i){
-      std::cout << "\t";
-      for(size_t j=0; j<CombiIndex[i].size(); ++j){
-         std::cout << CombiIndex[i][j] << " ";
+      #if 0 // check index generation for combinatorial search
+      std::cout << funcname;
+      for(size_t ipp=0; ipp<npp; ++ipp){
+         std::cout << "nCombi[" << ipp << "] = " << nCombi[ipp] << ", ";
       }
       std::cout << std::endl;
-   }
-   #endif
-   // ================================
-   // Track making, fitting, and selection(minimum number of hits and chi-square)
-   // ================================
-   #if 1
-   int ntr_try = 0;
-   int ntr_pass1 = 0;
-   int ntr_pass2 = 0;
-   #endif
-   for(int inCombi=0; inCombi<nnCombi; ++inCombi){
-      DCLocalTrack* track = MakeTrack(CandCont, &((CombiIndex[inCombi])[0]));
-      if(track == nullptr) continue;
-      ntr_try++;
-
-            #if 0
-            bool isBelowMaxChiSquare_beforeAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
-            double chiSquare_beforeAngleCorrection = track->GetChiSquare();
-            bool isBelowMaxChiSquare_afterAngleCorrection = false;
-            #endif
-            if(track->GetNHits() >= DCConstants::DCLocalMinNHits && track->DoFit()){
-               ntr_pass1++;
-               for(int i=0; i<fNumAngleCorrectionIteration; ++i){
-                  if(!track->AngleCorrection()) break;
-               }
-               #if 0
-               isBelowMaxChiSquare_afterAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
-               if(isBelowMaxChiSquare_afterAngleCorrection == true && isBelowMaxChiSquare_beforeAngleCorrection == false){
-                  std::cout << "[LocalTrackSearch_AngleCorrection] Track improved after angle correction:" << std::endl;
-                  std::cout << "\tBefore: " << chiSquare_beforeAngleCorrection << ", After: " << track->GetChiSquare() << std::endl;
-               }
-               #endif
-
-               if(track->GetChiSqr() < fMaxChiSqr){
-                  fTrackCont.push_back(track);
-                  ntr_pass2++;
-               }
-               else{
-                  delete track;
-               }
-            }
-         } // for(int inCombi=0; inCombi<nnCombi; ++inCombi)
+      std::cout << funcname << "nnCombi = " << nnCombi << ", and its content: " << std::endl;
+      for(size_t i=0; i<CombiIndex.size(); ++i){
+         std::cout << "\t";
+         for(size_t j=0; j<CombiIndex[i].size(); ++j){
+            std::cout << CombiIndex[i][j] << " ";
+         }
+         std::cout << std::endl;
       }
+      #endif
+      // ================================
+      // Track making, fitting, and selection(minimum number of hits and chi-square)
+      // ================================
+      #if 1
+      int ntr_try = 0;
+      int ntr_pass1 = 0;
+      int ntr_pass2 = 0;
+      #endif
+      for(int inCombi=0; inCombi<nnCombi; ++inCombi){
+         DCLocalTrack* track = MakeTrack(CandCont, &((CombiIndex[inCombi])[0]));
+         if(track == nullptr) continue;
+         ntr_try++;
+
+         #if 0
+         bool isBelowMaxChiSquare_beforeAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
+         double chiSquare_beforeAngleCorrection = track->GetChiSquare();
+         bool isBelowMaxChiSquare_afterAngleCorrection = false;
+         #endif
+         if(track->GetNHits() >= DCConstants::DCLocalMinNHits && track->DoFit()){
+            ntr_pass1++;
+            for(int i=0; i<fNumAngleCorrectionIteration; ++i){
+               if(!track->AngleCorrection()) break;
+            }
+            #if 0
+            isBelowMaxChiSquare_afterAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
+            if(isBelowMaxChiSquare_afterAngleCorrection == true && isBelowMaxChiSquare_beforeAngleCorrection == false){
+               std::cout << "[LocalTrackSearch_AngleCorrection] Track improved after angle correction:" << std::endl;
+               std::cout << "\tBefore: " << chiSquare_beforeAngleCorrection << ", After: " << track->GetChiSquare() << std::endl;
+            }
+            #endif
+
+            if(track->GetChiSqr() < fMaxChiSqr){
+               fTrackCont.push_back(track);
+               ntr_pass2++;
+            }
+            else{
+               delete track;
+            }
+         }
+      } // for(int inCombi=0; inCombi<nnCombi; ++inCombi)
 
       for(int i=0; i<npp; ++i){
          for_each(CandCont[i].begin(), CandCont[i].end(), DeleteObject());
