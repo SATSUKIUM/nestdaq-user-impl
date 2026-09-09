@@ -61,6 +61,7 @@ void FilterTimeFrameSliceABC::InitTask()
    fRootTree1->Branch("elapsed_time", &fTree_elapsed_time, "elapsed_time/D");
    fRootTree1->Branch("nslice", &fTree_nslice, "nslice/I");
    fRootTree1->Branch("npassslice", &fTree_npassslice, "npassslice/I");
+   fRootTree1->Branch("elapsed_time_per_slice", &fTree_elapsed_time_per_slice);
    #endif
 }
 
@@ -204,8 +205,13 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          #endif
          idxTFSLICE++;
          /*↓へ持って入る*/
+         #if FILEOUT_THROUGHPUT
+         fStartTimeSlice = std::chrono::high_resolution_clock::now();
+         #endif
          doKeep = ProcessSlice(tf);
          #if FILEOUT_THROUGHPUT
+         fEndTimeSlice = std::chrono::high_resolution_clock::now();
+         fTree_elapsed_time_per_slice.push_back(std::chrono::duration<double, std::micro>(fEndTimeSlice - fStartTimeSlice).count());
          nslice++;
          if(doKeep) npassslice++;
          #endif

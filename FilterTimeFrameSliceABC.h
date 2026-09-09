@@ -90,6 +90,7 @@ protected:
    // ================================
    std::chrono::high_resolution_clock::time_point fStartTime, fEndTime;
    std::chrono::high_resolution_clock::time_point fBeforeReceive, fAfterReceive;
+   std::chrono::high_resolution_clock::time_point fStartTimeSlice, fEndTimeSlice;
    double fElapsedTime{0.0};
    double fElapsedTimeReceive{0.0};
    TFile* fRootFile{nullptr};
@@ -99,6 +100,7 @@ protected:
    double fTree_elapsed_time{0.0};
    int fTree_nslice{0};
    int fTree_npassslice{0};
+   std::vector<double> fTree_elapsed_time_per_slice;
 
 
 };
