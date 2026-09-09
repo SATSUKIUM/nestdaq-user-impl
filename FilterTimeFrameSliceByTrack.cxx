@@ -343,7 +343,18 @@ void FilterTimeFrameSliceByTrack::InitTask()
                detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
                const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
                if(geomitemdc != nullptr){
-                  std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << " z position: " << std::fixed << std::setprecision(3) << geomitemdc->GetGlobalZ() << " [mm]" << std::endl;
+                  std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << std::endl;
+                  geomitemdc->decode();
+               }
+               const chmap::CalibrationItem_DCTdcCalib* calibitem_dctdccalib = dynamic_cast<const chmap::CalibrationItem_DCTdcCalib*>(detiditem.detconf->membername_calib_dctdccalib.get());
+               if(calibitem_dctdccalib != nullptr){
+                  std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << std::endl;
+                  calibitem_dctdccalib->decode();
+               }
+               const chmap::CalibrationItem_DCDriftLength* calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detiditem.detconf->membername_calib_dcdriftlen.get());
+               if(calibitem_dcdriftlen != nullptr){
+                  std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << std::endl;
+                  calibitem_dcdriftlen->decode();
                }
             } // if(_FOUND_FEtoDET == true)
          } // if(_FOUND_DETtoFE == true)
