@@ -394,6 +394,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
    fRootTree2->Branch("y0", &fTree_y0, "y0/D");
    fRootTree2->Branch("u0", &fTree_u0, "u0/D");
    fRootTree2->Branch("v0", &fTree_v0, "v0/D");
+   fRootTree3 = new TTree("tree3", "Hit Data");
    fRootTree3->Branch("layer", &fTree_iLayer, "layer/I");
    fRootTree3->Branch("wire", &fTree_iWire, "wire/I");
    fRootTree3->Branch("residual", &fTree_Residual, "residual/D");
