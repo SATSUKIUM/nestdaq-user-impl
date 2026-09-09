@@ -1153,6 +1153,11 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                   fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::membername_geom);
 
                   chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
+                  #if 1
+                  if(ChannelNumber == detiditem.channel_number + 1){
+                     std::cout << "\t\t" << funcname << "indexing matches." << std::endl;
+                  }
+                  #endif
                   const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
                   #if 0
                   std::cout << "pointer address of geomitemdc after move: " << geomitemdc.get() << std::endl;
@@ -1244,6 +1249,12 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
             uint32_t dopeKeyFEtoDET;
             bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
             if(found_FEtoDET){
+               detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
+               #if 1
+               if(ChannelNumber == detiditem.channel_number + 1){
+                  std::cout << "\t\t" << funcname << "indexing matches." << std::endl;
+               }
+               #endif
                bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
                #if 0
                if(registered){
@@ -1337,6 +1348,12 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
                uint32_t dopeKeyFEtoDET;
                bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
                if(found_FEtoDET){
+                  detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
+                  #if 1
+                  if(ChannelNumber == detiditem.channel_number + 1){
+                     std::cout << "\t\t" << funcname << "indexing matches." << std::endl;
+                  }
+                  #endif
                   bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCDriftLength>(dopeKeyFEtoDET, std::move(calibitem_dcdriftlength), &chmap::DETConfItem::membername_calib_dcdriftlen);
                   registered_count_geomitemdc_kldc++;
                   #if 0
