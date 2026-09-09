@@ -73,6 +73,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
 {
    const std::string_view funcname = "[FilterTimeFrameSliceABC::ConditionalRun] ";
    #if FILEOUT_THROUGHPUT
+   fTree_elapsed_time_per_slice.clear();
    fStartTime = std::chrono::high_resolution_clock::now();
    #endif
    #if 0
