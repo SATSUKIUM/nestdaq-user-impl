@@ -236,6 +236,100 @@ void FilterTimeFrameSliceByTrack::InitTask()
    RegisterDetectorConfig_DCTdcCalib();
    RegisterDetectorConfig_DCDriftParam();
 
+   #if CHECK_COUT_DETCONF
+   // kldc 1 U 63
+   std::cout << "\n\t" << "checking kldc 1 U 63 DETIdItem search..." << std::endl;
+   const std::string_view test_detectorname_kldc1u63 = "kldc";
+   const std::string_view test_planename_kldc1u63 = "U";
+   const uint8_t test_segment_kldc1u63 = 1;
+   const uint16_t test_channelnumber_kldc1u63 = 63;
+   const std::string_view test_channelname_kldc1u63 = "0";
+   _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_kldc1u63, test_planename_kldc1u63, test_segment_kldc1u63, test_channelname_kldc1u63, test_channelnumber_kldc1u63, dopeKey_DETtoFE);
+   if(_FOUND_DETtoFE == true){
+      std::cout << "\t" << "-> found." << std::endl;
+      feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+      feaddritem.decode();
+      _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+      if(_FOUND_FEtoDET == true){
+         std::cout << "\t" << "-> found." << std::endl;
+         detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+         detiditem.decode();
+         // check detector configuration for kldc 1 U 63
+         // geometry
+         const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
+         if(retrieved_geomitemdc != nullptr){
+            std::cout << "\t" << "-> found detector configuration for kldc 1 U 63." << std::endl;
+         }
+         else{
+            std::cout << "\t" << "-> not found detector configuration for kldc 1 U 63." << std::endl;
+         }
+
+         // TDC calibration
+         const chmap::CalibrationItem_DCTdcCalib* retrieved_calibitem_dctdccalib = dynamic_cast<const chmap::CalibrationItem_DCTdcCalib*>(detiditem.detconf->membername_calib_dctdccalib.get());
+         if(retrieved_calibitem_dctdccalib != nullptr){
+            std::cout << "\t" << "-> found TDC calibration for kldc 1 U 63." << std::endl;
+         }
+         else{
+            std::cout << "\t" << "-> not found TDC calibration for kldc 1 U 63." << std::endl;
+         }
+
+         // Drift Length calibration
+         const chmap::CalibrationItem_DCDriftLength* retrieved_calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detiditem.detconf->membername_calib_dcdriftlen.get());
+         if(retrieved_calibitem_dcdriftlen != nullptr){
+            std::cout << "\t" << "-> found Drift Length calibration for kldc 1 U 63." << std::endl;
+         }
+         else{
+            std::cout << "\t" << "-> not found Drift Length calibration for kldc 1 U 63." << std::endl;
+         }
+      } // if(_FOUND_FEtoDET == true)
+   } // if(_FOUND_DETtoFE == true)
+   else{
+      std::cout << "\t" << "-> not found." << std::endl;
+   }
+
+
+   // plane name index check
+   const std::string test_planename_up = "Up";
+   uint8_t test_planename_up_index = 0;
+   bool _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_up, test_planename_up_index);
+   if(_FOUND_Index == true){
+      std::cout << "\t" << "-> found plane name index for Up: " << std::hex << static_cast<int>(test_planename_up_index) << std::dec << std::endl;
+   }
+   else{
+      std::cout << "\t" << "-> not found plane name index for Up." << std::endl;
+   }
+
+   const std::string test_planename_v = "V";
+   uint8_t test_planename_v_index = 0;
+   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_v, test_planename_v_index);
+   if(_FOUND_Index == true){
+      std::cout << "\t" << "-> found plane name index for V: " << std::hex << static_cast<int>(test_planename_v_index) << std::dec << std::endl;
+   }
+   else{
+      std::cout << "\t" << "-> not found plane name index for V." << std::endl;
+   }
+
+   const std::string test_planename_u = "U";
+   uint8_t test_planename_u_index = 0;
+   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_u, test_planename_u_index);
+   if(_FOUND_Index == true){
+      std::cout << "\t" << "-> found plane name index for U: " << std::hex << static_cast<int>(test_planename_u_index) << std::dec << std::endl;
+   }
+   else{
+      std::cout << "\t" << "-> not found plane name index for U." << std::endl;
+   }
+
+   const std::string test_planename_vp = "Vp";
+   uint8_t test_planename_vp_index = 0;
+   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_vp, test_planename_vp_index);
+   if(_FOUND_Index == true){
+      std::cout << "\t" << "-> found plane name index for Vp: " << std::hex << static_cast<int>(test_planename_vp_index) << std::dec << std::endl;
+   }
+   else{
+      std::cout << "\t" << "-> not found plane name index for Vp." << std::endl;
+   }
+   #endif
+
    // z Position check for KLDC1(U,U',V,V') and KLDC2(U,U',V,V'), wire: 64th
    std::string_view PLANES[4] = {"U", "Up", "V", "Vp"};
    for(int iseg=0; iseg<2; ++iseg){
