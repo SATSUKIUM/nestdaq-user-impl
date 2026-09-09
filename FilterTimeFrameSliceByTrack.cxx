@@ -334,7 +334,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
    for(int iseg=0; iseg<2; ++iseg){
       for(int ipl=0; ipl<4; ++ipl){
          const std::string_view plane_name = PLANES[ipl];
-         const uint8_t segment = iseg + 1;
+         uint8_t segment = iseg + 1;
          _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string(plane_name), segment, std::string("0"), static_cast<uint16_t>(64), detiditem);
          if(_FOUND_DETtoFE == true){
             std::cout << "\t" << funcname << "-> found DETIdItem for kldc " << segment << " " << plane_name << std::endl;
