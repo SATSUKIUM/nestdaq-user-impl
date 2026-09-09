@@ -1099,8 +1099,8 @@ void FilterTimeFrameSliceByTrack::DefineDetectorIdMap()
       detectorPlaneMap[204] = "U";
       detectorPlaneMap[205] = "Up";
       detectorPlaneMap[206] = "U";
-      detectorPlaneMap[207] = "Vp"; // swap
-      detectorPlaneMap[208] = "V"; // swap
+      detectorPlaneMap[207] = "V";
+      detectorPlaneMap[208] = "Vp";
 
       detectorPlaneMap[301] = "X";
       detectorPlaneMap[302] = "U";
