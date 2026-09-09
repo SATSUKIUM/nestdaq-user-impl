@@ -335,24 +335,20 @@ void FilterTimeFrameSliceByTrack::InitTask()
       for(int ipl=0; ipl<4; ++ipl){
          const std::string_view plane_name = PLANES[ipl];
          uint8_t segment = iseg + 1;
-         _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string(plane_name), segment, std::string("0"), static_cast<uint16_t>(64), detiditem);
+         _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string(plane_name), segment, std::string("0"), static_cast<uint16_t>(64), dopeKey_DETtoFE);
          if(_FOUND_DETtoFE == true){
-            std::cout << "\t" << funcname << "-> found DETIdItem for kldc " << segment << " " << plane_name << std::endl;
-            detiditem.decode();
-            const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
-            if(geomitemdc != nullptr){
-               std::cout << "\t" << funcname << "-> found geometry configuration for kldc " << segment << " " << plane_name << std::endl;
-               std::cout << "\t\tZ position: " << geomitemdc->GetGlobalZ() << " [mm]" << std::endl;
-            }
-            else{
-               std::cout << "\t" << funcname << "-> not found geometry configuration for kldc " << segment << " " << plane_name << std::endl;
-            }
-         }
-         else{
-            std::cout << "\t" << funcname << "-> not found DETIdItem for kldc " << segment << " " << plane_name << std::endl;
-         }
-      }
-   }
+            feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+            _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+            if(_FOUND_FEtoDET == true){
+               detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+               const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
+               if(geomitemdc != nullptr){
+                  std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << " z position: " << std::fixed << std::setprecision(3) << geomitemdc->GetGlobalZ() << " [mm]" << std::endl;
+               }
+            } // if(_FOUND_FEtoDET == true)
+         } // if(_FOUND_DETtoFE == true)
+      } // for(int ipl=0; ipl<4; ++ipl)
+   } // for(int iseg=0; iseg<2; ++iseg)
 
    // ================================
    // File I/O for debugging
