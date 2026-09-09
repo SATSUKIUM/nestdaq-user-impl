@@ -43,6 +43,11 @@ namespace nestdaq {
             TOTs.push_back(tot);
             return;
         }
+        void ClearDriftResults(){
+            DriftTimes.clear();
+            DriftLengths.clear();
+            IsBelongToGoodTrack.clear();
+        }
         const chmap::DETIdItem* GetDETIdItem() const { return detid; };
         int Clear(){
             int n = TDCs.size();

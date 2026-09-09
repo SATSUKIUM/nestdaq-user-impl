@@ -235,99 +235,6 @@ void FilterTimeFrameSliceByTrack::InitTask()
    RegisterDetectorConfig_Geometry();
    RegisterDetectorConfig_DCTdcCalib();
    RegisterDetectorConfig_DCDriftParam();
-   #if CHECK_COUT_DETCONF
-   // kldc 1 U 63
-   std::cout << "\n\t" << "checking kldc 1 U 63 DETIdItem search..." << std::endl;
-   const std::string_view test_detectorname_kldc1u63 = "kldc";
-   const std::string_view test_planename_kldc1u63 = "U";
-   const uint8_t test_segment_kldc1u63 = 1;
-   const uint16_t test_channelnumber_kldc1u63 = 63;
-   const std::string_view test_channelname_kldc1u63 = "0";
-   _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_kldc1u63, test_planename_kldc1u63, test_segment_kldc1u63, test_channelname_kldc1u63, test_channelnumber_kldc1u63, dopeKey_DETtoFE);
-   if(_FOUND_DETtoFE == true){
-      std::cout << "\t" << "-> found." << std::endl;
-      feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
-      feaddritem.decode();
-      _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
-      if(_FOUND_FEtoDET == true){
-         std::cout << "\t" << "-> found." << std::endl;
-         detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
-         detiditem.decode();
-         // check detector configuration for kldc 1 U 63
-         // geometry
-         const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
-         if(retrieved_geomitemdc != nullptr){
-            std::cout << "\t" << "-> found detector configuration for kldc 1 U 63." << std::endl;
-         }
-         else{
-            std::cout << "\t" << "-> not found detector configuration for kldc 1 U 63." << std::endl;
-         }
-
-         // TDC calibration
-         const chmap::CalibrationItem_DCTdcCalib* retrieved_calibitem_dctdccalib = dynamic_cast<const chmap::CalibrationItem_DCTdcCalib*>(detiditem.detconf->membername_calib_dctdccalib.get());
-         if(retrieved_calibitem_dctdccalib != nullptr){
-            std::cout << "\t" << "-> found TDC calibration for kldc 1 U 63." << std::endl;
-         }
-         else{
-            std::cout << "\t" << "-> not found TDC calibration for kldc 1 U 63." << std::endl;
-         }
-
-         // Drift Length calibration
-         const chmap::CalibrationItem_DCDriftLength* retrieved_calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detiditem.detconf->membername_calib_dcdriftlen.get());
-         if(retrieved_calibitem_dcdriftlen != nullptr){
-            std::cout << "\t" << "-> found Drift Length calibration for kldc 1 U 63." << std::endl;
-         }
-         else{
-            std::cout << "\t" << "-> not found Drift Length calibration for kldc 1 U 63." << std::endl;
-         }
-      } // if(_FOUND_FEtoDET == true)
-   } // if(_FOUND_DETtoFE == true)
-   else{
-      std::cout << "\t" << "-> not found." << std::endl;
-   }
-
-
-   // plane name index check
-   const std::string test_planename_up = "Up";
-   uint8_t test_planename_up_index = 0;
-   bool _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_up, test_planename_up_index);
-   if(_FOUND_Index == true){
-      std::cout << "\t" << "-> found plane name index for Up: " << std::hex << static_cast<int>(test_planename_up_index) << std::dec << std::endl;
-   }
-   else{
-      std::cout << "\t" << "-> not found plane name index for Up." << std::endl;
-   }
-
-   const std::string test_planename_v = "V";
-   uint8_t test_planename_v_index = 0;
-   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_v, test_planename_v_index);
-   if(_FOUND_Index == true){
-      std::cout << "\t" << "-> found plane name index for V: " << std::hex << static_cast<int>(test_planename_v_index) << std::dec << std::endl;
-   }
-   else{
-      std::cout << "\t" << "-> not found plane name index for V." << std::endl;
-   }
-
-   const std::string test_planename_u = "U";
-   uint8_t test_planename_u_index = 0;
-   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_u, test_planename_u_index);
-   if(_FOUND_Index == true){
-      std::cout << "\t" << "-> found plane name index for U: " << std::hex << static_cast<int>(test_planename_u_index) << std::dec << std::endl;
-   }
-   else{
-      std::cout << "\t" << "-> not found plane name index for U." << std::endl;
-   }
-
-   const std::string test_planename_vp = "Vp";
-   uint8_t test_planename_vp_index = 0;
-   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_vp, test_planename_vp_index);
-   if(_FOUND_Index == true){
-      std::cout << "\t" << "-> found plane name index for Vp: " << std::hex << static_cast<int>(test_planename_vp_index) << std::dec << std::endl;
-   }
-   else{
-      std::cout << "\t" << "-> not found plane name index for Vp." << std::endl;
-   }
-   #endif
 
    // z Position check for KLDC1(U,U',V,V') and KLDC2(U,U',V,V'), wire: 64th
    std::string_view PLANES[4] = {"U", "Up", "V", "Vp"};
@@ -644,47 +551,47 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    std::cout << funcname << "After distributing raw hits to fKLDCHitContainer" << std::endl;
    #endif
 
-   // ================================
-   // calculate drift length
-   // ================================
-   #if DEBUG_KLDC_TRACK_SEARCH
-   std::cout << funcname << "Before calculating drift lengths" << std::endl;
-   #endif
-   for(int i=0; i<nStandardTime; ++i){
-      double standardTime = utof_left_times[i];
-      fKLDCHitContainer.SetStandardTime(standardTime, fDCTimeRange);
-   } // for(int i=0; i<nStandardTime; ++i)
-   #if DEBUG_KLDC_TRACK_SEARCH
-   std::cout << funcname << "After calculating drift lengths" << std::endl;
+   #if 1
+   int ntr_try = 0;
+   int ntr_pass1 = 0;
+   int ntr_pass2 = 0;
    #endif
 
+   // Reconstruct tracks independently for each UTOF reference time in this slice.
+   for(int iStandardTime=0; iStandardTime<nStandardTime; ++iStandardTime){
+      double standardTimeEach = utof_left_times[iStandardTime];
 
-   // ================================
-   // clustering
-   // ================================
-   std::vector< std::vector<DCPairHitCluster*> > CandCont;
-   CandCont.resize(npp);
-   for(size_t i=0; i<npp; ++i){
-      std::pair<int, int> ppindex = fKLDCPairPlaneInfo[i];
-      int plane1 = ppindex.first;
-      int plane2 = ppindex.second;
-      bool result = MakePairPlaneHitCluster(fKLDCHitContainer[plane1], fKLDCHitContainer[plane2], fKLDCCellSize, CandCont[i]);
-      #if 0
-      std::cout << funcname << "ipp: " << i << ", plane1: " << plane1 << ", plane2: " << plane2 << std::endl;
-      std::cout << "\tfKDLCHitContainer[" << plane1 << "].size() = " << fKLDCHitContainer[plane1].size() << std::endl;
-      std::cout << "\tfKDLCHitContainer[" << plane2 << "].size() = " << fKLDCHitContainer[plane2].size() << std::endl;
-      std::cout << "\tCandCont[" << i << "].size() = " << CandCont[i].size() << std::endl;
+      // ================================
+      // calculate drift length
+      // ================================
+      #if DEBUG_KLDC_TRACK_SEARCH
+      std::cout << funcname << "Before calculating drift lengths" << std::endl;
       #endif
-   } // for(size_t i=0; i<npp; ++i)
- 
-   // prepare for combinatorial search
-   std::vector<int> nCombi(npp);
-   for(int ipp=0; ipp<npp; ++ipp){
-      nCombi[ipp] = CandCont[ipp].size();
-      if(nCombi[ipp] > fMaxNumClusters){
-         nCombi[ipp] = 0; // T103のKLDCの読み出しボードのクロストークによって計算量が莫大になることを避けるための措置
+      fKLDCHitContainer.SetStandardTime(standardTimeEach, fDCTimeRange);
+      #if DEBUG_KLDC_TRACK_SEARCH
+      std::cout << funcname << "After calculating drift lengths" << std::endl;
+      #endif
+
+      // ================================
+      // clustering
+      // ================================
+      std::vector< std::vector<DCPairHitCluster*> > CandCont;
+      CandCont.resize(npp);
+      for(size_t i=0; i<npp; ++i){
+         std::pair<int, int> ppindex = fKLDCPairPlaneInfo[i];
+         int plane1 = ppindex.first;
+         int plane2 = ppindex.second;
+         MakePairPlaneHitCluster(fKLDCHitContainer[plane1], fKLDCHitContainer[plane2], fKLDCCellSize, CandCont[i]);
+      } // for(size_t i=0; i<npp; ++i)
+
+      // prepare for combinatorial search
+      std::vector<int> nCombi(npp);
+      for(int ipp=0; ipp<npp; ++ipp){
+         nCombi[ipp] = CandCont[ipp].size();
+         if(nCombi[ipp] > fMaxNumClusters){
+            nCombi[ipp] = 0; // T103のKLDCの読み出しボードのクロストークによって計算量が莫大になることを避けるための措置
+         }
       }
-   }
 
    std::vector<std::vector<int>> CombiIndex = makeindex(npp, &nCombi[0]);
    int nnCombi = CombiIndex.size();
@@ -727,33 +634,39 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       if(track == nullptr) continue;
       ntr_try++;
 
-      #if 0
-      bool isBelowMaxChiSquare_beforeAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
-      double chiSquare_beforeAngleCorrection = track->GetChiSquare();
-      bool isBelowMaxChiSquare_afterAngleCorrection = false;
-      #endif
-      if(track->GetNHits() >= DCConstants::DCLocalMinNHits && track->DoFit()){
-         ntr_pass1++;
-         for(int i=0; i<fNumAngleCorrectionIteration; ++i){
-            if(!track->AngleCorrection()) break;
-         }
-         #if 0
-         isBelowMaxChiSquare_afterAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
-         if(isBelowMaxChiSquare_afterAngleCorrection == true && isBelowMaxChiSquare_beforeAngleCorrection == false){
-            std::cout << "[LocalTrackSearch_AngleCorrection] Track improved after angle correction:" << std::endl;
-            std::cout << "\tBefore: " << chiSquare_beforeAngleCorrection << ", After: " << track->GetChiSquare() << std::endl;
-         }
-         #endif
+            #if 0
+            bool isBelowMaxChiSquare_beforeAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
+            double chiSquare_beforeAngleCorrection = track->GetChiSquare();
+            bool isBelowMaxChiSquare_afterAngleCorrection = false;
+            #endif
+            if(track->GetNHits() >= DCConstants::DCLocalMinNHits && track->DoFit()){
+               ntr_pass1++;
+               for(int i=0; i<fNumAngleCorrectionIteration; ++i){
+                  if(!track->AngleCorrection()) break;
+               }
+               #if 0
+               isBelowMaxChiSquare_afterAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
+               if(isBelowMaxChiSquare_afterAngleCorrection == true && isBelowMaxChiSquare_beforeAngleCorrection == false){
+                  std::cout << "[LocalTrackSearch_AngleCorrection] Track improved after angle correction:" << std::endl;
+                  std::cout << "\tBefore: " << chiSquare_beforeAngleCorrection << ", After: " << track->GetChiSquare() << std::endl;
+               }
+               #endif
 
-         if(track->GetChiSqr() < fMaxChiSqr){
-            fTrackCont.push_back(track);
-            ntr_pass2++;
-         }
-         else{
-            delete track;
-         }
+               if(track->GetChiSqr() < fMaxChiSqr){
+                  fTrackCont.push_back(track);
+                  ntr_pass2++;
+               }
+               else{
+                  delete track;
+               }
+            }
+         } // for(int inCombi=0; inCombi<nnCombi; ++inCombi)
       }
-   } // for(int inCombi=0; inCombi<nnCombi; ++inCombi)
+
+      for(int i=0; i<npp; ++i){
+         for_each(CandCont[i].begin(), CandCont[i].end(), DeleteObject());
+      }
+   } // for(int iStandardTime=0; iStandardTime<nStandardTime; ++iStandardTime)
    #if 1
    std::cout << funcname << "Number of tracks tried: " << ntr_try << std::endl;
    std::cout << "\tNumber of tracks passed first  selection: " << ntr_pass1 << std::endl;
@@ -791,14 +704,12 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    // Delete Duplicated Tracks
    for( int i=0; i<int(fTrackCont.size()); ++i ){
       DCLocalTrack *tp=fTrackCont[i];
-      int nh=tp->GetNHits();
       tp->SetFlags();
       
       for( int i2=fTrackCont.size()-1; i2>i; --i2 ){
          DCLocalTrack *tp2=fTrackCont[i2];
-         int nh2=tp2->GetNHits(), flag=0;
-         flag = tp->GetNumOfTrueFlags();
-         if(flag > 0){
+         int shared_hits = tp2->GetNumOfTrueFlags();
+         if(shared_hits > 0){
             delete tp2;
             fTrackCont.erase(fTrackCont.begin()+i2);
          }
@@ -814,11 +725,6 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       DCLocalTrack *tp = fTrackCont[i];
       tp->CalcHitPositions();
    } // for(int i=0; i<int(fTrackCont.size()); ++i)
-
-   // Delete Objects
-   for(int i=0; i<npp; ++i){
-      for_each(CandCont[i].begin(), CandCont[i].end(), DeleteObject());
-   }
 
    int ntr_after = fTrackCont.size();
    if(ntr_after > 0){
@@ -1473,6 +1379,7 @@ void KLDCHitContainer::Reset(){
 void KLDCHitContainer::SetStandardTime(double standardTime, const DCTimeRange& DCTimeRange){
    for(auto& std_vector_dchit : *this){
       for(auto& dchit : std_vector_dchit){
+         dchit.ClearDriftResults();
          dchit.CalcDriftTimes(standardTime, DCTimeRange);
       } // for(auto& dchit : std_vector_dchit)
    }
