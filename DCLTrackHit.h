@@ -1,6 +1,9 @@
 #ifndef DCLTrackHit_h
 #define DCLTrackHit_h 1
 
+#include "DCMathConstants.h"
+#include "DCMathTools.h"
+
 namespace nestdaq{
     class DCHit;
     class DCLTrackHit{
