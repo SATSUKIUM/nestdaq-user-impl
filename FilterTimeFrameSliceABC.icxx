@@ -163,7 +163,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
       bool doKeep = false;
 
       #if FILEOUT_THROUGHPUT
-      sizeTF += tf.GetRealLength();
+      fTree_sizeTF += tf.GetRealLength();
       #endif
 
       if (tf.GetHeader()->type == TimeFrame::META) {
@@ -229,7 +229,6 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          nslice++;
          if(doKeep) npassslice++;
          fTree_sizeSlice += tf.GetRealLength();
-         fTree_sizeTF += tf.GetRealLength();
          #endif
       } // else
 
