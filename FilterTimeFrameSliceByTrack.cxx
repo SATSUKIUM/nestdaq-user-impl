@@ -645,12 +645,6 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    std::cout << funcname << "After distributing raw hits to fKLDCHitContainer" << std::endl;
    #endif
 
-   #if 1
-   int ntr_try = 0;
-   int ntr_pass1 = 0;
-   int ntr_pass2 = 0;
-   #endif
-
    // Reconstruct tracks independently for each UTOF reference time in this slice.
    for(int iStandardTime=0; iStandardTime<nStandardTime; ++iStandardTime){
       double standardTimeEach = utof_left_times[iStandardTime];
@@ -760,7 +754,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          for_each(CandCont[i].begin(), CandCont[i].end(), DeleteObject());
       }
    } // for(int iStandardTime=0; iStandardTime<nStandardTime; ++iStandardTime)
-   #if 1
+   #if 0
    std::cout << funcname << "Number of tracks tried: " << ntr_try << std::endl;
    std::cout << "\tNumber of tracks passed first  selection: " << ntr_pass1 << std::endl;
    std::cout << "\tNumber of tracks passed second selection: " << ntr_pass2 << std::endl;
@@ -809,7 +803,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       } // for( int i2=fTrackCont.size()-1; i2>i; --i2 )  
    } // for( int i=0; i<int(fTrackCont.size()); ++i )
 
-   #if 1
+   #if 0
    std::cout << "\t\tNumber of tracks after duplicate removal: " << fTrackCont.size() << std::endl;
    #endif
 
