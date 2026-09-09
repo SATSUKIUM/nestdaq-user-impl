@@ -1118,7 +1118,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       double rotationAngle2 = geom.rotationangle2;
       double length = geom.length;
       double resolution = geom.resolution;
-      double wireCenterNumber = geom.wirecenternumber - 1.0; // convert to 0-index
+      double wireCenterNumber = geom.wirecenternumber; // 1-indexed
       double wirePitch = geom.wirepitch;
       double offset = geom.offset;
 
@@ -1133,7 +1133,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       // Register KLDC
       if(DetectorName == "kldc"){
          for(int i=0+32; i<128-32; ++i){
-            int ChannelNumber = i;
+            int ChannelNumber = i+1; // convert to 1-index
             std::unique_ptr<chmap::GeomItemDC> geomitemdc = std::make_unique<chmap::GeomItemDC>();
             geomitemdc->SetGlobalPosition(x, y, z);
             geomitemdc->SetResolution(resolution, resolution, resolution);
@@ -1142,7 +1142,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
             geomitemdc->CalcWirePosition(ChannelNumber);
 
             uint32_t dopeKey_DETtoFE;
-            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, std::string("0"), static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE);
+            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, std::string("0"), static_cast<uint16_t>(ChannelNumber-1), dopeKey_DETtoFE); // map has data based on 0-indexed channel number
             if(found_DETtoFE){
                chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
                uint32_t dopeKeyFEtoDET;
@@ -1234,7 +1234,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
 
       // Register KLDC
       if(DetectorName == "kldc"){
-         int ChannelNumber = wireId - 1; // wireId is 1-indexed, ChannelNumber is 0-indexed
+         int ChannelNumber = wireId + 1; // wireId is 0-indexed, ChannelNumber is 1-indexed
          uint32_t dopeKey_DETtoFE;
          bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, ChannelName, static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE);
          if(found_DETtoFE){
@@ -1326,7 +1326,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
             // Create CalibrationItem_DCDriftLength and set its properties
             std::unique_ptr<chmap::CalibrationItem_DCDriftLength> calibitem_dcdriftlength = std::make_unique<chmap::CalibrationItem_DCDriftLength>();
             calibitem_dcdriftlength->SetApproximation(approxOrder, coefficients);
-            int ChannelNumber = i;
+            int ChannelNumber = i+1; // i is 0-indexed, ChannelNumber is 1-indexed
             uint32_t dopeKey_DETtoFE;
             bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
             if(found_DETtoFE){
