@@ -105,7 +105,7 @@ bool DCHit::CalcDriftLengths(){
         else{
             const chmap::CalibrationItem_DCDriftLength* calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detid->detconf->membername_calib_dcdriftlen.get());
             if(calibitem_dcdriftlen == nullptr){
-                std::cout << funcname << "Error: calibitem_dcdriftlen is nullptr for detid: ";
+                std::cout << funcname << "Error: calibitem_dcdriftlen is nullptr for detid: " << std::endl;
                 detid->decode();
                 return false;
             }
