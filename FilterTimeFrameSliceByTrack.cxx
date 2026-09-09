@@ -646,8 +646,13 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    #endif
 
    // Reconstruct tracks independently for each UTOF reference time in this slice.
+   //
+   // A DCLTrackHit refers to its DCHit's drift-length and flag arrays.  Those
+   // arrays are rebuilt by SetStandardTime(), so candidates must be selected
+   // before processing the next UTOF reference time.
    for(int iStandardTime=0; iStandardTime<nStandardTime; ++iStandardTime){
       double standardTimeEach = utof_left_times[iStandardTime];
+      std::vector<DCLocalTrack*> tracksForStandardTime;
 
       // ================================
       // calculate drift length
@@ -741,7 +746,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             #endif
 
             if(track->GetChiSqr() < fMaxChiSqr){
-               fTrackCont.push_back(track);
+               tracksForStandardTime.push_back(track);
                ntr_pass2++;
             }
             else{
@@ -753,65 +758,37 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       for(int i=0; i<npp; ++i){
          for_each(CandCont[i].begin(), CandCont[i].end(), DeleteObject());
       }
+
+      // Select independent tracks while their DCHit state still corresponds
+      // to standardTimeEach.  Do not apply this procedure after the next
+      // SetStandardTime(), which would mix fitted parameters from one time
+      // with hit flags and drift lengths from another.
+      for(auto* track : tracksForStandardTime){
+         track->ClearFlags();
+      }
+      std::partial_sort(tracksForStandardTime.begin(), tracksForStandardTime.end(),
+                        tracksForStandardTime.end(), DCLTrackComp1());
+      for(int i=0; i<int(tracksForStandardTime.size()); ++i){
+         DCLocalTrack* track = tracksForStandardTime[i];
+         track->SetFlags();
+         for(int i2=int(tracksForStandardTime.size())-1; i2>i; --i2){
+            DCLocalTrack* other = tracksForStandardTime[i2];
+            if(other->GetNumOfTrueFlags() > 0){
+               delete other;
+               tracksForStandardTime.erase(tracksForStandardTime.begin()+i2);
+            }
+         }
+      }
+      for(auto* track : tracksForStandardTime){
+         track->CalcHitPositions();
+      }
+      fTrackCont.insert(fTrackCont.end(), tracksForStandardTime.begin(), tracksForStandardTime.end());
    } // for(int iStandardTime=0; iStandardTime<nStandardTime; ++iStandardTime)
    #if 0
    std::cout << funcname << "Number of tracks tried: " << ntr_try << std::endl;
    std::cout << "\tNumber of tracks passed first  selection: " << ntr_pass1 << std::endl;
    std::cout << "\tNumber of tracks passed second selection: " << ntr_pass2 << std::endl;
    #endif
-
-   // ================================
-   // Clear Flags
-   // ================================
-   int ntr = fTrackCont.size();
-   for(int i=0; i<ntr; ++i){
-      DCLocalTrack* tp = fTrackCont[i];
-      tp->ClearFlags();
-   } // for(int i=0; i<ntr; ++i)
-
-   #if CHECK_COUT_DUPLICATE
-   std::cout << funcname << ": Before Sorting. #Tracks = " << fTrackCont.size() << std::endl;
-   for(int i=0; i<fTrackCont.size(); ++i){
-      DCLocalTrack* tp = fTrackCont[i];
-      std::cout << "\tTrack " << i << ": #Hits = " << tp->GetNHits() << ", ChiSquare = " << tp->GetChiSqr() << ", dx/dz = " << tp->GetU0() << ", dy/dz = " << tp->GetV0() << std::endl;
-   }
-   #endif
-
-   // ヒット数, ChiSquareの順でソートする。現状、partial_sortで全ての要素がソートされている。
-   std::partial_sort(fTrackCont.begin(), fTrackCont.end(), fTrackCont.end(), DCLTrackComp1());
-
-   #if CHECK_COUT_DUPLICATE
-   std::cout << funcname << ": After Sorting. #Tracks = " << fTrackCont.size() << std::endl;
-   for(int i=0; i<fTrackCont.size(); ++i){
-      DCLocalTrack* tp = fTrackCont[i];
-      std::cout << "\tTrack " << i << ": #Hits = " << tp->GetNHits() << ", ChiSquare = " << tp->GetChiSqr() << ", dx/dz = " << tp->GetU0() << ", dy/dz = " << tp->GetV0() << std::endl;
-   }
-   #endif
-
-   // Delete Duplicated Tracks
-   for( int i=0; i<int(fTrackCont.size()); ++i ){
-      DCLocalTrack *tp=fTrackCont[i];
-      tp->SetFlags();
-      
-      for( int i2=fTrackCont.size()-1; i2>i; --i2 ){
-         DCLocalTrack *tp2=fTrackCont[i2];
-         int shared_hits = tp2->GetNumOfTrueFlags();
-         if(shared_hits > 0){
-            delete tp2;
-            fTrackCont.erase(fTrackCont.begin()+i2);
-         }
-      } // for( int i2=fTrackCont.size()-1; i2>i; --i2 )  
-   } // for( int i=0; i<int(fTrackCont.size()); ++i )
-
-   #if 0
-   std::cout << "\t\tNumber of tracks after duplicate removal: " << fTrackCont.size() << std::endl;
-   #endif
-
-   // Calculate hit position
-   for(int i=0; i<int(fTrackCont.size()); ++i){
-      DCLocalTrack *tp = fTrackCont[i];
-      tp->CalcHitPositions();
-   } // for(int i=0; i<int(fTrackCont.size()); ++i)
 
    int ntr_after = fTrackCont.size();
    if(ntr_after > 0){
