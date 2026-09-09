@@ -828,10 +828,10 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       fTree_v0 = tp->GetV0();
       int nh = tp->GetNHits();
       for(int j=0; j<nh; ++j){
-         auto& dclthit = tp->GetHit(j);
+         const DCLTrackHit* dclthit = tp->GetHit(j);
          int layer;
 // 0: KLDC1V, 1: KLDC1Vp, 2: KLDC1Up, 3: KLDC1U, 4: KLDC2Up, 5: KLDC2U, 6: KLDC2V, 7: KLDC2Vp
-         const chmap::DETIdItem* detiditem = dclthit.GetDETIdItem();
+         const chmap::DETIdItem* detiditem = dclthit->GetDETIdItem();
          if(detiditem->segment == 1){
             if(detiditem->getDetectorPlane() == "U"){
                layer = 3;
