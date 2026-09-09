@@ -225,6 +225,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          #if FILEOUT_THROUGHPUT
          fEndTimeSlice = std::chrono::high_resolution_clock::now();
          fTree_elapsed_time_per_slice.push_back(std::chrono::duration<double, std::micro>(fEndTimeSlice - fStartTimeSlice).count());
+         std::cout << "\t\tSlice elapsed time: " << fTree_elapsed_time_per_slice.back() << " [us]" << std::endl;
          fTree_sizeSlice_per_slice.push_back(tf.GetRealLength());
          nslice++;
          if(doKeep) npassslice++;
