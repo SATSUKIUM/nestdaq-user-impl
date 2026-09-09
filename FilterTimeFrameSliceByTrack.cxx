@@ -329,13 +329,13 @@ void FilterTimeFrameSliceByTrack::InitTask()
    }
    #endif
 
-   // z Position check for KLDC1(U,U',V,V') and KLDC2(U,U',V,V'), wire: 64
+   // z Position check for KLDC1(U,U',V,V') and KLDC2(U,U',V,V'), wire: 64th
    std::string_view PLANES[4] = {"U", "Up", "V", "Vp"};
    for(int iseg=0; iseg<2; ++iseg){
       for(int ipl=0; ipl<4; ++ipl){
          const std::string_view plane_name = PLANES[ipl];
          uint8_t segment = iseg + 1;
-         _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string(plane_name), segment, std::string("0"), static_cast<uint16_t>(64), dopeKey_DETtoFE);
+         _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string(plane_name), segment, std::string("0"), static_cast<uint16_t>(64-1), dopeKey_DETtoFE); // 64th wire, 0-indexed
          if(_FOUND_DETtoFE == true){
             feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
             _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
