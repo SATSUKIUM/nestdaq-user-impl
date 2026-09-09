@@ -1,5 +1,7 @@
 #include "DCLTrackHit.h"
 #include "DCHit.h"
+#include <chmap/channel_map_dopeness.hpp>
+#include <chmap/item.hpp>
 #include "FilterTimeFrameSliceByTrackDebugger.h"
 
 using nestdaq::DCLTrackHit;
