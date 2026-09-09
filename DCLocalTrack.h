@@ -62,7 +62,7 @@ namespace nestdaq{
                     DCLTrackHit* hit = dclthits[iHit];
                     if(hit != nullptr){
                         double z = hit->GetGlobalZ();
-                        double w = hit->GetWirePos() + hit->GetLeftRight() * hit->GetDriftLength();
+                        double w = hit->GetWirePosition() + hit->GetLeftRight() * hit->GetDriftLength();
                         double scal = CalcX(z) * cos(DCMath::Deg2Rad * hit->GetWireAngle()) + CalcY(z) * sin(DCMath::Deg2Rad * hit->GetWireAngle());
                         return w - scal;
                     }
