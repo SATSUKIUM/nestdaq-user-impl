@@ -1119,7 +1119,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       double rotationAngle2 = geom.rotationangle2;
       double length = geom.length;
       double resolution = geom.resolution;
-      double wireCenterNumber = geom.wirecenternumber; // 1-indexed
+      double wireCenterNumber = geom.wirecenternumber-1; // convert to 0-indexed wire number
       double wirePitch = geom.wirepitch;
       double offset = geom.offset;
 
@@ -1134,8 +1134,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       // Register KLDC
       if(DetectorName == "kldc"){
          std::cout << "\tRegistering geometry for KLDC wire 33 to 96 (1-indexed)..." << std::endl;
-         for(int i=33; i<=128-32; ++i){
-            int ChannelNumber = i+1; // convert to 1-index
+         for(int i=0; i<128; ++i){
+            int ChannelNumber = i; // 0-indexed channel number
             std::unique_ptr<chmap::GeomItemDC> geomitemdc = std::make_unique<chmap::GeomItemDC>();
             geomitemdc->SetGlobalPosition(x, y, z);
             geomitemdc->SetResolution(resolution, resolution, resolution);
@@ -1144,7 +1144,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
             geomitemdc->CalcWirePosition(ChannelNumber);
 
             uint32_t dopeKey_DETtoFE;
-            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, std::string("0"), static_cast<uint16_t>(ChannelNumber-1), dopeKey_DETtoFE); // map has data based on 0-indexed channel number
+            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, std::string("0"), static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE); // map has data based on 0-indexed channel number
             if(found_DETtoFE){
                chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
                uint32_t dopeKeyFEtoDET;
@@ -1154,8 +1154,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
 
                   chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
                   #if 1
-                  if(ChannelNumber == detiditem.channel_number + 1){
-                     std::cout << "\t\t" << funcname << "indexing matches." << std::endl;
+                  if(ChannelNumber == detiditem.channel_number){
+                     std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
                   }
                   #endif
                   const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
@@ -1241,7 +1241,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
 
       // Register KLDC
       if(DetectorName == "kldc"){
-         int ChannelNumber = wireId + 1; // wireId is 0-indexed, ChannelNumber is 1-indexed
+         int ChannelNumber = wireId; // wireId is 0-indexed, ChannelNumber is also 0-indexed
          uint32_t dopeKey_DETtoFE;
          bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, ChannelName, static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE);
          if(found_DETtoFE){
@@ -1251,8 +1251,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
             if(found_FEtoDET){
                chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
                #if 1
-               if(ChannelNumber == detiditem.channel_number + 1){
-                  std::cout << "\t\t" << funcname << "indexing matches." << std::endl;
+               if(ChannelNumber == detiditem.channel_number){
+                  std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
                }
                #endif
                bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
@@ -1335,12 +1335,12 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
       int missing_count_DETIdItem = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
-         std::cout << "\tRegistering drift parameter for KLDC wire 33 to 96 (1-indexed)..." << std::endl;
-         for(int i=1+32; i<=128-32; ++i){
+         std::cout << "\tRegistering drift parameter for KLDC wire 0 to 127 (0-indexed)..." << std::endl;
+         for(int i=0; i<128; ++i){
             // Create CalibrationItem_DCDriftLength and set its properties
             std::unique_ptr<chmap::CalibrationItem_DCDriftLength> calibitem_dcdriftlength = std::make_unique<chmap::CalibrationItem_DCDriftLength>();
             calibitem_dcdriftlength->SetApproximation(approxOrder, coefficients);
-            int ChannelNumber = i+1; // i is 0-indexed, ChannelNumber is 1-indexed
+            int ChannelNumber = i; // i is 0-indexed, ChannelNumber is 0-indexed
             uint32_t dopeKey_DETtoFE;
             bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
             if(found_DETtoFE){
@@ -1350,8 +1350,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
                if(found_FEtoDET){
                   chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
                   #if 1
-                  if(ChannelNumber == detiditem.channel_number + 1){
-                     std::cout << "\t\t" << funcname << "indexing matches." << std::endl;
+                  if(ChannelNumber == detiditem.channel_number){
+                     std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
                   }
                   #endif
                   bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCDriftLength>(dopeKeyFEtoDET, std::move(calibitem_dcdriftlength), &chmap::DETConfItem::membername_calib_dcdriftlen);
@@ -1372,7 +1372,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
             else{
                ++missing_count_FEAddrItem;
             }
-         } // for(int i=1+32; i<=128-32; ++i)
+         } // for(int i=32; i<=128-32; ++i)
          if(missing_count_FEAddrItem > 0){
             std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
          }
