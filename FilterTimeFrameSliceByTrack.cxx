@@ -1132,7 +1132,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
       int missing_count_DETIdItem = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
-         for(int i=0+32; i<128-32; ++i){
+         std::cout << "\tRegistering geometry for KLDC wire 33 to 96 (1-indexed)..." << std::endl;
+         for(int i=33; i<=128-32; ++i){
             int ChannelNumber = i+1; // convert to 1-index
             std::unique_ptr<chmap::GeomItemDC> geomitemdc = std::make_unique<chmap::GeomItemDC>();
             geomitemdc->SetGlobalPosition(x, y, z);
@@ -1172,7 +1173,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
             else{
                ++missing_count_FEAddrItem;
             }
-         } // for(int i=0+32; i<128-32; ++i)
+         } // for(int i=33; i<=128-32; ++i)
          if(missing_count_DETIdItem > 0){
             std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
          }
@@ -1322,7 +1323,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
       int missing_count_DETIdItem = 0;
       // Register KLDC
       if(DetectorName == "kldc"){
-         for(int i=0+32; i<128-32; ++i){
+         std::cout << "\tRegistering drift parameter for KLDC wire 33 to 96 (1-indexed)..." << std::endl;
+         for(int i=1+32; i<=128-32; ++i){
             // Create CalibrationItem_DCDriftLength and set its properties
             std::unique_ptr<chmap::CalibrationItem_DCDriftLength> calibitem_dcdriftlength = std::make_unique<chmap::CalibrationItem_DCDriftLength>();
             calibitem_dcdriftlength->SetApproximation(approxOrder, coefficients);
@@ -1352,7 +1354,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
             else{
                ++missing_count_FEAddrItem;
             }
-         } // for(int i=0+32; i<128-32; ++i)
+         } // for(int i=1+32; i<=128-32; ++i)
          if(missing_count_FEAddrItem > 0){
             std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
          }
