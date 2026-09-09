@@ -381,7 +381,6 @@ void FilterTimeFrameSliceByTrack::InitTask()
                if(_FOUND_FEtoDET == true){
                   nFOUND_FEtoDET++;
                   detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
-                  detiditem.decode();
                } // if(_FOUND_FEtoDET == true)
             } // if(_FOUND_DETtoFE == true)
          } // for(int ich=0; ich<128; ++ich)
