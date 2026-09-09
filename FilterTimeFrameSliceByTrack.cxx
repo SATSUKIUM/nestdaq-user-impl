@@ -805,6 +805,10 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       } // for( int i2=fTrackCont.size()-1; i2>i; --i2 )  
    } // for( int i=0; i<int(fTrackCont.size()); ++i )
 
+   #if 1
+   std::cout << "\t\tNumber of tracks after duplicate removal: " << fTrackCont.size() << std::endl;
+   #endif
+
    // Calculate hit position
    for(int i=0; i<int(fTrackCont.size()); ++i){
       DCLocalTrack *tp = fTrackCont[i];
