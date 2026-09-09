@@ -363,6 +363,32 @@ void FilterTimeFrameSliceByTrack::InitTask()
       } // for(int ipl=0; ipl<4; ++ipl)
    } // for(int iseg=0; iseg<2; ++iseg)
 
+   // KLDC channel map check
+   int nFOUND_DETtoFE = 0;
+   int nFOUND_FEtoDET = 0;
+   for(int iseg=0; iseg<2; ++iseg){
+      for(int ipl=0; ipl<4; ++ipl){
+         nFOUND_DETtoFE = 0;
+         nFOUND_FEtoDET = 0;
+         const std::string_view plane_name = PLANES[ipl];
+         uint8_t segment = iseg + 1;
+         for(int ich=32; ich<128-32; ++ich){
+            _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string(plane_name), segment, std::string("0"), static_cast<uint16_t>(ich), dopeKey_DETtoFE);
+            if(_FOUND_DETtoFE == true){
+               nFOUND_DETtoFE++;
+               feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+               _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+               if(_FOUND_FEtoDET == true){
+                  nFOUND_FEtoDET++;
+                  detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+                  detiditem.decode();
+               } // if(_FOUND_FEtoDET == true)
+            } // if(_FOUND_DETtoFE == true)
+         } // for(int ich=0; ich<128; ++ich)
+         std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << ": # of DETtoFE found: " << nFOUND_DETtoFE << ", # of FEtoDET found: " << nFOUND_FEtoDET << std::endl;
+      } // for(int ipl=0; ipl<4; ++ipl)
+   } // for(int iseg=0; iseg<2; ++iseg)
+
    // ================================
    // File I/O for debugging
    // ================================
@@ -1093,21 +1119,12 @@ void FilterTimeFrameSliceByTrack::DefineDetectorIdMap()
       // detectorPlaneMap[207] = "Vp";
       // detectorPlaneMap[208] = "V";
 
-      // detectorPlaneMap[201] = "V";
-      // detectorPlaneMap[202] = "Vp";
-      // detectorPlaneMap[203] = "Up";
-      // detectorPlaneMap[204] = "U";
-      // detectorPlaneMap[205] = "Up";
-      // detectorPlaneMap[206] = "U";
-      // detectorPlaneMap[207] = "V";
-      // detectorPlaneMap[208] = "Vp";
-
-      detectorPlaneMap[201] = "Vp";
-      detectorPlaneMap[202] = "V";
-      detectorPlaneMap[203] = "U";
-      detectorPlaneMap[204] = "Up";
-      detectorPlaneMap[205] = "U";
-      detectorPlaneMap[206] = "Up";
+      detectorPlaneMap[201] = "V";
+      detectorPlaneMap[202] = "Vp";
+      detectorPlaneMap[203] = "Up";
+      detectorPlaneMap[204] = "U";
+      detectorPlaneMap[205] = "Up";
+      detectorPlaneMap[206] = "U";
       detectorPlaneMap[207] = "V";
       detectorPlaneMap[208] = "Vp";
 
