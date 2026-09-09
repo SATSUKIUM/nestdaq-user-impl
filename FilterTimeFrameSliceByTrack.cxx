@@ -341,6 +341,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
             _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
             if(_FOUND_FEtoDET == true){
                detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+               detiditem.decode();
                const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
                if(geomitemdc != nullptr){
                   std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << std::endl;
