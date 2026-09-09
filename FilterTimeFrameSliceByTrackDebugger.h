@@ -24,6 +24,7 @@
 #define CHECK_COUT_ELAPSED_TIME 0
 #define FILEOUT_ELAPSED_TIME 0
 #define FILEOUT_ELAPSED_TIME_TREE 1
+#define CHECK_COUT_GLOBALZ 1
 // ================================
 
 
