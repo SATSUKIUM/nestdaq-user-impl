@@ -151,6 +151,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    #if CHECK_COUT_LFTDC || 1
    std::cout << funcname << "numTrigs = " << nTrig << std::endl;
    std::cout << funcname << "fTFs.size() = " << fTFs.size() << std::endl;
+   std::cout << "\tnTrig - fTFs.size() = " << nTrig - fTFs.size() << std::endl;
    #endif
 
    #if FILEOUT_THROUGHPUT
