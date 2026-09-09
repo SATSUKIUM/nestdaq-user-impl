@@ -167,8 +167,6 @@ protected:
    double fTree_y0{0.0};
    double fTree_u0{0.0};
    double fTree_v0{0.0};
-   double fTree_xUTOF{0.0};
-   double fTree_yUTOF{0.0};
 
 
 

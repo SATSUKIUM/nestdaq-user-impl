@@ -389,13 +389,11 @@ void FilterTimeFrameSliceByTrack::InitTask()
    fRootTree1->Branch("elapsed_time", &fTree_elapsed_time, "elapsed_time/L");
    fRootTree2 = new TTree("tree2", "Hit Data");
    fRootTree2->Branch("nHits", &fTree_nHits, "nHits/I");
-   fRootTree2->Branch("chiSqr", &fTree_chiSqr, "chiSqr/D");
+   fRootTree2->Branch("chisqr", &fTree_chiSqr, "chisqr/D");
    fRootTree2->Branch("x0", &fTree_x0, "x0/D");
    fRootTree2->Branch("y0", &fTree_y0, "y0/D");
    fRootTree2->Branch("u0", &fTree_u0, "u0/D");
    fRootTree2->Branch("v0", &fTree_v0, "v0/D");
-   fRootTree2->Branch("xUTOF", &fTree_xUTOF, "xUTOF/D");
-   fRootTree2->Branch("yUTOF", &fTree_yUTOF, "yUTOF/D");
    #endif
 
 } // void FilterTimeFrameSliceByTrack::InitTask()
@@ -848,8 +846,6 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       fTree_y0 = tp->GetY0();
       fTree_u0 = tp->GetU0();
       fTree_v0 = tp->GetV0();
-      fTree_xUTOF = tp->CalcX( fZPosUTOF );
-      fTree_yUTOF = tp->CalcY( fZPosUTOF );
    }
    fRootTree2->Fill();
    #endif
@@ -882,8 +878,13 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    }
    fTrackCont.clear();
 
-   return false;
-}
+   if(ntr_after > 0){
+      return true;
+   }
+   else{
+      return false;
+   }
+} // bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
 int FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry(std::string_view filename)
 {
