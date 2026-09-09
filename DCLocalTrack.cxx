@@ -196,9 +196,9 @@ bool DCLocalTrack::DoFit(){
 
     double csr=0.0;
     for( std::size_t i=0; i<nn; ++i ){
-        double w_hat=w[i], z_=z[i];
+        double res_=res[i], z_=z[i];
         double scal=CalcX(z_)*ct[i]+CalcY(z_)*st[i];
-        csr += w_hat*(w[i]-scal)*(w[i]-scal);
+        csr += res_*(w[i]-scal)*(w[i]-scal);
 
 #if 0
     if(1){
