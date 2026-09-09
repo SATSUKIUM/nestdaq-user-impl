@@ -62,6 +62,9 @@ void FilterTimeFrameSliceABC::InitTask()
    fRootTree1->Branch("nslice", &fTree_nslice, "nslice/I");
    fRootTree1->Branch("npassslice", &fTree_npassslice, "npassslice/I");
    fRootTree1->Branch("elapsed_time_per_slice", &fTree_elapsed_time_per_slice);
+   fRootTree1->Branch("sizeSlice", &fTree_sizeSlice, "sizeSlice/i");
+   fRootTree1->Branch("sizeTF", &fTree_sizeTF, "sizeTF/i");
+   fRootTree1->Branch("sizeSlice_per_slice", &fTree_sizeSlice_per_slice);
    #endif
 }
 
@@ -74,6 +77,11 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    const std::string_view funcname = "[FilterTimeFrameSliceABC::ConditionalRun] ";
    #if FILEOUT_THROUGHPUT
    fTree_elapsed_time_per_slice.clear();
+   fTree_sizeSlice_per_slice.clear();
+   fTree_sizeSlice = 0;
+   fTree_sizeTF = 0;
+   fTree_nslice = 0;
+   fTree_npassslice = 0;
    fStartTime = std::chrono::high_resolution_clock::now();
    #endif
    #if 0
@@ -154,6 +162,10 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
       auto& tf = fTFs[ifrm];
       bool doKeep = false;
 
+      #if FILEOUT_THROUGHPUT
+      sizeTF += tf.GetRealLength();
+      #endif
+
       if (tf.GetHeader()->type == TimeFrame::META) {
          #if CHECK_COUT_CONDITIONALRUN
          std::cout << "\t\tTF type: META" << std::endl;
@@ -213,8 +225,11 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          #if FILEOUT_THROUGHPUT
          fEndTimeSlice = std::chrono::high_resolution_clock::now();
          fTree_elapsed_time_per_slice.push_back(std::chrono::duration<double, std::micro>(fEndTimeSlice - fStartTimeSlice).count());
+         fTree_sizeSlice_per_slice.push_back(tf.GetRealLength());
          nslice++;
          if(doKeep) npassslice++;
+         fTree_sizeSlice += tf.GetRealLength();
+         fTree_sizeTF += tf.GetRealLength();
          #endif
       } // else
 
