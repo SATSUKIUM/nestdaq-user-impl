@@ -1162,7 +1162,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                   fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::membername_geom);
 
                   chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
-                  #if 1
+                  #if 0
                   if(ChannelNumber == detiditem.channel_number){
                      std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
                   }
@@ -1259,7 +1259,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
             bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
             if(found_FEtoDET){
                chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
-               #if 1
+               #if 0
                if(ChannelNumber == detiditem.channel_number){
                   std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
                }
@@ -1358,7 +1358,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
                bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
                if(found_FEtoDET){
                   chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
-                  #if 1
+                  #if 0
                   if(ChannelNumber == detiditem.channel_number){
                      std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
                   }
