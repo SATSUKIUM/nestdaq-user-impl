@@ -7,6 +7,8 @@
 #include <string>
 // cerr
 #include <iostream>
+// debug flag
+#include "FilterTimeFrameSliceByTrackDebugger.h"
 
 using nestdaq::DCLocalTrack;
 using nestdaq::DCLTrackHit;
@@ -479,7 +481,13 @@ bool DCLocalTrack::AngleCorrection( void )
 
 void DCLocalTrack::CalcHitPositions(){
     for(auto hit : dclthits){
+        #if CHECK_COUT_GLOBALZ
+        std::cout << "[DCLocalTrack::CalcHitPositions] require hit->GetGlobalZ()" << std::endl;
+        #endif
         double z = hit->GetGlobalZ();
+        #if CHECK_COUT_GLOBALZ
+        std::cout << "[DCLocalTrack::CalcHitPositions] z = " << z << std::endl;
+        #endif
         hit->SetCalPosition(CalcX(z), CalcY(z));
     }
 } // void DCLocalTrack::CalcHitPositions()

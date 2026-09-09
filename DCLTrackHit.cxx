@@ -1,5 +1,6 @@
 #include "DCLTrackHit.h"
 #include "DCHit.h"
+#include "FilterTimeFrameSliceByTrackDebugger.h"
 
 using nestdaq::DCLTrackHit;
 
@@ -11,7 +12,12 @@ DCLTrackHit::DCLTrackHit(DCHit* actualhit, int nth_, double w_, int leftright) :
 double DCLTrackHit::GetWirePosition() const { return actualhit->GetWirePos(); };
 double DCLTrackHit::GetWireAngle() const { return actualhit->GetWireAngle(); };
 double DCLTrackHit::GetResolution() const { return actualhit->GetResolution(); };
-double DCLTrackHit::GetGlobalZ() const{ return actualhit->GetGlobalZ(); };
+double DCLTrackHit::GetGlobalZ() const{
+    #if CHECK_COUT_GLOBALZ
+    std::cout << "[DCLTrackHit::GetGlobalZ] require actualhit->GetGlobalZ()" << std::endl;
+    #endif
+    return actualhit->GetGlobalZ();
+};
 
 // ヒットごとに変わる情報
 double DCLTrackHit::GetDriftLength() const { return actualhit->GetDriftLength(nth); };

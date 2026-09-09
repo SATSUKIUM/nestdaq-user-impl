@@ -134,23 +134,35 @@ bool DCHit::CalcDriftLengths(){
 } // bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftLengths()
 
 double DCHit::GetGlobalZ() const{
-   if(detid == nullptr){
-      return 0.0;
-   }
-   else{
-      if(detid->detconf == nullptr){
-         return 0.0;
-      }
-      else{
-         const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detid->detconf->membername_geom.get());
-         if(geomitemdc == nullptr){
+    #if CHECK_COUT_GLOBALZ
+    std::cout << "[DCHit::GetGlobalZ] require detid->detconf->membername_geom->GetGlobalZ()" << std::endl;
+    #endif
+    if(detid == nullptr){
+        #if CHECK_COUT_GLOBALZ
+        std::cout << "[DCHit::GetGlobalZ] detid is nullptr" << std::endl;
+        #endif
+        return 0.0;
+    }
+    else{
+        if(detid->detconf == nullptr){
+            #if CHECK_COUT_GLOBALZ
+            std::cout << "[DCHit::GetGlobalZ] detid->detconf is nullptr" << std::endl;
+            #endif
             return 0.0;
-         }
-         else{
-            return geomitemdc->GetGlobalZ();
-         } // if(geomitemdc == nullptr)
-      } // if(detid->detconf == nullptr)
-   }
+        }
+        else{
+            const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detid->detconf->membername_geom.get());
+            if(geomitemdc == nullptr){
+                #if CHECK_COUT_GLOBALZ
+                std::cout << "[DCHit::GetGlobalZ] geomitemdc is nullptr" << std::endl;
+                #endif
+                return 0.0;
+            }
+            else{
+                return geomitemdc->GetGlobalZ();
+            } // if(geomitemdc == nullptr)
+        } // if(detid->detconf == nullptr)
+    }
 } // double nestdaq::FilterTimeFrameSliceByTrack::DCHit::GetGlobalZ() const
 
 double DCHit::GetResolution() const{
