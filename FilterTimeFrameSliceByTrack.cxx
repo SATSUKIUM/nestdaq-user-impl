@@ -1097,8 +1097,8 @@ void FilterTimeFrameSliceByTrack::DefineDetectorIdMap()
       detectorPlaneMap[202] = "Vp";
       detectorPlaneMap[203] = "Up";
       detectorPlaneMap[204] = "U";
-      detectorPlaneMap[205] = "Up";
-      detectorPlaneMap[206] = "U";
+      detectorPlaneMap[205] = "U";
+      detectorPlaneMap[206] = "Up";
       detectorPlaneMap[207] = "V";
       detectorPlaneMap[208] = "Vp";
 
