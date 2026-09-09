@@ -3,6 +3,8 @@
 
 #include "DCMathConstants.h"
 #include "DCMathTools.h"
+#include <chmap/channel_map_dopeness.hpp>
+#include <chmap/item.hpp>
 
 namespace nestdaq{
     class DCHit;
