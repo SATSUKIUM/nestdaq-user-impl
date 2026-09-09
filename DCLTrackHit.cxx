@@ -13,9 +13,6 @@ double DCLTrackHit::GetWirePosition() const { return actualhit->GetWirePos(); };
 double DCLTrackHit::GetWireAngle() const { return actualhit->GetWireAngle(); };
 double DCLTrackHit::GetResolution() const { return actualhit->GetResolution(); };
 double DCLTrackHit::GetGlobalZ() const{
-    #if CHECK_COUT_GLOBALZ
-    std::cout << "[DCLTrackHit::GetGlobalZ] require actualhit->GetGlobalZ()" << std::endl;
-    #endif
     return actualhit->GetGlobalZ();
 };
 

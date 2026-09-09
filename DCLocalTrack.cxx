@@ -482,7 +482,7 @@ bool DCLocalTrack::AngleCorrection( void )
 void DCLocalTrack::CalcHitPositions(){
     for(auto hit : dclthits){
         #if CHECK_COUT_GLOBALZ
-        std::cout << "[DCLocalTrack::CalcHitPositions] require hit->GetGlobalZ()" << std::endl;
+        std::cout << "\n[DCLocalTrack::CalcHitPositions] require hit->GetGlobalZ()" << std::endl;
         #endif
         double z = hit->GetGlobalZ();
         #if CHECK_COUT_GLOBALZ

@@ -134,9 +134,6 @@ bool DCHit::CalcDriftLengths(){
 } // bool nestdaq::FilterTimeFrameSliceByTrack::DCHit::CalcDriftLengths()
 
 double DCHit::GetGlobalZ() const{
-    #if CHECK_COUT_GLOBALZ
-    std::cout << "[DCHit::GetGlobalZ] require detid->detconf->membername_geom->GetGlobalZ()" << std::endl;
-    #endif
     if(detid == nullptr){
         #if CHECK_COUT_GLOBALZ
         std::cout << "[DCHit::GetGlobalZ] detid is nullptr" << std::endl;
@@ -159,6 +156,9 @@ double DCHit::GetGlobalZ() const{
                 return 0.0;
             }
             else{
+                #if CHECK_COUT_GLOBALZ
+                std::cout << "[DCHit::GetGlobalZ] geomitemdc->GetGlobalZ(): " << geomitemdc->GetGlobalZ() << std::endl;
+                #endif
                 return geomitemdc->GetGlobalZ();
             } // if(geomitemdc == nullptr)
         } // if(detid->detconf == nullptr)
