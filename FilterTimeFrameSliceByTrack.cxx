@@ -1249,7 +1249,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
             uint32_t dopeKeyFEtoDET;
             bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
             if(found_FEtoDET){
-               detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
+               chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
                #if 1
                if(ChannelNumber == detiditem.channel_number + 1){
                   std::cout << "\t\t" << funcname << "indexing matches." << std::endl;
@@ -1348,7 +1348,7 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
                uint32_t dopeKeyFEtoDET;
                bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
                if(found_FEtoDET){
-                  detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
+                  chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
                   #if 1
                   if(ChannelNumber == detiditem.channel_number + 1){
                      std::cout << "\t\t" << funcname << "indexing matches." << std::endl;
