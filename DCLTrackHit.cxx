@@ -22,3 +22,5 @@ double DCLTrackHit::GetDriftLength() const { return actualhit->GetDriftLength(nt
 void DCLTrackHit::clearFlag() { actualhit->clearFlag(nth); };
 void DCLTrackHit::setFlag() { actualhit->setFlag(nth); };
 bool DCLTrackHit::showFlag() const { return actualhit->showFlag(nth); };
+
+const chmap::DETIdItem* DCLTrackHit::GetDETIdItem() const { return actualhit->GetDETIdItem(); };
