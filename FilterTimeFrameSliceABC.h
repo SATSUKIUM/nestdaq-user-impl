@@ -20,6 +20,11 @@
 #include "HeartbeatFrameHeader.h"
 #include "FrameContainer.h"
 
+#include <TFile.h>
+#include <TTree.h>
+
+#include <chrono>
+
 #include <chmap/item.hpp>
 
 namespace nestdaq {
@@ -36,6 +41,7 @@ public:
    virtual void InitTask() override;
    virtual bool ConditionalRun() override;
    virtual void PostRun() override;
+   virtual void ResetTask() override;
 
 
    struct OptionKey {
@@ -79,6 +85,21 @@ protected:
    int fPollTimeoutMS  {0};
    int fSplitMethod    {0};
    
+   // ================================
+   // Throughput measurement
+   // ================================
+   std::chrono::high_resolution_clock::time_point fStartTime, fEndTime;
+   std::chrono::high_resolution_clock::time_point fBeforeReceive, fAfterReceive;
+   double fElapsedTime{0.0};
+   double fElapsedTimeReceive{0.0};
+   TFile* fRootFile{nullptr};
+   TTree* fRootTree1{nullptr};
+   const std::string fRootFileName{"./fileout/tracking/ConditionalRun_throughput.root"};
+
+   double fTree_elapsed_time{0.0};
+   int fTree_nslice{0};
+   int fTree_npassslice{0};
+
 
 };
 

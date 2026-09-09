@@ -61,6 +61,8 @@ FilterTimeFrameSliceByTrack::FilterTimeFrameSliceByTrack()
 
 void FilterTimeFrameSliceByTrack::ResetTask()
 {
+   FilterTimeFrameSliceABC::ResetTask();
+   
    std::cerr << "fRootFile  = " << fRootFile << std::endl;
    std::cerr << "fRootTree1 = " << fRootTree1 << std::endl;
    std::cerr << "fRootTree2 = " << fRootTree2 << std::endl;
