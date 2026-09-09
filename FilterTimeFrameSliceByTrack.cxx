@@ -717,9 +717,15 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    // ================================
    // Track making, fitting, and selection(minimum number of hits and chi-square)
    // ================================
+   #if 1
+   int ntr_try = 0;
+   int ntr_pass1 = 0;
+   int ntr_pass2 = 0;
+   #endif
    for(int inCombi=0; inCombi<nnCombi; ++inCombi){
       DCLocalTrack* track = MakeTrack(CandCont, &((CombiIndex[inCombi])[0]));
       if(track == nullptr) continue;
+      ntr_try++;
 
       #if 0
       bool isBelowMaxChiSquare_beforeAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
@@ -727,6 +733,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       bool isBelowMaxChiSquare_afterAngleCorrection = false;
       #endif
       if(track->GetNHits() >= DCConstants::DCLocalMinNHits && track->DoFit()){
+         ntr_pass1++;
          for(int i=0; i<fNumAngleCorrectionIteration; ++i){
             if(!track->AngleCorrection()) break;
          }
@@ -740,12 +747,18 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
          if(track->GetChiSqr() < fMaxChiSqr){
             fTrackCont.push_back(track);
+            ntr_pass2++;
          }
          else{
             delete track;
          }
       }
    } // for(int inCombi=0; inCombi<nnCombi; ++inCombi)
+   #if 1
+   std::cout << funcname << "Number of tracks tried: " << ntr_try << std::endl;
+   std::cout << "\tNumber of tracks passed first  selection: " << ntr_pass1 << std::endl;
+   std::cout << "\tNumber of tracks passed second selection: " << ntr_pass2 << std::endl;
+   #endif
 
    // ================================
    // Clear Flags

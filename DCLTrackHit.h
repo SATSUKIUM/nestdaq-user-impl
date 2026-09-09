@@ -17,10 +17,15 @@ namespace nestdaq{
     private:
         // position and slope calculated with the track fit result
         double x0{0.0}, y0{0.0}; // position, position
+        double x1{0.0}, y1{0.0}; // position, position
     public:
-        void SetCalPosition(double x0_, double y0_){
-            x0 = x0_;
-            y0 = y0_;
+        void SetCalPosition(double x_, double y_){
+            x1 = x_;
+            y1 = y_;
+        }
+        void SetCalPositionAtTarget(double x_, double y_){
+            x0 = x_;
+            y0 = y_;
         }
 
     public:
