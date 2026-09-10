@@ -270,9 +270,11 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    }
    
 
-   std::cout << "\tfTree_sizeTF = " << fTree_sizeTF << std::endl;
    std::cout << "\ttotal size of inparts = " << total_size << std::endl;
+   std::cout << "\tfTree_sizeTF = " << fTree_sizeTF << std::endl;
+   std::cout << "\t\ttotal_size - fTree_sizeTF = " << total_size - fTree_sizeTF << std::endl;
    std::cout << "\tfTree_sizeSlice = " << fTree_sizeSlice << std::endl;
+   std::cout << "\t\tfTree_sizeTF - fTree_sizeSlice = " << fTree_sizeTF - fTree_sizeSlice << std::endl;
    #if FILEOUT_THROUGHPUT
    fEndTime = std::chrono::high_resolution_clock::now();
    fElapsedTime = std::chrono::duration<double, std::micro>(fEndTime - fStartTime).count();
