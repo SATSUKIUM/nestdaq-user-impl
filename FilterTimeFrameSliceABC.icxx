@@ -167,9 +167,9 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          #endif
          lf = &fLFs[idxTFMETA];
          
-         #if CHECK_COUT_LFTDC
+         #if CHECK_COUT_LFTDC || 1
          nTrig = lf->GetHeader()->numTrigs;
-         std::cout << funcname << idxTFMETA << "-th META TF: numTrigs = " << nTrig << std::endl;
+         std::cout << "\t" << idxTFMETA << "-th META TF: numTrigs = " << nTrig << std::endl;
          #endif
 
          #if CHECK_COUT_CONDITIONALRUN
