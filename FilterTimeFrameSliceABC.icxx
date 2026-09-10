@@ -75,6 +75,9 @@ void FilterTimeFrameSliceABC::PreRun()
 bool FilterTimeFrameSliceABC::ConditionalRun()
 {
    const std::string_view funcname = "[FilterTimeFrameSliceABC::ConditionalRun] ";
+   #if 1
+   std::cout << funcname << "Function called" << std::endl;
+   #endif
    #if FILEOUT_THROUGHPUT
    fTree_elapsed_time_per_slice.clear();
    fTree_sizeSlice_per_slice.clear();
@@ -144,16 +147,6 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    #endif
    TTT* lfTdcBlock = nullptr;
 
-   #if CHECK_COUT_CONDITIONALRUN
-   std::cout << "\tcheck point" << std::endl;
-   #endif
-
-   #if CHECK_COUT_LFTDC || 1
-   std::cout << funcname << "numTrigs = " << nTrig << std::endl;
-   std::cout << funcname << "fTFs.size() = " << fTFs.size() << std::endl;
-   std::cout << "\tnTrig - fTFs.size() = " << static_cast<int>(nTrig) - static_cast<int>(fTFs.size()) << std::endl;
-   #endif
-
    #if FILEOUT_THROUGHPUT
    int nslice{0}, npassslice{0};
    #endif
@@ -169,7 +162,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
       #endif
 
       if (tf.GetHeader()->type == TimeFrame::META) {
-         #if CHECK_COUT_CONDITIONALRUN
+         #if CHECK_COUT_CONDITIONALRUN || 1
          std::cout << "\t\tTF type: META" << std::endl;
          #endif
          lf = &fLFs[idxTFMETA];
@@ -196,8 +189,10 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          doKeep = true;
       } // if (tf.GetHeader()->type == TimeFrame::META)
       else {
-         #if CHECK_COUT_CONDITIONALRUN
+         #if CHECK_COUT_CONDITIONALRUN || 1
          std::cout << "\t\tTF type: SLICE, idxTFSLICE = " << idxTFSLICE << std::endl;
+         #endif
+         #if CHECK_COUT_CONDITIONALRUN
          std::cout << "\t\tcheck point: lfTdcBlock->GetHeader()->length = " << lfTdcBlock->GetHeader()->length << std::endl;
 // constexpr unsigned char FLT_TDC_TYPE {0xaa};
 // struct TrgTime {
