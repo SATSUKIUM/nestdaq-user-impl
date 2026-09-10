@@ -101,9 +101,10 @@ protected:
    int fTree_nslice{0};
    int fTree_npassslice{0};
    std::vector<double> fTree_elapsed_time_per_slice;
-   uint32_t fTree_sizeSlice{0};
-   uint32_t fTree_sizeTF{0};
-   std::vector<uint32_t> fTree_sizeSlice_per_slice;
+   double  fTree_sizeSlice{0};
+   double fTree_sizeTF{0};
+   double fTree_sizeMessage{0};
+   std::vector<double> fTree_sizeSlice_per_slice;
 
 
 };

@@ -62,9 +62,10 @@ void FilterTimeFrameSliceABC::InitTask()
    fRootTree1->Branch("nslice", &fTree_nslice, "nslice/I");
    fRootTree1->Branch("npassslice", &fTree_npassslice, "npassslice/I");
    fRootTree1->Branch("elapsed_time_per_slice", &fTree_elapsed_time_per_slice);
-   fRootTree1->Branch("sizeSlice", &fTree_sizeSlice, "sizeSlice/i");
-   fRootTree1->Branch("sizeTF", &fTree_sizeTF, "sizeTF/i");
+   fRootTree1->Branch("sizeSlice", &fTree_sizeSlice, "sizeSlice/D");
+   fRootTree1->Branch("sizeTF", &fTree_sizeTF, "sizeTF/D");
    fRootTree1->Branch("sizeSlice_per_slice", &fTree_sizeSlice_per_slice);
+   fRootTree1->Branch("sizeMessage", &fTree_sizeMessage, "sizeMessage/D");
    #endif
 }
 
@@ -115,7 +116,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    fAfterReceive = std::chrono::high_resolution_clock::now();
    #endif
 
-   #if CHECK_COUT_CONDITIONALRUN || 1
+   #if CHECK_COUT_CONDITIONALRUN
    std::cout << "\tReveived " << inParts.Size() << std::endl;
    uint64_t total_size = 0;
    for(auto& part : inParts) {
@@ -230,7 +231,9 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          fTree_elapsed_time_per_slice.push_back(std::chrono::duration<double, std::micro>(fEndTimeSlice - fStartTimeSlice).count());
          fTree_sizeSlice_per_slice.push_back(tf.GetRealLength());
          nslice++;
-         if(doKeep) npassslice++;
+         if(doKeep){
+            npassslice++;
+         }
          fTree_sizeSlice += tf.GetRealLength();
          #endif
       } // else
@@ -270,11 +273,11 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    }
    
 
-   std::cout << "\ttotal size of inparts = " << total_size << std::endl;
-   std::cout << "\tfTree_sizeTF = " << fTree_sizeTF << std::endl;
-   std::cout << "\t\ttotal_size - fTree_sizeTF = " << total_size - fTree_sizeTF << std::endl;
-   std::cout << "\tfTree_sizeSlice = " << fTree_sizeSlice << std::endl;
-   std::cout << "\t\tfTree_sizeTF - fTree_sizeSlice = " << fTree_sizeTF - fTree_sizeSlice << std::endl;
+   // std::cout << "\ttotal size of inparts = " << total_size << std::endl;
+   // std::cout << "\tfTree_sizeTF = " << fTree_sizeTF << std::endl;
+   // std::cout << "\t\ttotal_size - fTree_sizeTF = " << total_size - fTree_sizeTF << std::endl;
+   // std::cout << "\tfTree_sizeSlice = " << fTree_sizeSlice << std::endl;
+   // std::cout << "\t\tfTree_sizeTF - fTree_sizeSlice = " << fTree_sizeTF - fTree_sizeSlice << std::endl;
    #if FILEOUT_THROUGHPUT
    fEndTime = std::chrono::high_resolution_clock::now();
    fElapsedTime = std::chrono::duration<double, std::micro>(fEndTime - fStartTime).count();
@@ -282,6 +285,8 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    fTree_elapsed_time = fElapsedTime - fElapsedTimeReceive;
    fTree_nslice = nslice;
    fTree_npassslice = npassslice;
+   fTree_sizeMessage = total_size;
+   fRootFile->cd();
    fRootTree1->Fill();
    #endif
 
