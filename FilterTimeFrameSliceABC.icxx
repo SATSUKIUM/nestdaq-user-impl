@@ -285,6 +285,10 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
    fTree_elapsed_time = fElapsedTime - fElapsedTimeReceive;
    fTree_nslice = nslice;
    fTree_npassslice = npassslice;
+   double total_size = 0;
+   for(auto& part : inParts) {
+      total_size += part->GetSize();
+   }
    fTree_sizeMessage = total_size;
    fRootFile->cd();
    fRootTree1->Fill();
