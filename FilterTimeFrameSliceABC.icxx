@@ -190,7 +190,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
       } // if (tf.GetHeader()->type == TimeFrame::META)
       else {
          #if CHECK_COUT_CONDITIONALRUN || 1
-         std::cout << "\t\tTF type: SLICE, idxTFSLICE = " << idxTFSLICE << std::endl;
+         std::cout << "\t\tTF type: SLICE, idxTFSLICE = " << idxTFSLICE;
          #endif
          #if CHECK_COUT_CONDITIONALRUN
          std::cout << "\t\tcheck point: lfTdcBlock->GetHeader()->length = " << lfTdcBlock->GetHeader()->length << std::endl;
@@ -210,6 +210,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          // std::cout << "\t\t\tlfTdc.time = " << lfTdc.time << std::endl;
          #endif
          fLFTDC4n = lfTdcBlock->UncheckedAt(idxTFSLICE).time;
+         std::cout << ", with fltdc4n = " << fLFTDC4n << std::endl;
          #if CHECK_COUT_CONDITIONALRUN
          std::cout << "\t\tLF TDC4n: " << fLFTDC4n << std::endl;
          #endif
