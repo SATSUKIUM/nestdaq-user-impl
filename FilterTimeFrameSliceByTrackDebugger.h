@@ -23,8 +23,8 @@
 #define DEBUG_KLDC_TRACK_SEARCH 0
 #define CHECK_COUT_ELAPSED_TIME 0
 #define FILEOUT_ELAPSED_TIME 0
-#define FILEOUT_ELAPSED_TIME_TREE 1
-#define FILEOUT_THROUGHPUT 0 // Sliceごとではなく、ContitionalRun()ごと
+#define FILEOUT_ELAPSED_TIME_TREE 0
+#define FILEOUT_THROUGHPUT 1 // Sliceごとではなく、ContitionalRun()ごと
 #define CHECK_COUT_GLOBALZ 0
 // ================================
 
