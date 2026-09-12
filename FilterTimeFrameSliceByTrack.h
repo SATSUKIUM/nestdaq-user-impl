@@ -163,6 +163,13 @@ protected:
    // for fRootTree1
    int fTree_nt{0};
    double fTree_elapsed_time{0.0};
+   double fTree_elapsed_time_decode{0.0};
+   int fTree_nUTOF{0};
+   std::vector<double> fTree_elapsed_time_setstandardtime;
+   std::vector<double> fTree_elapsed_time_makepairplanehitcluster;
+   std::vector<double> fTree_elapsed_time_maketrack;
+   std::vector<double> fTree_elapsed_time_fitting;
+   std::vector<int> fTree_nCombi; // number of combinations of clusters of each UTOF standard time
    // for fRootTree2
    int fTree_nHits{0};
    double fTree_chiSqr{0.0};

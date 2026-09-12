@@ -407,11 +407,31 @@ void FilterTimeFrameSliceByTrack::InitTask()
    }
    #endif
 
+
+/*
+   // for fRootTree1
+   int fTree_nt{0};
+   double fTree_elapsed_time{0.0};
+   double fTree_elapsed_time_decode{0.0};
+   int fTree_nUTOF{0};
+   std::vector<double> fTree_elapsed_time_setstandardtime;
+   std::vector<double> fTree_elapsed_time_makepairplanehitcluster;
+   std::vector<double> fTree_elapsed_time_maketrack;
+   std::vector<double> fTree_elapsed_time_fitting;
+*/
    #if FILEOUT_ELAPSED_TIME_TREE
    fRootFile = new TFile("./fileout/tracking/FilterTimeFrameSliceByTrack_throughput.root", "RECREATE");
    fRootTree1 = new TTree("tree1", "ProcessSlice() data");
    fRootTree1->Branch("nt", &fTree_nt, "nt/I");
    fRootTree1->Branch("elapsed_time", &fTree_elapsed_time, "elapsed_time/L");
+   fRootTree1->Branch("elapsed_time_decode", &fTree_elapsed_time_decode, "elapsed_time_decode/D");
+   fRootTree1->Branch("nUTOF", &fTree_nUTOF, "nUTOF/I");
+   fRootTree1->Branch("elapsed_time_setstandardtime", &fTree_elapsed_time_setstandardtime, "elapsed_time_setstandardtime/D");
+   fRootTree1->Branch("elapsed_time_makepairplanehitcluster", &fTree_elapsed_time_makepairplanehitcluster, "elapsed_time_makepairplanehitcluster/D");
+   fRootTree1->Branch("elapsed_time_maketrack", &fTree_elapsed_time_maketrack, "elapsed_time_maketrack/D");
+   fRootTree1->Branch("elapsed_time_fitting", &fTree_elapsed_time_fitting, "elapsed_time_fitting/D");
+   fRootTree1->Branch("nCombi", &fTree_nCombi, "nCombi/I");
+
    fRootTree2 = new TTree("tree2", "Hit Data");
    fRootTree2->Branch("nHits", &fTree_nHits, "nHits/I");
    fRootTree2->Branch("chisqr", &fTree_chiSqr, "chisqr/D");
@@ -430,8 +450,21 @@ void FilterTimeFrameSliceByTrack::InitTask()
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::ProcessSlice] ";
+   #if FILEOUT_ELAPSED_TIME_TREE
+   fTree_elapsed_time_setstandardtime.clear();
+   fTree_elapsed_time_makepairplanehitcluster.clear();
+   fTree_elapsed_time_maketrack.clear();
+   fTree_elapsed_time_fitting.clear();
+   fTree_nCombi.clear();
+   #endif
    #if CHECK_COUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME_TREE
    std::chrono::high_resolution_clock::time_point start_time, end_time;
+   std::chrono::high_resolution_clock::time_point start_time_decode, end_time_decode;
+   std::chrono::high_resolution_clock::time_point start_time_setstandardtime, end_time_setstandardtime;
+   std::chrono::high_resolution_clock::time_point start_time_makepairplanehitcluster, end_time_makepairplanehitcluster;
+   std::chrono::high_resolution_clock::time_point start_time_maketrack, end_time_maketrack;
+   std::chrono::high_resolution_clock::time_point start_time_fitting, end_time_fitting;
+   start_time_decode = std::chrono::high_resolution_clock::now();
    start_time = std::chrono::high_resolution_clock::now();
    #endif
 
@@ -561,6 +594,14 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    // ================================
    // define the standard time for the start time of drift time calculation
    int nStandardTime = utof_left_times.size();
+   #if FILEOUT_ELAPSED_TIME_TREE
+   fTree_nUTOF = nStandardTime;
+   fTree_elapsed_time_setstandardtime.reserve(nStandardTime);
+   fTree_elapsed_time_makepairplanehitcluster.reserve(nStandardTime);
+   fTree_elapsed_time_maketrack.reserve(nStandardTime);
+   fTree_elapsed_time_fitting.reserve(nStandardTime);
+   fTree_nCombi.reserve(nStandardTime);
+   #endif
    int standardTime = 0;
    if(nStandardTime > 0){
       standardTime = static_cast<int>(*std::min_element(utof_left_times.begin(), utof_left_times.end()));
@@ -672,6 +713,10 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    std::cout << funcname << "After distributing raw hits to fKLDCHitContainer" << std::endl;
    #endif
 
+
+   #if FILEOUT_ELAPSED_TIME_TREE
+   end_time_decode = std::chrono::high_resolution_clock::now();
+   #endif
    // Reconstruct tracks independently for each UTOF reference time in this slice.
    //
    // A DCLTrackHit refers to its DCHit's drift-length and flag arrays.  Those
@@ -687,7 +732,14 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       #if DEBUG_KLDC_TRACK_SEARCH
       std::cout << funcname << "Before calculating drift lengths" << std::endl;
       #endif
+      #if FILEOUT_ELAPSED_TIME_TREE
+      start_time_setstandardtime = std::chrono::high_resolution_clock::now();
+      #endif
       fKLDCHitContainer.SetStandardTime(standardTimeEach, fDCTimeRange);
+      #if FILEOUT_ELAPSED_TIME_TREE
+      end_time_setstandardtime = std::chrono::high_resolution_clock::now();
+      fTree_elapsed_time_setstandardtime.push_back(std::chrono::duration<double, std::micro>(end_time_setstandardtime - start_time_setstandardtime).count());
+      #endif
       #if DEBUG_KLDC_TRACK_SEARCH
       std::cout << funcname << "After calculating drift lengths" << std::endl;
       #endif
@@ -695,6 +747,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       // ================================
       // clustering
       // ================================
+      #if FILEOUT_ELAPSED_TIME_TREE
+      start_time_makepairplanehitcluster = std::chrono::high_resolution_clock::now();
+      #endif
       std::vector< std::vector<DCPairHitCluster*> > CandCont;
       CandCont.resize(npp);
       for(size_t i=0; i<npp; ++i){
@@ -718,6 +773,10 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       if(nnCombi > fMaxCombi){
          return false;
       }
+      #if FILEOUT_ELAPSED_TIME_TREE
+      end_time_makepairplanehitcluster = std::chrono::high_resolution_clock::now();
+      fTree_elapsed_time_makepairplanehitcluster.push_back(std::chrono::duration<double, std::micro>(end_time_makepairplanehitcluster - start_time_makepairplanehitcluster).count());
+      #endif
 
       #if DEBUG_KLDC_TRACK_SEARCH
       std::cout << funcname << "After clustering, nnCombi = " << nnCombi << std::endl;
@@ -749,8 +808,18 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       int ntr_pass1 = 0;
       int ntr_pass2 = 0;
       #endif
+      #if FILEOUT_ELAPSED_TIME_TREE
+      double elapsed_time_maketrack = 0.0;
+      double elapsed_time_fitting = 0.0;
+      #endif
       for(int inCombi=0; inCombi<nnCombi; ++inCombi){
+         #if FILEOUT_ELAPSED_TIME_TREE
+         start_time_maketrack = std::chrono::high_resolution_clock::now();
+         #endif
          DCLocalTrack* track = MakeTrack(CandCont, &((CombiIndex[inCombi])[0]));
+         #if FILEOUT_ELAPSED_TIME_TREE
+         end_time_maketrack = std::chrono::high_resolution_clock::now();
+         #endif
          if(track == nullptr) continue;
          ntr_try++;
 
@@ -758,6 +827,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          bool isBelowMaxChiSquare_beforeAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
          double chiSquare_beforeAngleCorrection = track->GetChiSquare();
          bool isBelowMaxChiSquare_afterAngleCorrection = false;
+         #endif
+         #if FILEOUT_ELAPSED_TIME_TREE
+         start_time_fitting = std::chrono::high_resolution_clock::now();
          #endif
          if(track->GetNHits() >= DCConstants::DCLocalMinNHits && track->DoFit()){
             ntr_pass1++;
@@ -780,7 +852,17 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
                delete track;
             }
          }
+         #if FILEOUT_ELAPSED_TIME_TREE
+         end_time_fitting = std::chrono::high_resolution_clock::now();
+         elapsed_time_maketrack += std::chrono::duration<double, std::micro>(end_time_maketrack - start_time_maketrack).count();
+         elapsed_time_fitting += std::chrono::duration<double, std::micro>(end_time_fitting - start_time_fitting).count();
+         #endif
       } // for(int inCombi=0; inCombi<nnCombi; ++inCombi)
+      #if FILEOUT_ELAPSED_TIME_TREE
+      fTree_elapsed_time_maketrack.push_back(elapsed_time_maketrack);
+      fTree_elapsed_time_fitting.push_back(elapsed_time_fitting);
+      fTree_nCombi.push_back(nnCombi);
+      #endif
 
       for(int i=0; i<npp; ++i){
          for_each(CandCont[i].begin(), CandCont[i].end(), DeleteObject());
