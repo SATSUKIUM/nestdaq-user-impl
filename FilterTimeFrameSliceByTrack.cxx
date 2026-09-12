@@ -932,6 +932,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    fTree_elapsed_time_clustering = fTree_elapsed_time_clustering_;
    fTree_elapsed_time_maketrack = fTree_elapsed_time_maketrack_;
    fTree_elapsed_time_fitting = fTree_elapsed_time_fitting_;
+   fTree_nCombi = fTree_nCombi_;
    fRootTree1->Fill();
    for(int i=0; i<ntr_after; ++i){
       DCLocalTrack *tp = fTrackCont[i];
