@@ -424,6 +424,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
    fRootFile = new TFile("./fileout/tracking/FilterTimeFrameSliceByTrack_throughput.root", "RECREATE");
    fRootTree1 = new TTree("tree1", "ProcessSlice() data");
    fRootTree1->Branch("nt", &fTree_nt, "nt/I");
+   fRootTree1->Branch("sizeSlice", &fTree_sizeSlice, "sizeSlice/D");
    fRootTree1->Branch("elapsed_time", &fTree_elapsed_time, "elapsed_time/D");
    fRootTree1->Branch("elapsed_time_decode", &fTree_elapsed_time_decode, "elapsed_time_decode/D");
    fRootTree1->Branch("nUTOF", &fTree_nUTOF, "nUTOF/I");
@@ -457,6 +458,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    std::vector<Double_t> fTree_elapsed_time_maketrack_;
    std::vector<Double_t> fTree_elapsed_time_fitting_;
    std::vector<Int_t> fTree_nCombi_;
+   fTree_sizeSlice = static_cast<Double_t>(tf.GetRealLength());
    #endif
    #if CHECK_COUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME_TREE
    std::chrono::high_resolution_clock::time_point start_time, end_time;
