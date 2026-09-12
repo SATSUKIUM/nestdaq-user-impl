@@ -427,7 +427,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
    fRootTree1->Branch("elapsed_time_decode", &fTree_elapsed_time_decode, "elapsed_time_decode/D");
    fRootTree1->Branch("nUTOF", &fTree_nUTOF, "nUTOF/I");
    fRootTree1->Branch("elapsed_time_setstandardtime", &fTree_elapsed_time_setstandardtime, "elapsed_time_setstandardtime/D");
-   fRootTree1->Branch("elapsed_time_makepairplanehitcluster", &fTree_elapsed_time_makepairplanehitcluster, "elapsed_time_makepairplanehitcluster/D");
+   fRootTree1->Branch("elapsed_time_clustering", &fTree_elapsed_time_clustering, "elapsed_time_clustering/D");
    fRootTree1->Branch("elapsed_time_maketrack", &fTree_elapsed_time_maketrack, "elapsed_time_maketrack/D");
    fRootTree1->Branch("elapsed_time_fitting", &fTree_elapsed_time_fitting, "elapsed_time_fitting/D");
    fRootTree1->Branch("nCombi", &fTree_nCombi, "nCombi/I");
@@ -451,17 +451,17 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::ProcessSlice] ";
    #if FILEOUT_ELAPSED_TIME_TREE
-   fTree_elapsed_time_setstandardtime.clear();
-   fTree_elapsed_time_makepairplanehitcluster.clear();
-   fTree_elapsed_time_maketrack.clear();
-   fTree_elapsed_time_fitting.clear();
-   fTree_nCombi.clear();
+   std::vector<double> fTree_elapsed_time_setstandardtime_;
+   std::vector<double> fTree_elapsed_time_clustering_;
+   std::vector<double> fTree_elapsed_time_maketrack_;
+   std::vector<double> fTree_elapsed_time_fitting_;
+   std::vector<int> fTree_nCombi_;
    #endif
    #if CHECK_COUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME_TREE
    std::chrono::high_resolution_clock::time_point start_time, end_time;
    std::chrono::high_resolution_clock::time_point start_time_decode, end_time_decode;
    std::chrono::high_resolution_clock::time_point start_time_setstandardtime, end_time_setstandardtime;
-   std::chrono::high_resolution_clock::time_point start_time_makepairplanehitcluster, end_time_makepairplanehitcluster;
+   std::chrono::high_resolution_clock::time_point start_time_clustering, end_time_clustering;
    std::chrono::high_resolution_clock::time_point start_time_maketrack, end_time_maketrack;
    std::chrono::high_resolution_clock::time_point start_time_fitting, end_time_fitting;
    start_time_decode = std::chrono::high_resolution_clock::now();
@@ -596,11 +596,11 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    int nStandardTime = utof_left_times.size();
    #if FILEOUT_ELAPSED_TIME_TREE
    fTree_nUTOF = nStandardTime;
-   fTree_elapsed_time_setstandardtime.reserve(nStandardTime);
-   fTree_elapsed_time_makepairplanehitcluster.reserve(nStandardTime);
-   fTree_elapsed_time_maketrack.reserve(nStandardTime);
-   fTree_elapsed_time_fitting.reserve(nStandardTime);
-   fTree_nCombi.reserve(nStandardTime);
+   fTree_elapsed_time_setstandardtime_.reserve(nStandardTime);
+   fTree_elapsed_time_clustering_.reserve(nStandardTime);
+   fTree_elapsed_time_maketrack_.reserve(nStandardTime);
+   fTree_elapsed_time_fitting_.reserve(nStandardTime);
+   fTree_nCombi_.reserve(nStandardTime);
    #endif
    int standardTime = 0;
    if(nStandardTime > 0){
@@ -716,6 +716,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 
    #if FILEOUT_ELAPSED_TIME_TREE
    end_time_decode = std::chrono::high_resolution_clock::now();
+   fTree_elapsed_time_decode = std::chrono::duration<double, std::micro>(end_time_decode - start_time_decode).count();
    #endif
    // Reconstruct tracks independently for each UTOF reference time in this slice.
    //
@@ -738,7 +739,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       fKLDCHitContainer.SetStandardTime(standardTimeEach, fDCTimeRange);
       #if FILEOUT_ELAPSED_TIME_TREE
       end_time_setstandardtime = std::chrono::high_resolution_clock::now();
-      fTree_elapsed_time_setstandardtime.push_back(std::chrono::duration<double, std::micro>(end_time_setstandardtime - start_time_setstandardtime).count());
+      fTree_elapsed_time_setstandardtime_.push_back(std::chrono::duration<double, std::micro>(end_time_setstandardtime - start_time_setstandardtime).count());
       #endif
       #if DEBUG_KLDC_TRACK_SEARCH
       std::cout << funcname << "After calculating drift lengths" << std::endl;
@@ -748,7 +749,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       // clustering
       // ================================
       #if FILEOUT_ELAPSED_TIME_TREE
-      start_time_makepairplanehitcluster = std::chrono::high_resolution_clock::now();
+      start_time_clustering = std::chrono::high_resolution_clock::now();
       #endif
       std::vector< std::vector<DCPairHitCluster*> > CandCont;
       CandCont.resize(npp);
@@ -774,8 +775,8 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          return false;
       }
       #if FILEOUT_ELAPSED_TIME_TREE
-      end_time_makepairplanehitcluster = std::chrono::high_resolution_clock::now();
-      fTree_elapsed_time_makepairplanehitcluster.push_back(std::chrono::duration<double, std::micro>(end_time_makepairplanehitcluster - start_time_makepairplanehitcluster).count());
+      end_time_clustering = std::chrono::high_resolution_clock::now();
+      fTree_elapsed_time_clustering_.push_back(std::chrono::duration<double, std::micro>(end_time_clustering - start_time_clustering).count());
       #endif
 
       #if DEBUG_KLDC_TRACK_SEARCH
@@ -819,6 +820,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          DCLocalTrack* track = MakeTrack(CandCont, &((CombiIndex[inCombi])[0]));
          #if FILEOUT_ELAPSED_TIME_TREE
          end_time_maketrack = std::chrono::high_resolution_clock::now();
+         elapsed_time_maketrack += std::chrono::duration<double, std::micro>(end_time_maketrack - start_time_maketrack).count();
          #endif
          if(track == nullptr) continue;
          ntr_try++;
@@ -854,14 +856,14 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          }
          #if FILEOUT_ELAPSED_TIME_TREE
          end_time_fitting = std::chrono::high_resolution_clock::now();
-         elapsed_time_maketrack += std::chrono::duration<double, std::micro>(end_time_maketrack - start_time_maketrack).count();
+         elapsed_time_maketrack += std::chrono::duration<double, std::micro>(end_time_fitting - start_time_fitting).count();
          elapsed_time_fitting += std::chrono::duration<double, std::micro>(end_time_fitting - start_time_fitting).count();
          #endif
       } // for(int inCombi=0; inCombi<nnCombi; ++inCombi)
       #if FILEOUT_ELAPSED_TIME_TREE
-      fTree_elapsed_time_maketrack.push_back(elapsed_time_maketrack);
-      fTree_elapsed_time_fitting.push_back(elapsed_time_fitting);
-      fTree_nCombi.push_back(nnCombi);
+      fTree_elapsed_time_maketrack_.push_back(elapsed_time_maketrack);
+      fTree_elapsed_time_fitting_.push_back(elapsed_time_fitting);
+      fTree_nCombi_.push_back(nnCombi);
       #endif
 
       for(int i=0; i<npp; ++i){
@@ -925,6 +927,10 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    #if FILEOUT_ELAPSED_TIME_TREE
    fTree_nt = ntr_after;
    fTree_elapsed_time = elapsed_time;
+   fTree_elapsed_time_setstandardtime = fTree_elapsed_time_setstandardtime_;
+   fTree_elapsed_time_clustering = fTree_elapsed_time_clustering_;
+   fTree_elapsed_time_maketrack = fTree_elapsed_time_maketrack_;
+   fTree_elapsed_time_fitting = fTree_elapsed_time_fitting_;
    fRootTree1->Fill();
    for(int i=0; i<ntr_after; ++i){
       DCLocalTrack *tp = fTrackCont[i];
