@@ -162,6 +162,7 @@ protected:
    TTree* fRootTree3{nullptr}; // each hit information
    // for fRootTree1
    Int_t fTree_nt{0};
+   Double_t fTree_sizeSlice{0};
    Double_t fTree_elapsed_time{0.0};
    Double_t fTree_elapsed_time_decode{0.0};
    Int_t fTree_nUTOF{0};
