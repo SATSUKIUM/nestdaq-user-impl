@@ -427,11 +427,11 @@ void FilterTimeFrameSliceByTrack::InitTask()
    fRootTree1->Branch("elapsed_time", &fTree_elapsed_time, "elapsed_time/D");
    fRootTree1->Branch("elapsed_time_decode", &fTree_elapsed_time_decode, "elapsed_time_decode/D");
    fRootTree1->Branch("nUTOF", &fTree_nUTOF, "nUTOF/I");
-   fRootTree1->Branch("elapsed_time_setstandardtime", &fTree_elapsed_time_setstandardtime, "elapsed_time_setstandardtime/D");
-   fRootTree1->Branch("elapsed_time_clustering", &fTree_elapsed_time_clustering, "elapsed_time_clustering/D");
-   fRootTree1->Branch("elapsed_time_maketrack", &fTree_elapsed_time_maketrack, "elapsed_time_maketrack/D");
-   fRootTree1->Branch("elapsed_time_fitting", &fTree_elapsed_time_fitting, "elapsed_time_fitting/D");
-   fRootTree1->Branch("nCombi", &fTree_nCombi, "nCombi/I");
+   fRootTree1->Branch("elapsed_time_setstandardtime", &fTree_elapsed_time_setstandardtime);
+   fRootTree1->Branch("elapsed_time_clustering", &fTree_elapsed_time_clustering);
+   fRootTree1->Branch("elapsed_time_maketrack", &fTree_elapsed_time_maketrack);
+   fRootTree1->Branch("elapsed_time_fitting", &fTree_elapsed_time_fitting);
+   fRootTree1->Branch("nCombi", &fTree_nCombi);
 
    fRootTree2 = new TTree("tree2", "Hit Data");
    fRootTree2->Branch("nHits", &fTree_nHits, "nHits/I");
