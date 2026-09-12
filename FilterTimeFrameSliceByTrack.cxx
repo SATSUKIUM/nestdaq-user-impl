@@ -410,20 +410,21 @@ void FilterTimeFrameSliceByTrack::InitTask()
 
 /*
    // for fRootTree1
-   int fTree_nt{0};
-   double fTree_elapsed_time{0.0};
-   double fTree_elapsed_time_decode{0.0};
-   int fTree_nUTOF{0};
-   std::vector<double> fTree_elapsed_time_setstandardtime;
-   std::vector<double> fTree_elapsed_time_makepairplanehitcluster;
-   std::vector<double> fTree_elapsed_time_maketrack;
-   std::vector<double> fTree_elapsed_time_fitting;
+   Int_t fTree_nt{0};
+   Double_t fTree_elapsed_time{0.0};
+   Double_t fTree_elapsed_time_decode{0.0};
+   Int_t fTree_nUTOF{0};
+   std::vector<Double_t> fTree_elapsed_time_setstandardtime;
+   std::vector<Double_t> fTree_elapsed_time_clustering;
+   std::vector<Double_t> fTree_elapsed_time_maketrack;
+   std::vector<Double_t> fTree_elapsed_time_fitting;
+   std::vector<Int_t> fTree_nCombi; // number of combinations of clusters of each UTOF standard time
 */
    #if FILEOUT_ELAPSED_TIME_TREE
    fRootFile = new TFile("./fileout/tracking/FilterTimeFrameSliceByTrack_throughput.root", "RECREATE");
    fRootTree1 = new TTree("tree1", "ProcessSlice() data");
    fRootTree1->Branch("nt", &fTree_nt, "nt/I");
-   fRootTree1->Branch("elapsed_time", &fTree_elapsed_time, "elapsed_time/L");
+   fRootTree1->Branch("elapsed_time", &fTree_elapsed_time, "elapsed_time/D");
    fRootTree1->Branch("elapsed_time_decode", &fTree_elapsed_time_decode, "elapsed_time_decode/D");
    fRootTree1->Branch("nUTOF", &fTree_nUTOF, "nUTOF/I");
    fRootTree1->Branch("elapsed_time_setstandardtime", &fTree_elapsed_time_setstandardtime, "elapsed_time_setstandardtime/D");
@@ -451,11 +452,11 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::ProcessSlice] ";
    #if FILEOUT_ELAPSED_TIME_TREE
-   std::vector<double> fTree_elapsed_time_setstandardtime_;
-   std::vector<double> fTree_elapsed_time_clustering_;
-   std::vector<double> fTree_elapsed_time_maketrack_;
-   std::vector<double> fTree_elapsed_time_fitting_;
-   std::vector<int> fTree_nCombi_;
+   std::vector<Double_t> fTree_elapsed_time_setstandardtime_;
+   std::vector<Double_t> fTree_elapsed_time_clustering_;
+   std::vector<Double_t> fTree_elapsed_time_maketrack_;
+   std::vector<Double_t> fTree_elapsed_time_fitting_;
+   std::vector<Int_t> fTree_nCombi_;
    #endif
    #if CHECK_COUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME_TREE
    std::chrono::high_resolution_clock::time_point start_time, end_time;
