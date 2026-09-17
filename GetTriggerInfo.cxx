@@ -70,7 +70,7 @@ int main(int argc, char* argv[])  {
 	//[std::vector< std::vector<uint32_t> > signals,
 	//	std::vector<struct ExprParser::TrgExpression> exprs]
 	auto [signals, exprs]
-		= GetTriggerSignals("parameters:LogicFilter", "redis://localhost:6379/2");
+		= GetTriggerSignals("parameters:LogicFilter", "redis://localhost:5921/2");
 
 	std::cout << "Signals: " << signals.size() << std::endl;
 	std::cout << std::hex;
