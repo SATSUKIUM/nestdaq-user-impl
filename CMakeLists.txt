@@ -1,18 +1,20 @@
-#
 cmake_minimum_required(VERSION 3.11)
 
-project(nestdaq LANGUAGES CXX C)
+# branching for LogicFilter with CUDA
+option(CMAKE_LOGICFILTER_CUDA_ENABLE "Enable CUDA for LogicFilter" OFF)
+if(CMAKE_LOGICFILTER_CUDA_ENABLE)
+  project(nestdaq LANGUAGES CXX C CUDA)
+else()
+  project(nestdaq LANGUAGES CXX C)
+endif()
 
 message(STATUS "PROJECT_NAME: ${PROJECT_NAME}")
 
 # check c++ compiler and turn on colored output
-message("c++ compiler ID is ${CMAKE_CXX_COMPILER_ID}")
-if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-  message("turnn on colored error message of GNU")
-  add_compile_options(-fdiagnostics-color=always)
-elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  message("turn on colored error message of Clang")
-  add_compile_options(-fcolor-diagnostics)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
 endif()
 
 #------------------------------------------------------------------------------
@@ -187,7 +189,6 @@ foreach(lvar IN ITEMS
   TimeFrameBuilder; TFBFilePlayer; STFBFilePlayer;
   TimeFrameSlicerByLogicTiming;
   fltcoin;
-  LogicFilter;
   tfdump;
 # onlinedisplay;
   FilterTimeFrameSliceABC;
@@ -452,6 +453,18 @@ install(TARGETS ${EXEC};
 )
 
 endforeach()
+
+#================================================================================
+# LogicFilter
+#==============================================================================
+if(CMAKE_LOGICFILTER_CUDA_ENABLE)
+  message(STATUS "LogicFilter: Building with CUDA (LogicFilter.cu)")
+  add_subdirectory(LogicFilter/CUDA)
+else()
+  message(STATUS "LogicFilter: Building with C++ (LogicFilter.cxx)")
+  add_subdirectory(LogicFilter/CPU)
+endif()
+
 
 
 #================================================================================
