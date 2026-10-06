@@ -17,4 +17,6 @@ DCPairHitCluster::DCPairHitCluster( DCLTrackHit *hitA, DCLTrackHit *hitB )
 
 DCPairHitCluster::~DCPairHitCluster()
 {
+  delete hitA_;
+  delete hitB_;
 }

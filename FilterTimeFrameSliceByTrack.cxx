@@ -726,6 +726,18 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    // A DCLTrackHit refers to its DCHit's drift-length and flag arrays.  Those
    // arrays are rebuilt by SetStandardTime(), so candidates must be selected
    // before processing the next UTOF reference time.
+   std::vector<DCPairHitCluster*> clusters;
+   auto cleanupTrackingObjects = [&]() {
+      for(auto* track : fTrackCont){
+         delete track;
+      }
+      fTrackCont.clear();
+      for(auto* cluster : clusters){
+         delete cluster;
+      }
+      clusters.clear();
+   };
+
    for(int iStandardTime=0; iStandardTime<nStandardTime; ++iStandardTime){
       double standardTimeEach = utof_left_times[iStandardTime];
       std::vector<DCLocalTrack*> tracksForStandardTime;
@@ -761,6 +773,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          int plane1 = ppindex.first;
          int plane2 = ppindex.second;
          MakePairPlaneHitCluster(fKLDCHitContainer[plane1], fKLDCHitContainer[plane2], fKLDCCellSize, CandCont[i]);
+         clusters.insert(clusters.end(), CandCont[i].begin(), CandCont[i].end());
       } // for(size_t i=0; i<npp; ++i)
 
       // prepare for combinatorial search
@@ -775,6 +788,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       std::vector<std::vector<int>> CombiIndex = makeindex(npp, &nCombi[0]);
       int nnCombi = CombiIndex.size();
       if(nnCombi > fMaxCombi){
+         cleanupTrackingObjects();
          return false;
       }
       #if FILEOUT_ELAPSED_TIME_TREE
@@ -836,26 +850,29 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          #if FILEOUT_ELAPSED_TIME_TREE
          start_time_fitting = std::chrono::high_resolution_clock::now();
          #endif
-         if(track->GetNHits() >= DCConstants::DCLocalMinNHits && track->DoFit()){
-            ntr_pass1++;
-            for(int i=0; i<fNumAngleCorrectionIteration; ++i){
-               if(!track->AngleCorrection()) break;
-            }
-            #if 0
-            isBelowMaxChiSquare_afterAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
-            if(isBelowMaxChiSquare_afterAngleCorrection == true && isBelowMaxChiSquare_beforeAngleCorrection == false){
-               std::cout << "[LocalTrackSearch_AngleCorrection] Track improved after angle correction:" << std::endl;
-               std::cout << "\tBefore: " << chiSquare_beforeAngleCorrection << ", After: " << track->GetChiSquare() << std::endl;
-            }
-            #endif
+         if(track->GetNHits() < DCConstants::DCLocalMinNHits || !track->DoFit()){
+            delete track;
+            continue;
+         }
 
-            if(track->GetChiSqr() < fMaxChiSqr){
-               tracksForStandardTime.push_back(track);
-               ntr_pass2++;
-            }
-            else{
-               delete track;
-            }
+         ntr_pass1++;
+         for(int i=0; i<fNumAngleCorrectionIteration; ++i){
+            if(!track->AngleCorrection()) break;
+         }
+         #if 0
+         isBelowMaxChiSquare_afterAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
+         if(isBelowMaxChiSquare_afterAngleCorrection == true && isBelowMaxChiSquare_beforeAngleCorrection == false){
+            std::cout << "[LocalTrackSearch_AngleCorrection] Track improved after angle correction:" << std::endl;
+            std::cout << "\tBefore: " << chiSquare_beforeAngleCorrection << ", After: " << track->GetChiSquare() << std::endl;
+         }
+         #endif
+
+         if(track->GetChiSqr() < fMaxChiSqr){
+            tracksForStandardTime.push_back(track);
+            ntr_pass2++;
+         }
+         else{
+            delete track;
          }
          #if FILEOUT_ELAPSED_TIME_TREE
          end_time_fitting = std::chrono::high_resolution_clock::now();
@@ -868,10 +885,6 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       fTree_elapsed_time_fitting_.push_back(elapsed_time_fitting);
       fTree_nCombi_.push_back(nnCombi);
       #endif
-
-      for(int i=0; i<npp; ++i){
-         for_each(CandCont[i].begin(), CandCont[i].end(), DeleteObject());
-      }
 
       // Select independent tracks while their DCHit state still corresponds
       // to standardTimeEach.  Do not apply this procedure after the next
@@ -1010,11 +1023,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 #endif   
 
    // clear fTrackCont
-   for(int i=0; i<int(fTrackCont.size()); ++i){
-      DCLocalTrack *tp = fTrackCont[i];
-      delete tp;
-   }
-   fTrackCont.clear();
+   cleanupTrackingObjects();
 
    if(ntr_after > 0){
       return true;

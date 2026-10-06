@@ -35,8 +35,6 @@ namespace nestdaq {
         std::vector<bool> IsBelongToGoodTrack; // トラックをヒット数やChiSquareでソートしたのちに、上位のトラックに属するヒットはtrueにされる
         const chmap::DETIdItem* detid;
 
-        mutable std::vector< DCLTrackHit* > Cont_; // このヒットがどのDCLTrackHitに属するかを登録する
-
     public:
         void AddHit(uint32_t tdc, uint32_t tot){
             TDCs.push_back(tdc);
@@ -68,9 +66,6 @@ namespace nestdaq {
         bool IsValidDriftLength(double min, double max, double dl); // input unit: mm
         bool RangeCheck(int nth) const { return (nth >= 0 && nth < DriftLengths.size()); };
 
-        void RegisterHits( DCLTrackHit* virtualhit) const {
-            Cont_.push_back(virtualhit);
-        }
         void clearFlag(int nth) { IsBelongToGoodTrack[nth] = false; }
         void setFlag(int nth) { IsBelongToGoodTrack[nth] = true; }
         bool showFlag(int nth) const { return IsBelongToGoodTrack[nth]; }
