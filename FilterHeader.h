@@ -49,13 +49,21 @@ struct TrgTimeHeader {
     union {
         uint32_t u32data[4];
         struct {
-            uint64_t magic       {TDC_MAGIC};
-            uint32_t length      {0};
-            uint16_t hLength     {16};
-            uint16_t type        {0};
+            uint64_t magic;
+            uint32_t length;
+            uint16_t hLength;
+            uint16_t type;
             //uint32_t timeFrameId {0};
         };
     };
+
+    TrgTimeHeader()
+        : magic {TDC_MAGIC}
+        , length {0}
+        , hLength {16}
+        , type {0}
+    {
+    }
 };
 
 constexpr unsigned char FLT_TDC_TYPE {0xaa};
