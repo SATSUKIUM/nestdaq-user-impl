@@ -10,9 +10,9 @@
 #include <sw/redis++/redis++.h>
 #include <sw/redis++/errors.h>
 
-// #include "../LogicFilter/SignalParser.cxx"
-#include "../LogicFilter/ExprParser.cxx"
-#include "../LogicFilter/SignalParser.h"
+// #include "LogicFilter/SignalParser.cxx"
+#include "LogicFilter/CPU/ExprParser.cxx"
+#include "LogicFilter/CPU/SignalParser.h"
 
 
 //std::vector< std::vector<uint32_t> > GetTriggerSignals(std::string key, std::string server_uri)

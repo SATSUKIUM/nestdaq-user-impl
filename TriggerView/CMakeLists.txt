@@ -13,7 +13,7 @@ foreach(lvar IN ITEMS
 set(EXEC ${lvar})
   add_executable(${EXEC} 
   ${EXEC}.cxx;
-  ${CMAKE_SOURCE_DIR}/LogicFilter/SignalParser.cxx
+  ${CMAKE_SOURCE_DIR}/LogicFilter/CPU/SignalParser.cxx
 )
 
 target_include_directories(${EXEC} PUBLIC 

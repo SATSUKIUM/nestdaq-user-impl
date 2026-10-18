@@ -1,7 +1,14 @@
 #
 cmake_minimum_required(VERSION 3.11)
 
-project(nestdaq LANGUAGES CXX C)
+# branching for LogicFilter with CUDA
+option(CMAKE_LOGICFILTER_CUDA_ENABLE "Enable CUDA for LogicFilter" OFF)
+if(CMAKE_LOGICFILTER_CUDA_ENABLE)
+  project(nestdaq LANGUAGES CXX C CUDA)
+else()
+  project(nestdaq LANGUAGES CXX C)
+endif()
+
 if(POLICY CMP0167)
   cmake_policy(SET CMP0167 NEW)
 endif()
@@ -331,7 +338,14 @@ install(TARGETS
 
 #================================================================================
 add_subdirectory(utility)
-add_subdirectory(LogicFilter)
+## LogicFilter
+if(CMAKE_LOGICFILTER_CUDA_ENABLE)
+  message(STATUS "LogicFilter: Building with CUDA (LogicFilter.cu)")
+  add_subdirectory(LogicFilter/GPU)
+else()
+  add_subdirectory(LogicFilter/CPU)
+endif()
+##
 add_subdirectory(TriggerView)
 add_subdirectory(emulator)
 add_subdirectory(sqlite)

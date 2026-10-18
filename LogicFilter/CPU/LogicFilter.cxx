@@ -20,16 +20,16 @@
 
 #include <cstring>
 
-#include "../utility/MessageUtil.h"
+#include "utility/MessageUtil.h"
 
-#include "../SubTimeFrameHeader.h"
-#include "../TimeFrameHeader.h"
-#include "../HeartbeatFrameHeader.h"
-#include "../FilterHeader.h"
+#include "SubTimeFrameHeader.h"
+#include "TimeFrameHeader.h"
+#include "HeartbeatFrameHeader.h"
+#include "FilterHeader.h"
 
 #include "SignalParser.h"
 #include "Trigger.cxx"
-#include "../KTimer.cxx"
+#include "KTimer.cxx"
 
 
 //std::atomic<int> gQdepth = 0;
