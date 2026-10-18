@@ -1,0 +1,164 @@
+/*
+ *
+ *
+ */
+#include <iostream>
+#include <vector>
+#include <string>
+#include <cstdint>
+#include "SignalParser.h"
+
+#if 0
+struct signal_prop {
+	uint32_t id;
+	uint32_t channel;
+	uint32_t offset;
+};
+
+class SignalParser
+{
+public:
+	SignalParser(){};
+	virtual ~SignalParser(){};
+	std::vector<struct signal_prop> & Parsing(std::string &);
+protected:
+private:
+	std::vector<struct signal_prop> signals;
+};
+
+std::vector<struct signal_prop> & SignalParser::Parsing(std::string &sigstr)
+{
+	std::cout << sigstr << std::endl;
+	return signals;
+}
+#endif
+
+namespace SignalParser {
+
+std::vector<std::string> bksplit(const std::string str)
+{
+	char cbra = bra.c_str()[0];
+	char cket = ket.c_str()[0];
+	char cdelim = delim.c_str()[0];
+
+	std::vector<std::string> words;
+
+	std::string word;
+	for (char ch : str) {
+		if ((ch == cbra)  || (ch == cket)) {
+			if (! word.empty()) {
+				words.emplace_back(word);
+				word.clear();
+			}
+			char temp_ch[2] = {0, 0};
+			temp_ch[0] = ch;
+			std::string braket(temp_ch);
+			words.emplace_back(braket);
+		} else
+		if (ch == cdelim) {
+			if (! word.empty()) {
+				words.emplace_back(word);
+				word.clear();
+			}
+		} else {
+			word += ch;
+		}
+	}
+	if (! word.empty()) words.emplace_back(word);
+
+	return words;
+}
+
+
+std::vector<struct psig> Parsing(const std::string &sigstr)
+{
+	std::vector<struct psig> signals;
+	#if 0
+	std::cout << sigstr << std::endl;
+	#endif
+
+	std::vector<std::string> words = bksplit(sigstr);
+
+	#if 0
+	std::cout << "# " << words.size() ;
+	for (auto &s : words)  std::cout << "_" << s;
+	std::cout << std::endl;
+	#endif
+
+	int level = 0;
+	std::vector<std::string> fields;
+	for(auto &v : words){
+		if(v == bra){
+			level++;
+			if(level != 1){
+				std::cout << "#E invalid nest" << std::endl;
+			}
+			fields.clear();
+		} // endif(v == bra)
+		else if(v == ket){
+			level--;
+			if(fields.size() < 4){
+				std::cout << "#E too few fields: " << fields.size() << std::endl;
+			}
+
+			try{
+				psig sig;
+				// ------------------------
+				// group parser
+				// ------------------------
+				size_t hyphen_pos = fields[0].find("-");
+				if(hyphen_pos == std::string::npos){
+					sig.group_id = std::stoul(fields[0], nullptr, 0);
+					sig.subgroup_id = NO_SUBGROUP;
+				}
+				else{
+					std::string gpstr = fields[0].substr(0, hyphen_pos);
+					std::string subgpstr = fields[0].substr(hyphen_pos + 1);
+					sig.group_id = std::stoul(gpstr, nullptr, 0);
+					sig.subgroup_id = std::stoul(subgpstr, nullptr, 0);
+				}
+				// ------------------------
+				sig.femId = std::stoul(fields[1], nullptr, 0);
+				sig.channel = std::stoul(fields[2], nullptr, 0);
+				sig.offset = std::stoul(fields[3], nullptr, 0);
+				signals.emplace_back(sig);
+			} // endtry
+			catch(const std::exception &e){
+				std::cout << "#E parse group field error: " << fields[0] << " " << e.what() << std::endl;
+			}
+		} // endif(v == ket)
+		else{
+			if(level <= 0){
+				std::cout << "#E token outside bracket : " << v << std::endl;
+				continue;
+			}
+			fields.emplace_back(v);
+		} // endelse
+	} // for(auto &v : words)
+	if(level != 0){
+		std::cout << "#E braket level mismatch" << std::endl;
+	}
+
+	return signals;
+}
+
+} // namespace SignalParser
+
+#ifdef SIGNALPARSER_TEST_MAIN
+int main(int argc, char* argv[])
+{
+	std::string param("(0x1234 0 0) ( 0xc0a802a9 1 0 ) (0xa235 xxx1 1)");
+	std::vector<std::vector<uint32_t> > signals
+		= SignalParser::Parsing(param);
+
+	std::cout << "String: " << param << std::endl;
+	std::cout << std::hex;
+	for (auto &vec : signals) {
+		for (auto &val : vec) std::cout << " 0x" << val;
+		std::cout << std::endl;
+	}
+	
+
+	return 0;
+}
+#endif
