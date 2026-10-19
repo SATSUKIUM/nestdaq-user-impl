@@ -31,6 +31,8 @@
 #include "Trigger.cxx"
 #include "KTimer.cxx"
 
+#include <cudamap.h> // dependency: https://github.com/SATSUKIUM/light-map-in-cuda.git
+
 
 //std::atomic<int> gQdepth = 0;
 
@@ -163,7 +165,16 @@ private:
 	KTimer *fKt3;
 	KTimer *fKt4;
 
-	std::map<uint32_t, uint32_t> fNEntryInSubTimeRegion_LogicFilter; // key: iSubTR, value: # of signals in iSubTR
+	uint32_t* fNEntryInSubTimeRegion; // key: iSubTR, value: # of signals in iSubTR
+	int fNSubTimeRegions {0};
+	uint32_t* fiSubTimeRegionMainTimeRegion; // key: iSubTR, value: iMainTR
+
+    std::vector<cudamap::FEEAddr> feeAddrs;
+    std::vector<cudamap::TriggerConfig> triggerConfigs;
+
+
+    // add(0xc0a802a9,  static_cast<uint8_t>(8), static_cast<uint8_t>(0), static_cast<uint8_t>(NO_SUBGROUP), static_cast<short>(0), width);
+    // add(0xc0a802a9, static_cast<uint8_t>(10), static_cast<uint8_t>(1), static_cast<uint8_t>(NO_SUBGROUP), static_cast<short>(0), width);
 };
 
 
@@ -205,8 +216,8 @@ void LogicFilter::InitTask()
 	}
 	LOG(info) << "InitTask: RemoveHB : " << fIsRemoveHB;
 
-
-	fTrig->SetTimeRegion(1024 * 128);
+	constexpr int timeRegionSize = 1024 * 128;
+	fTrig->SetTimeRegion(timeRegionSize);
 	fTrig->ClearEntry();
 
 	std::string str_signals = fConfig->GetProperty<std::string>(opt::TriggerSignals.data());
@@ -279,78 +290,102 @@ void LogicFilter::InitTask()
 	std::cout << "\n[LogicFilter::InitTask] Trigger expression: " << expression << std::endl;
 
 	// --------------------------------
-	// register signals to Trigger
+	// initialize cudamap
 	// --------------------------------
-	std::cout << "\n[LogicFilter::InitTask] Registering signals to Trigger... " << std::endl;
-	int iSubTimeRegion = -1; // subgroupが見つかれば、0から順番に割り当てる
-	std::pair<uint32_t, uint32_t> last_subgroup = std::make_pair(UINT32_MAX, UINT32_MAX); // 最初にsubgroupが見つかれば必ず、このペアとは異なる
-	for(size_t i = 0; i < max_group_id + 1; i++){
-		auto &group = groups[i];
+	std::cout << "\n[LogicFilter::InitTask] Initializing cudamap... " << std::endl;
+	int iSubTimeRegion_ = -1; // subgroupが見つかれば、0から順番に割り当てる
+	std::pair<uint32_t, uint32_t> last_subgroup_ = std::make_pair(UINT32_MAX, UINT32_MAX); // 最初にsubgroupが見つかれば必ず、このペアとは異なる
+	std::vector<uint32_t> nEntryInSubTimeRegion; // key: iSubTR, value: # of signals in iSubTR
+	std::vector<uint32_t> iSubTimeRegionMainTimeRegion; // key: iSubTR, value: iMainTR
+	for(size_t iGroupId = 0; iGroupId < max_group_id + 1; ++iGroupId){
+		auto &group = groups[iGroupId];
 		if(group.size() == 0){
-			std::cout << "\tgroup " << i << " is empty, skip." << std::endl;
+			std::cout << "\tgroup " << iGroupId << " is empty, skip." << std::endl;
 			continue; // skip empty group
 		}
 		for(const auto &sig : group){
-			bool registered;
-			if(sig.subgroup_id != SignalParser::NO_SUBGROUP){
-				if(last_subgroup != std::make_pair(sig.group_id, sig.subgroup_id)){
-					iSubTimeRegion++;
-					fNEntryInSubTimeRegion_LogicFilter[iSubTimeRegion] = 1;
-					last_subgroup = std::make_pair(sig.group_id, sig.subgroup_id);
-					std::cout << "\t\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTimeRegion " << iSubTimeRegion << std::endl;
+			if(sig.subgroup_id != SignalParser::NO_SUBGROUP){ // subgroupに属していれば
+				if(last_subgroup_ != std::make_pair(sig.group_id, sig.subgroup_id)){ // 前のgroup-subgroupのペアと異なれば
+					iSubTimeRegion_++;
+					nEntryInSubTimeRegion.push_back(1);
+					iSubTimeRegionMainTimeRegion.push_back(iGroupId);
+					last_subgroup_ = std::make_pair(sig.group_id, sig.subgroup_id);
+					std::cout << "\t\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTimeRegion " << iSubTimeRegion_ << std::endl;
 				}
-				else{
-					fNEntryInSubTimeRegion_LogicFilter[iSubTimeRegion]++;
-					std::cout << "\t\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTimeRegion " << iSubTimeRegion << " (entry count in this SubTimeRegion: " << fNEntryInSubTimeRegion_LogicFilter[iSubTimeRegion] << "th)" << std::endl;
+				else{ // 前のgroup-subgroupのペアと同じであれば
+					nEntryInSubTimeRegion[iSubTimeRegion_]++;
+					std::cout << "\t\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTimeRegion " << iSubTimeRegion_ << " (entry count in this SubTimeRegion: " << nEntryInSubTimeRegion[iSubTimeRegion_] << "th)" << std::endl;
 				}
 				std::cout << "\t\tRegistering signal: group_id=" << sig.group_id
 					<< " subgroup_id=" << sig.subgroup_id
-					<< " iSubTimeRegion=" << (sig.subgroup_id != SignalParser::NO_SUBGROUP ? iSubTimeRegion : SignalParser::NO_SUBGROUP)
+					<< " iSubTimeRegion=" << (sig.subgroup_id != SignalParser::NO_SUBGROUP ? iSubTimeRegion_ : SignalParser::NO_SUBGROUP)
 					<< " femId=" << std::hex << sig.femId
 					<< " channel=" << std::dec <<sig.channel
 					<< " offset=" << sig.offset
+					<< " window_width=" << window_width
 					<< std::endl;
-				registered = fTrig->EntryTo(sig.group_id, sig.subgroup_id, iSubTimeRegion, sig.femId, sig.channel, static_cast<int>(sig.offset));
+				cudamap::stageItem(sig.femId, static_cast<uint8_t>(sig.channel), static_cast<uint32_t>(1u << (nEntryInSubTimeRegion[iSubTimeRegion_] - 1)), static_cast<uint8_t>(window_width), static_cast<int16_t>(sig.offset), static_cast<uint8_t>(iSubTimeRegion_), feeAddrs, triggerConfigs);
 			} // if(sig.subgroup_id != SignalParser::NO_SUBGROUP)
-			else{
+			else{ // subgroupに属していなければ
 				std::cout << "\t\tRegistering signal: group_id=" << sig.group_id
 					<< " subgroup_id=NO_SUBGROUP"
 					<< " iSubTimeRegion=NO_SUBGROUP"
 					<< " femId=" << std::hex << sig.femId
 					<< " channel=" << std::dec <<sig.channel
 					<< " offset=" << sig.offset
+					<< " window_width=" << window_width
 					<< std::endl;
-				registered = fTrig->EntryTo(sig.group_id, sig.subgroup_id, SignalParser::NO_SUBGROUP, sig.femId, sig.channel, static_cast<int>(sig.offset));
+				cudamap::stageItem(sig.femId, static_cast<uint8_t>(sig.channel), static_cast<uint32_t>(1u << sig.group_id), static_cast<uint8_t>(window_width), static_cast<int16_t>(sig.offset), static_cast<uint8_t>(cudamap::NO_SUBGROUP), feeAddrs, triggerConfigs);
 			} // else(sig.subgroup_id != SignalParser::NO_SUBGROUP)
-			if(!registered){
-				std::cout << "[LogicFilter::InitTask] Failed to register signal: "
-					<< "group_id=" << sig.group_id
-					<< " subgroup_id=" << sig.subgroup_id
-					<< " iSubTimeRegion=" << (sig.subgroup_id != SignalParser::NO_SUBGROUP ? iSubTimeRegion : SignalParser::NO_SUBGROUP)
-					<< " femId=" << std::hex << sig.femId
-					<< " channel=" << std::dec << sig.channel
-					<< " offset=" << sig.offset << std::endl;
-				throw std::runtime_error("Trigger::EntryTo: group_id must be 0..31 and each subgroup must contain at most 31 signals");
-			}
 		} // for(const auto &sig : group)
-	} // for(size_t i = 0; i < max_group_id + 1; i++)
-	std::cout << "\tNumber of SubTimeRegions: " << iSubTimeRegion + 1 << std::endl;
-	fTrig->SetfnEntryInSubTimeRegion(fNEntryInSubTimeRegion_LogicFilter);
+	} // for(size_t iGroupId = 0; iGroupId < max_group_id + 1; ++iGroupId)
+
+	fNSubTimeRegions = iSubTimeRegion_ + 1;
+	#if 1
+	// check for development
+	if(fNSubTimeRegions != nEntryInSubTimeRegion.size()){
+		std::cerr << "#E nSubTimeRegions != nEntryInSubTimeRegion.size()" << std::endl;
+		std::cerr << "#E nSubTimeRegions: " << fNSubTimeRegions << std::endl;
+		std::cerr << "#E nEntryInSubTimeRegion.size(): " << nEntryInSubTimeRegion.size() << std::endl;
+		throw std::runtime_error("fNSubTimeRegions != nEntryInSubTimeRegion.size()");
+	}
+	if(fNSubTimeRegions != iSubTimeRegionMainTimeRegion.size()){
+		std::cerr << "#E nSubTimeRegions != iSubTimeRegionMainTimeRegion.size()" << std::endl;
+		std::cerr << "#E nSubTimeRegions: " << fNSubTimeRegions << std::endl;
+		std::cerr << "#E iSubTimeRegionMainTimeRegion.size(): " << iSubTimeRegionMainTimeRegion.size() << std::endl;
+		throw std::runtime_error("fNSubTimeRegions != iSubTimeRegionMainTimeRegion.size()");
+	}
+	#endif
+	cudaMallocHost(&fNEntryInSubTimeRegion, sizeof(uint32_t) * fNSubTimeRegions);
+	for(size_t i=0; i<nEntryInSubTimeRegion.size(); ++i){
+		fNEntryInSubTimeRegion[i] = nEntryInSubTimeRegion[i];
+	}
+	cudaMallocHost(&fiSubTimeRegionMainTimeRegion, sizeof(uint32_t) * fNSubTimeRegions);
+	for(size_t i=0; i<iSubTimeRegionMainTimeRegion.size(); ++i){
+		fiSubTimeRegionMainTimeRegion[i] = iSubTimeRegionMainTimeRegion[i];
+	}
+	std::cout << "\tNumber of SubTimeRegions: " << fNSubTimeRegions << std::endl;
+
+	fTrig->SetfnEntryInSubTimeRegion(fNEntryInSubTimeRegion, fNSubTimeRegions);
+
+	fTrig->InitializeFEEAddrDecoder(feeAddrs, triggerConfigs);
+
 	std::cout << "\tDone." << std::endl;
+
 
 	// --------------------------------
 	// Initialize SubTimeRegions
 	// --------------------------------
 	std::cout << "\n[LogicFilter::InitTask] Setting SubTimeRegions... " << std::endl;
-	fTrig->SetSubTimeRegion(1024 * 128, fNEntryInSubTimeRegion_LogicFilter); // (int, map<uint32_t, uint32_t>) -> (subTimeRegionSize, nEntryInSubTimeRegion)
+	fTrig->SetSubTimeRegion(timeRegionSize, fNEntryInSubTimeRegion, fNSubTimeRegions);
 	std::cout << "\tDone." << std::endl;
 
-	// --------------------------------
-	// Make LUT
-	// --------------------------------
-	LOG(info) << "Trigger Expression: " << expression;
-	fTrig->MakeTable(expression);
-	std::cout << "\tMaking table Done." << std::endl;
+	// // --------------------------------
+	// // Make LUT
+	// // --------------------------------
+	// LOG(info) << "Trigger Expression: " << expression;
+	// fTrig->MakeTable(expression);
+	// std::cout << "\tMaking table Done." << std::endl;
 
 }
 
@@ -1183,7 +1218,7 @@ bool LogicFilter::ConditionalRun()
 
 			//Trigger process
 			fTrig->CleanUpTimeRegion();
-			fTrig->CleanUpSubTimeRegion(fNEntryInSubTimeRegion_LogicFilter);
+			fTrig->CleanUpSubTimeRegion(fNEntryInSubTimeRegion_, fNSubTimeRegions);
 			std::vector<uint32_t> *hits = fTrig->Exec(hbf_list);
 			fltdata.emplace_back(*hits);
 			int nhits = hits->size();

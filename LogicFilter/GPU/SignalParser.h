@@ -15,7 +15,7 @@ struct psig{
 	uint32_t subgroup_id;
 	uint32_t femId;
 	uint32_t channel;
-	uint32_t offset;
+	int offset;
 
     void print() const {
         std::cout << "group_id: " << group_id
