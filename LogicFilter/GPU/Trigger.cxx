@@ -146,10 +146,9 @@ private:
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChRightWidth; // [T - leftwidth, T + rightwidth]
 	std::map<std::pair<uint32_t, uint32_t>, int> fEntryCounts; // key: (gp_id, subgp_id), value: count of entry
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChiSubTimeRegion; // key: fem, value: list of iSubTimeRegion
-	std::map< uint32_t, uint32_t > fiSubTimeRegionMainTimeRegion; // key: iSubTimeRegion, value: iMainTimeRegion
+	uint32_t* fiSubTimeRegionMainTimeRegion; // key: iSubTimeRegion, value: iMainTimeRegion
 	uint32_t* deviSubTimeRegionMainTimeRegion = nullptr; // key: iSubTimeRegion, value: iMainTimeRegion
 
-	int fNSubTimeRegions = 0;
 	uint32_t* fNEntryInSubTimeRegion; // key: iSubTimeRegion, value: nEntryInSubTimeRegion
 	uint32_t* devNEntryInSubTimeRegion; // key: iSubTimeRegion, value: nEntryInSubTimeRegion
 
@@ -167,7 +166,6 @@ private:
 	uint32_t* devTimeRegion;
 	uint32_t* devSubTimeRegions;
 
-	uint32_t* devNEntryInSubTimeRegion; // key: iSubTimeRegion, value: nEntryInSubTimeRegion
 	//int fMarkCount = 0;
 	//uint32_t fMarkMask = 0;
 	std::vector<uint32_t> fHits;
@@ -304,7 +302,7 @@ bool Trigger::SetSubTimeRegion(uint32_t subTimeRegionSize, const uint32_t* nEntr
 	cudaMemcpy(devNEntryInSubTimeRegion, nEntryInSubTimeRegion, nSubTimeRegions * sizeof(uint32_t), cudaMemcpyHostToDevice);
 
 	numBlocks = cuda::ceil_div(nSubTimeRegions * fTimeRegionSize, numThreadsPerBlock);
-	devCleanUpSubTimeRegion<<<numBlocks, numThreadsPerBlock>>>(devSubTimeRegions, fSubTimeRegionSize, devNEntryInSubTimeRegion);
+	devCleanUpSubTimeRegion<<<numBlocks, numThreadsPerBlock>>>(devSubTimeRegions, fSubTimeRegionSize, nEntryInSubTimeRegion, nSubTimeRegions);
 	cudaDeviceSynchronize();
 
 	// for(size_t iSubTimeRegion = 0; iSubTimeRegion < nSubTimeRegions; ++iSubTimeRegion){
