@@ -6,6 +6,7 @@
 #ifndef TriggerMap_cxx
 #define TriggerMap_cxx
 
+#include <cstdint>
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -22,6 +23,10 @@ public:
 	void MakeTable(std::string &);
 	bool LookUp(uint32_t);
 	void Dump();
+    // vector<bool> has no contiguous byte storage suitable for cudaMemcpy.
+    std::vector<uint8_t> GetLutBytes() const {
+        return std::vector<uint8_t>(fLut.begin(), fLut.end());
+    }
 protected:
 private:
 	bool ExtractBit(uint32_t, int);
