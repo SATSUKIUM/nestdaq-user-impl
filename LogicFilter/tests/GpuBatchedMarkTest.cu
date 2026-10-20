@@ -24,7 +24,7 @@ int main() {
         uint64_t second = (uint64_t(TDC64H::T_TDC) << 58) | (uint64_t(20) << shift);
         std::vector<HBFIndex> segments;
         for (int board = 0; board < 39; ++board)
-            segments.push_back({0, 0, type, 1,
+            segments.push_back({type, 1,
                 reinterpret_cast<unsigned char*>(board % 2 ? &second : &first), 8});
         for (int hbf = 0; hbf < 4; ++hbf) {
             trigger.CleanUpTimeRegion();
@@ -33,23 +33,45 @@ int main() {
     }
 
     // Different IP/type/length, multiple blocks, a partial block, empty input,
-    // and an unregistered IP. The legacy per-segment Mark is the reference.
+    // and an unregistered IP. The two expected rising edges are bins 9 and 21.
     std::vector<uint64_t> large(1025, 0);
     large.back() = (uint64_t(TDC64H::T_TDC) << 58) | (uint64_t(10) << 12);
     uint64_t low = (uint64_t(TDC64H::T_TDC) << 58) | (uint64_t(20) << 18);
     std::vector<HBFIndex> mixed = {
-        {0, 0, SubTimeFrame::TDC64H, 1, reinterpret_cast<unsigned char*>(large.data()), int(large.size() * 8)},
-        {0, 0, SubTimeFrame::TDC64L, 2, reinterpret_cast<unsigned char*>(&low), 8},
-        {0, 0, SubTimeFrame::TDC64H, 1, nullptr, 0},
-        {0, 0, SubTimeFrame::TDC64L, 99, reinterpret_cast<unsigned char*>(&low), 8}};
-    trigger.CleanUpTimeRegion();
-    for (auto& seg : mixed) trigger.Mark(seg.data, seg.size, seg.femId, seg.femType);
-    const auto reference = *trigger.Scan();
-    require(reference == std::vector<uint32_t>({9, 21}));
+        {SubTimeFrame::TDC64H, 1, reinterpret_cast<unsigned char*>(large.data()), int(large.size() * 8)},
+        {SubTimeFrame::TDC64L, 2, reinterpret_cast<unsigned char*>(&low), 8},
+        {SubTimeFrame::TDC64H, 1, nullptr, 0},
+        {SubTimeFrame::TDC64L, 99, reinterpret_cast<unsigned char*>(&low), 8}};
+    const std::vector<uint32_t> reference = {9, 21};
     trigger.CleanUpTimeRegion();
     require(*trigger.Exec(mixed) == reference);
     trigger.CleanUpTimeRegion();
     std::vector<HBFIndex> empty;
     require(trigger.Exec(empty)->empty());
-    std::cout << "PASS: four TDC formats, 39 boards x 4 HBFs, mixed FEM/type, multi-block and empty input\n";
+    // All subgroup bits must clear before its main-region bit is set.
+    // Exercise the 32-bit mask boundary and mappings copied during setup.
+    Trigger subgroup;
+    subgroup.SetTimeRegion(64);
+    std::vector<cudamap::FEEAddr> subAddresses;
+    std::vector<cudamap::TriggerConfig> subConfigs;
+    std::vector<uint64_t> subWords;
+    for (unsigned channel = 0; channel < 32; ++channel) {
+        cudamap::stageItem(1, channel, uint32_t(1) << channel, 3, 0, 0, subAddresses, subConfigs);
+        subWords.push_back((uint64_t(TDC64H::T_TDC) << 58) | (uint64_t(channel) << 51) | (uint64_t(10) << 12));
+    }
+    subgroup.InitializeFEEAddrDecoder(subAddresses, subConfigs);
+    uint32_t entries = 32, mapping = 1;
+    subgroup.SetSubTimeRegion(64, &entries, 1);
+    subgroup.SetfiSubTimeRegionMainTimeRegion(&mapping, 1);
+    subgroup.MakeTable(expression);
+    std::vector<HBFIndex> subSegments = {{SubTimeFrame::TDC64H, 1,
+        reinterpret_cast<unsigned char*>(subWords.data()), int(subWords.size() * 8)}};
+    subgroup.CleanUpTimeRegion();
+    subgroup.CleanUpSubTimeRegion(&entries, 1);
+    require(*subgroup.Exec(subSegments) == std::vector<uint32_t>({9}));
+    subSegments[0].size -= 8;
+    subgroup.CleanUpTimeRegion();
+    subgroup.CleanUpSubTimeRegion(&entries, 1);
+    require(subgroup.Exec(subSegments)->empty());
+    std::cout << "PASS: four TDC formats, 39 boards x 4 HBFs, mixed FEM/type, multi-block, empty input and 32-signal subgroup\n";
 }
