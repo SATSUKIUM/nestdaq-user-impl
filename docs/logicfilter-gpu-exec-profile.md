@@ -1,5 +1,7 @@
 # GPU Exec内部の時間内訳
 
+4 HBFをまとめた新しい実装と全件比較は[HBF一括処理](logicfilter-hbf-batch.md)を参照。
+
 `--exec-details true`を追加し、GPU版のExec内部をホスト側の経過時間で分割した。
 既定は無効。`--performance-output`で記録を有効にした場合だけ使用できる。
 ROOTの`logicfilter` TTreeへ`gpu_exec_*`ブランチを追加し、各ConditionalRun内の
@@ -163,10 +165,10 @@ CUDAイベント値とホスト時間は重複しており、足し合わせな�
 cmake --build build --target LogicFilter -j4
 python3 tools/run_trgtime_pipeline.py \
   --build-dir ./build --run-dir "$HOME/GitHub/nestdaq-run" \
-  --output-dir /tmp/gpu-exec-control-run --iterations 2000 --wait 0 --performance
+  --output-dir /tmp/gpu-exec-control-run --iterations 2000 --wait 0 --performance --gpu-hbf-batch-size 1
 python3 tools/run_trgtime_pipeline.py \
   --build-dir ./build --run-dir "$HOME/GitHub/nestdaq-run" \
-  --output-dir /tmp/gpu-exec-detail-run --iterations 2000 --wait 0 --performance --gpu-exec-details
+  --output-dir /tmp/gpu-exec-detail-run --iterations 2000 --wait 0 --performance --gpu-hbf-batch-size 1 --gpu-exec-details
 root -l -b -q 'tools/analyze_gpu_exec.C("/tmp/gpu-exec-detail-run/logicfilter.root","/tmp/gpu-exec-control-run/logicfilter.root","/tmp/gpu-exec-analysis",10)'
 ```
 

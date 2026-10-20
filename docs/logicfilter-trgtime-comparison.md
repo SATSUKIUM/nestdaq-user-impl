@@ -141,3 +141,6 @@ python3 -m unittest discover -s tools/tests -v
 全件確認用にByTrackの元の`ProcessSlice()`を`#if 0`で囲み、`false`だけ返す実装を
 有効にしている。TrgTimeと受信スライスの記録はその呼び出し前なので照合は継続できる。
 トラック再構成とスライスの出力は無効。詳細は[全件テスト](logicfilter-full-file-test.md)参照。
+
+GPU版は既定で最大4 HBFを一括処理する。`--gpu-hbf-batch-size 1`でHBF単位処理と
+比較できる。境界・出力形式・全件の照合は[HBF一括処理](logicfilter-hbf-batch.md)参照。
