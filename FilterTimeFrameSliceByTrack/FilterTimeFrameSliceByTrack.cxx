@@ -1,0 +1,1771 @@
+/**
+ * @file FilterTimeFrameSliceByTrack.cxx
+ * @brief Slice Timeframe by Logic timing for NestDAQ
+ * @date Created : 2026-07-14 13:41:20 JST
+ *       Last Modified : 2026-07-14 13:41:20 JST
+ *
+ * @author Shinsuke OTA <ota@rcnp.osaka-u.ac.jp>
+ * @author Shunichi KASHIMA <kashima@rcnp.osaka-u.ac.jp>
+ *
+ */
+#include "FilterTimeFrameSliceByTrack.h"
+#include "FilterTimeFrameSliceABC.icxx"
+#include "fairmq/runDevice.h"
+
+#include "utility/MessageUtil.h"
+#include "UnpackTdc.h"
+
+#include "SubTimeFrameHeader.h"
+#include "TimeFrameHeader.h"
+#include "FrameContainer.h" // TTF, TSTF, THBF, TLF(parse raw data)
+
+// for the Parser of detector configurations
+#include <fstream>
+#include <sstream>
+
+// for registering the detector configurations
+#include <map>
+
+// for cout
+#include <iomanip>
+#include <iostream>
+
+// for debugging
+#include "FilterTimeFrameSliceByTrackDebugger.h"
+
+// for tracking
+#include "DCConstants.h"
+#include <algorithm>
+#include "FilterTimeFrameSliceTempleteLib.h"
+
+// for measuring throughput
+#include <chrono>
+
+#define DEBUG 0
+
+using nestdaq::FilterTimeFrameSliceByTrack;
+using nestdaq::DCRawHit;
+using nestdaq::DCHit;
+using nestdaq::KLDCHitContainer;
+using nestdaq::DCLocalTrack;
+using nestdaq::DCLTrackHit;
+namespace bpo = boost::program_options;
+
+namespace{ // unnamed namespace(can be seen only in this translation unit)
+   std::ofstream gDebugFile = std::ofstream("./fileout/tracking/globalDebug.txt", std::ios::out);
+}
+
+FilterTimeFrameSliceByTrack::FilterTimeFrameSliceByTrack()
+{
+}
+
+void FilterTimeFrameSliceByTrack::ResetTask()
+{
+   FilterTimeFrameSliceABC::ResetTask();
+
+   if(fDebugFile.is_open()){
+      fDebugFile.close();
+   }
+   if(fThroughputFile.is_open()){
+      fThroughputFile.close();
+   }
+
+   if(fRootFile != nullptr){
+      fRootFile->cd();
+
+      if(fRootTree1 != nullptr){
+         fRootTree1->Write();
+      }
+      if(fRootTree2 != nullptr){
+         fRootTree2->Write();
+      }
+      if(fRootTree3 != nullptr){
+         fRootTree3->Write();
+      }
+
+      fRootFile->Close();
+
+      delete fRootFile;
+      fRootFile = nullptr;
+      fRootTree1 = nullptr;
+      fRootTree2 = nullptr;
+      fRootTree3 = nullptr;
+   }
+} // FilterTimeFrameSliceByTrack::ResetTask()
+
+void FilterTimeFrameSliceByTrack::InitTask()
+{
+   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::InitTask] ";
+   FilterTimeFrameSliceABC::InitTask();
+   using opt = OptionKey;
+
+   // ================================
+   // channel map initialization
+   // ================================
+   fChMapDataFile = fConfig->GetProperty<std::string>(opt::ChannelMapDataFile.data());
+   chmap::ChannelMapDopeness& chmap = chmap::ChannelMapDopeness::get_instance();
+   chmap.initialize(fChMapDataFile, isCreateInvMap);
+
+   fChMap = &chmap;
+   std::cout << "[FilterTimeFrameSliceABC::InitTask] ChannelMapDopeness initialized with " << fChMapDataFile << std::endl;
+   std::cout << "\t# of channels: " << std::dec << fChMap->getNumberOfChannels() << std::endl;
+
+   #if CHECK_COUT_CHMAP
+   uint32_t dopeKey_FEtoDET;
+   uint32_t dopeKey_DETtoFE;
+   chmap::DETIdItem detiditem;
+   chmap::FEAddrItem feaddritem;
+
+   // test t1 right channel
+   uint8_t test_ip3rd_T1right = 0x02;
+   uint8_t test_ip4th_T1right = 0xAA;
+   uint8_t test_ch_T1right = 12;
+   std::cout << "\n\tchecking T1 right DETIdItem search..." << std::endl;
+   bool _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(test_ip3rd_T1right, test_ip4th_T1right, test_ch_T1right, dopeKey_FEtoDET);
+   if(_FOUND_FEtoDET == true){
+      std::cout << "\t\t-> found." << std::endl;
+      detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+      detiditem.decode();
+   }
+   else{
+      std::cout << "\t\t-> not found." << std::endl;
+   }
+
+   // test kldc 2 U 95
+   uint8_t test_ip3rd_kldc2u95 = 0x02;
+   uint8_t test_ip4th_kldc2u95 = 0xB2;
+   uint8_t test_ch_kldc2u95 = 96;
+
+   // check existance of kldc 2 U 95 DETIdItem
+   std::cout << "\n\t" << "checking kldc 2 U 95 DETIdItem search" << std::endl;
+   _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(test_ip3rd_kldc2u95, test_ip4th_kldc2u95, test_ch_kldc2u95, dopeKey_FEtoDET);
+   if(_FOUND_FEtoDET == true){
+      std::cout << "\t" << funcname << "-> found." << std::endl;
+      detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+      detiditem.decode();
+   }
+   else{
+      std::cout << "\t" << funcname << "-> not found." << std::endl;
+   }
+
+   // check the counterpart of kldc 2 U 95 DETidItem
+   std::cout << "\t" << "checking kldc 2 U 95 FEAddrItem search..." << std::endl;
+   bool _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(detiditem, dopeKey_DETtoFE);
+   if(_FOUND_DETtoFE == true){
+      std::cout << "\t" << funcname << "-> found." << std::endl;
+      feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+      feaddritem.decode();
+   }
+   else{
+      std::cout << "\t" << funcname << "-> not found when searching the counterpart of\n";
+      detiditem.decode();
+   }
+
+   // check existance of utof right DETIdItem
+   const std::string_view test_detectorname_utofright = "utof";
+   const std::string_view test_planename_utofright = "0";
+   const uint8_t test_segment_utofright = 0;
+   const uint16_t test_channelnumber_utofright = 0;
+   const std::string_view test_channelname_utofright = "right";
+   std::cout << "\n\t" << "checking utof right FEAddrItem search..." << std::endl;
+   _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_utofright, test_planename_utofright, test_segment_utofright, test_channelname_utofright, test_channelnumber_utofright, dopeKey_DETtoFE);
+   if(_FOUND_DETtoFE == true){
+      std::cout << "\t" << "utof right FEAddrItem -> found." << std::endl;
+      feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+      feaddritem.decode();
+      _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+      if(_FOUND_FEtoDET == true){
+         std::cout << "\t" << "utof right DETIdItem -> found." << std::endl;
+         detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+         detiditem.decode();
+      }
+   }
+
+   // check existance of utof left DETIdItem
+   const std::string_view test_detectorname_utofleft = "utof";
+   const std::string_view test_planename_utofleft = "0";
+   const uint8_t test_segment_utofleft = 0;
+   const uint16_t test_channelnumber_utofleft = 0;
+   const std::string_view test_channelname_utofleft = "left";
+   std::cout << "\n\t" << "checking utof left FEAddrItem search..." << std::endl;
+   _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_utofleft, test_planename_utofleft, test_segment_utofleft, test_channelname_utofleft, test_channelnumber_utofleft, dopeKey_DETtoFE);
+   if(_FOUND_DETtoFE == true){
+      std::cout << "\t" << "utof left FEAddrItem -> found." << std::endl;
+      feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+      feaddritem.decode();
+      _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+      if(_FOUND_FEtoDET == true){
+         std::cout << "\t" << "utof left DETIdItem -> found." << std::endl;
+         detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+         detiditem.decode();
+         // fZPosUTOF = detiditem.detconf->membername_geom->GetGlobalZ();
+         fZPosUTOF = 0.0; // interim
+      }
+   }
+   #endif
+
+   // ================================
+   // detector configuration initialization
+   // ================================
+
+   const auto geometryFile = fConfig->GetProperty<std::string>(opt::GeometryConfigFile.data());
+   std::cout << funcname << "Geometry configuration file: " << geometryFile << std::endl;
+   const auto dctdcCalibFile = fConfig->GetProperty<std::string>(opt::DCTdcCalibConfigFile.data());
+   std::cout << funcname << "DC TDC calibration configuration file: " << dctdcCalibFile << std::endl;
+   const auto dcDriftParamFile = fConfig->GetProperty<std::string>(opt::DCDriftParamConfigFile.data());
+   std::cout << funcname << "DC drift parameter configuration file: " << dcDriftParamFile << std::endl;
+
+   if (!geometryFile.empty()) {
+      if (!LoadDetectorConfig_Geometry(geometryFile)) {
+         std::cerr << funcname << "Failed to parse geometry configuration file: " << geometryFile << std::endl;
+      }
+   }
+   if (!dctdcCalibFile.empty()) {
+      if (!LoadDetectorConfig_DCTdcCalib(dctdcCalibFile)) {
+         std::cerr << funcname << "Failed to parse DC TDC calibration configuration file: " << dctdcCalibFile << std::endl;
+      }
+   }
+   if (!dcDriftParamFile.empty()) {
+      if (!LoadDetectorConfig_DCDriftParam(dcDriftParamFile)) {
+         std::cerr << funcname << "Failed to parse DC drift parameter configuration file: " << dcDriftParamFile << std::endl;
+      }
+   }
+
+   DefineDetectorIdMap(); // for reading detector configuration files from AnalyzerT103
+   RegisterDetectorConfig_Geometry();
+   RegisterDetectorConfig_DCTdcCalib();
+   RegisterDetectorConfig_DCDriftParam();
+
+   #if CHECK_COUT_DETCONF
+   // kldc 1 U 63
+   std::cout << "\n\t" << "checking kldc 1 U 63 DETIdItem search..." << std::endl;
+   const std::string_view test_detectorname_kldc1u63 = "kldc";
+   const std::string_view test_planename_kldc1u63 = "U";
+   const uint8_t test_segment_kldc1u63 = 1;
+   const uint16_t test_channelnumber_kldc1u63 = 63;
+   const std::string_view test_channelname_kldc1u63 = "0";
+   _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_kldc1u63, test_planename_kldc1u63, test_segment_kldc1u63, test_channelname_kldc1u63, test_channelnumber_kldc1u63, dopeKey_DETtoFE);
+   if(_FOUND_DETtoFE == true){
+      std::cout << "\t" << "-> found." << std::endl;
+      feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+      feaddritem.decode();
+      _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+      if(_FOUND_FEtoDET == true){
+         std::cout << "\t" << "-> found." << std::endl;
+         detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+         detiditem.decode();
+         // check detector configuration for kldc 1 U 63
+         // geometry
+         const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
+         if(retrieved_geomitemdc != nullptr){
+            std::cout << "\t" << "-> found detector configuration for kldc 1 U 63." << std::endl;
+         }
+         else{
+            std::cout << "\t" << "-> not found detector configuration for kldc 1 U 63." << std::endl;
+         }
+
+         // TDC calibration
+         const chmap::CalibrationItem_DCTdcCalib* retrieved_calibitem_dctdccalib = dynamic_cast<const chmap::CalibrationItem_DCTdcCalib*>(detiditem.detconf->membername_calib_dctdccalib.get());
+         if(retrieved_calibitem_dctdccalib != nullptr){
+            std::cout << "\t" << "-> found TDC calibration for kldc 1 U 63." << std::endl;
+         }
+         else{
+            std::cout << "\t" << "-> not found TDC calibration for kldc 1 U 63." << std::endl;
+         }
+
+         // Drift Length calibration
+         const chmap::CalibrationItem_DCDriftLength* retrieved_calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detiditem.detconf->membername_calib_dcdriftlen.get());
+         if(retrieved_calibitem_dcdriftlen != nullptr){
+            std::cout << "\t" << "-> found Drift Length calibration for kldc 1 U 63." << std::endl;
+         }
+         else{
+            std::cout << "\t" << "-> not found Drift Length calibration for kldc 1 U 63." << std::endl;
+         }
+      } // if(_FOUND_FEtoDET == true)
+   } // if(_FOUND_DETtoFE == true)
+   else{
+      std::cout << "\t" << "-> not found." << std::endl;
+   }
+
+
+   // plane name index check
+   const std::string test_planename_up = "Up";
+   uint8_t test_planename_up_index = 0;
+   bool _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_up, test_planename_up_index);
+   if(_FOUND_Index == true){
+      std::cout << "\t" << "-> found plane name index for Up: " << std::hex << static_cast<int>(test_planename_up_index) << std::dec << std::endl;
+   }
+   else{
+      std::cout << "\t" << "-> not found plane name index for Up." << std::endl;
+   }
+
+   const std::string test_planename_v = "V";
+   uint8_t test_planename_v_index = 0;
+   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_v, test_planename_v_index);
+   if(_FOUND_Index == true){
+      std::cout << "\t" << "-> found plane name index for V: " << std::hex << static_cast<int>(test_planename_v_index) << std::dec << std::endl;
+   }
+   else{
+      std::cout << "\t" << "-> not found plane name index for V." << std::endl;
+   }
+
+   const std::string test_planename_u = "U";
+   uint8_t test_planename_u_index = 0;
+   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_u, test_planename_u_index);
+   if(_FOUND_Index == true){
+      std::cout << "\t" << "-> found plane name index for U: " << std::hex << static_cast<int>(test_planename_u_index) << std::dec << std::endl;
+   }
+   else{
+      std::cout << "\t" << "-> not found plane name index for U." << std::endl;
+   }
+
+   const std::string test_planename_vp = "Vp";
+   uint8_t test_planename_vp_index = 0;
+   _FOUND_Index = fChMap->plane_dictionary.StringToIndex(test_planename_vp, test_planename_vp_index);
+   if(_FOUND_Index == true){
+      std::cout << "\t" << "-> found plane name index for Vp: " << std::hex << static_cast<int>(test_planename_vp_index) << std::dec << std::endl;
+   }
+   else{
+      std::cout << "\t" << "-> not found plane name index for Vp." << std::endl;
+   }
+   #endif
+
+   // z Position check for KLDC1(U,U',V,V') and KLDC2(U,U',V,V'), wire: 64th
+   std::string_view PLANES[4] = {"U", "Up", "V", "Vp"};
+   for(int iseg=0; iseg<2; ++iseg){
+      for(int ipl=0; ipl<4; ++ipl){
+         const std::string_view plane_name = PLANES[ipl];
+         uint8_t segment = iseg + 1;
+         _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string(plane_name), segment, std::string("0"), static_cast<uint16_t>(64-1), dopeKey_DETtoFE); // 64th wire, 0-indexed
+         if(_FOUND_DETtoFE == true){
+            feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+            _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+            if(_FOUND_FEtoDET == true){
+               detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+               detiditem.decode();
+               const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
+               if(geomitemdc != nullptr){
+                  std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << std::endl;
+                  geomitemdc->decode();
+               }
+               const chmap::CalibrationItem_DCTdcCalib* calibitem_dctdccalib = dynamic_cast<const chmap::CalibrationItem_DCTdcCalib*>(detiditem.detconf->membername_calib_dctdccalib.get());
+               if(calibitem_dctdccalib != nullptr){
+                  std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << std::endl;
+                  calibitem_dctdccalib->decode();
+               }
+               const chmap::CalibrationItem_DCDriftLength* calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detiditem.detconf->membername_calib_dcdriftlen.get());
+               if(calibitem_dcdriftlen != nullptr){
+                  std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << std::endl;
+                  calibitem_dcdriftlen->decode();
+               }
+            } // if(_FOUND_FEtoDET == true)
+         } // if(_FOUND_DETtoFE == true)
+      } // for(int ipl=0; ipl<4; ++ipl)
+   } // for(int iseg=0; iseg<2; ++iseg)
+
+   // KLDC channel map check
+   int nFOUND_DETtoFE = 0;
+   int nFOUND_FEtoDET = 0;
+   for(int iseg=0; iseg<2; ++iseg){
+      for(int ipl=0; ipl<4; ++ipl){
+         nFOUND_DETtoFE = 0;
+         nFOUND_FEtoDET = 0;
+         const std::string_view plane_name = PLANES[ipl];
+         uint8_t segment = iseg + 1;
+         for(int ich=32; ich<128-32; ++ich){
+            _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string(plane_name), segment, std::string("0"), static_cast<uint16_t>(ich), dopeKey_DETtoFE);
+            if(_FOUND_DETtoFE == true){
+               nFOUND_DETtoFE++;
+               feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+               _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+               if(_FOUND_FEtoDET == true){
+                  nFOUND_FEtoDET++;
+                  detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+               } // if(_FOUND_FEtoDET == true)
+            } // if(_FOUND_DETtoFE == true)
+         } // for(int ich=0; ich<128; ++ich)
+         std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << ": # of DETtoFE found: " << nFOUND_DETtoFE << ", # of FEtoDET found: " << nFOUND_FEtoDET << std::endl;
+      } // for(int ipl=0; ipl<4; ++ipl)
+   } // for(int iseg=0; iseg<2; ++iseg)
+
+   // ================================
+   // File I/O for debugging
+   // ================================
+   #if FILEOUT_LFTDC
+   fDebugFileName = "./fileout/tracking/FilterTimeFrameSliceByTrack_debug.txt";
+   fDebugFile.open(fDebugFileName, std::ios::out);
+   if (!fDebugFile.is_open()) {
+      std::cerr << funcname << "Failed to open debug file: " << fDebugFileName << std::endl;
+   }
+   #endif
+
+   #if FILEOUT_ELAPSED_TIME
+   fThroughputFileName = "./fileout/tracking/FilterTimeFrameSliceByTrack_throughput.txt";
+   fThroughputFile.open(fThroughputFileName, std::ios::out);
+   if (!fThroughputFile.is_open()) {
+      std::cerr << funcname << "Failed to open throughput file: " << fThroughputFileName << std::endl;
+   }
+   #endif
+
+
+/*
+   // for fRootTree1
+   Int_t fTree_nt{0};
+   Double_t fTree_elapsed_time{0.0};
+   Double_t fTree_elapsed_time_decode{0.0};
+   Int_t fTree_nUTOF{0};
+   std::vector<Double_t> fTree_elapsed_time_setstandardtime;
+   std::vector<Double_t> fTree_elapsed_time_clustering;
+   std::vector<Double_t> fTree_elapsed_time_maketrack;
+   std::vector<Double_t> fTree_elapsed_time_fitting;
+   std::vector<Int_t> fTree_nCombi; // number of combinations of clusters of each UTOF standard time
+*/
+   #if FILEOUT_ELAPSED_TIME_TREE
+   fRootFile = new TFile("./fileout/tracking/FilterTimeFrameSliceByTrack_throughput.root", "RECREATE");
+   fRootTree1 = new TTree("tree1", "ProcessSlice() data");
+   fRootTree1->Branch("nt", &fTree_nt, "nt/I");
+   fRootTree1->Branch("sizeSlice", &fTree_sizeSlice, "sizeSlice/D");
+   fRootTree1->Branch("elapsed_time", &fTree_elapsed_time, "elapsed_time/D");
+   fRootTree1->Branch("elapsed_time_decode", &fTree_elapsed_time_decode, "elapsed_time_decode/D");
+   fRootTree1->Branch("nUTOF", &fTree_nUTOF, "nUTOF/I");
+   fRootTree1->Branch("elapsed_time_setstandardtime", &fTree_elapsed_time_setstandardtime);
+   fRootTree1->Branch("elapsed_time_clustering", &fTree_elapsed_time_clustering);
+   fRootTree1->Branch("elapsed_time_maketrack", &fTree_elapsed_time_maketrack);
+   fRootTree1->Branch("elapsed_time_fitting", &fTree_elapsed_time_fitting);
+   fRootTree1->Branch("nCombi", &fTree_nCombi);
+
+   fRootTree2 = new TTree("tree2", "Hit Data");
+   fRootTree2->Branch("nHits", &fTree_nHits, "nHits/I");
+   fRootTree2->Branch("chisqr", &fTree_chiSqr, "chisqr/D");
+   fRootTree2->Branch("x0", &fTree_x0, "x0/D");
+   fRootTree2->Branch("y0", &fTree_y0, "y0/D");
+   fRootTree2->Branch("u0", &fTree_u0, "u0/D");
+   fRootTree2->Branch("v0", &fTree_v0, "v0/D");
+   fRootTree3 = new TTree("tree3", "Hit Data");
+   fRootTree3->Branch("layer", &fTree_iLayer, "layer/I");
+   fRootTree3->Branch("wire", &fTree_iWire, "wire/I");
+   fRootTree3->Branch("residual", &fTree_Residual, "residual/D");
+   #endif
+
+} // void FilterTimeFrameSliceByTrack::InitTask()
+
+bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
+{
+   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::ProcessSlice] ";
+   #if FILEOUT_ELAPSED_TIME_TREE
+   std::vector<Double_t> fTree_elapsed_time_setstandardtime_;
+   std::vector<Double_t> fTree_elapsed_time_clustering_;
+   std::vector<Double_t> fTree_elapsed_time_maketrack_;
+   std::vector<Double_t> fTree_elapsed_time_fitting_;
+   std::vector<Int_t> fTree_nCombi_;
+   fTree_sizeSlice = static_cast<Double_t>(tf.GetRealLength());
+   #endif
+   #if CHECK_COUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME_TREE
+   std::chrono::high_resolution_clock::time_point start_time, end_time;
+   std::chrono::high_resolution_clock::time_point start_time_decode, end_time_decode;
+   std::chrono::high_resolution_clock::time_point start_time_setstandardtime, end_time_setstandardtime;
+   std::chrono::high_resolution_clock::time_point start_time_clustering, end_time_clustering;
+   std::chrono::high_resolution_clock::time_point start_time_maketrack, end_time_maketrack;
+   std::chrono::high_resolution_clock::time_point start_time_fitting, end_time_fitting;
+   start_time_decode = std::chrono::high_resolution_clock::now();
+   start_time = std::chrono::high_resolution_clock::now();
+   #endif
+
+   #if DEBUG_LFTDC
+   std::cout << funcname << "Function called" << std::endl;
+   std::cout << "\tchecking TLF TDC 4ns unit: " << std::dec << std::setw(10) << fLFTDC4n << " -> " << std::setw(10) << fLFTDC4n * 4 << " [ns]" << std::endl;
+   #endif
+
+   auto tfHeader = tf.GetHeader();
+   auto numSTF = tfHeader->numSource;
+
+   uint32_t femId = 0;
+   uint16_t ch = 0; // 8でも十分なんだけど、255よりでかい謎のエントリーを除外するために16で受ける
+   double ftdc = 0; // unit: ns
+   uint32_t ftdc_int = 0; // unit: ns
+   uint32_t ftot_int = 0; // unit: ns
+   const uint32_t lftdc = fLFTDC4n * 4; // FilterTimeFrameSliceABCの持ってるfield lftdc4n
+   std::vector<double> utof_left_times;
+
+   chmap::DETIdItem* detiditem = nullptr;
+
+   // ================================
+   // Scan, searching for UTOF
+   // ================================
+   const uint32_t femId_utof = 0xc0a802a9;
+   const uint16_t ch_utof_right = 10;
+   const uint16_t ch_utof_left = 8;
+   const uint32_t tdc_min = lftdc - 100; // unit: ns
+   const uint32_t tdc_max = lftdc + 100; // unit: ns
+   int nTDC_utof_right = 0;
+   int nTDC_utof_left = 0;
+   uint32_t time_utof_right = 0;
+   uint32_t time_utof_left = 0;
+
+   #if FILEOUT_LFTDC
+   double min_diff_utof_right = 1e6;
+   double min_diff_utof_left = 1e6;
+   #endif
+
+   for(auto& stf : tf){
+      auto stfHeader = stf->GetHeader();
+      femId = stfHeader->femId;
+      if(femId != femId_utof){
+         continue;
+      }
+      // auto numHBF = stfHeader->numMessages; // tabun, 1
+
+      TDC64H_V3::tdc64 tdc64_h;
+      // TDC64L_V3::tdc64 tdc64_l;
+      uint32_t nTDC = 0;
+      if(stfHeader->femType == SubTimeFrame::TDC64H_V3){
+         auto& hbf = stf->at(0);
+         nTDC = hbf->GetNumData();
+         if(nTDC == 0){
+            continue; // no TDC data
+         }
+         #if DEBUG_LFTDC
+         std::cout << funcname << "HR TDC FEE found. femId = " << std::hex << femId << std::dec << std::endl;
+         std::cout << "\tnTDC: " << nTDC << std::endl;
+         #endif
+         for(uint32_t iTDC=0; iTDC<nTDC; ++iTDC){
+            TDC64H_V3::Unpack(hbf->UncheckedAt(iTDC), &tdc64_h);
+            ch = tdc64_h.ch;
+            // if(ch == ch_utof_right){
+            //    ftdc = tdc64_h.tdc * 0.9765625 * 0.001; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける
+            //    // ftdc_int = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
+            //    #if DEBUG_LFTDC
+            //    std::cout << funcname << "(double) utof right: ch = " << ch << ", tdc     - lftdc = " << ftdc - lftdc << std::endl;
+            //    std::cout << funcname << "(int)    utof right: ch = " << ch << ", tdc_int - lftdc = " << static_cast<int>(ftdc_int) - static_cast<int>(lftdc) << std::endl;
+            //    #endif
+
+            //    #if FILEOUT_LFTDC
+            //    if(fabs(ftdc - lftdc) < min_diff_utof_right){
+            //       min_diff_utof_right = ftdc - lftdc;
+            //    }
+            //    #endif
+
+            //    if(ftdc >= tdc_min && ftdc <= tdc_max){
+            //       nTDC_utof_right++;
+            //       time_utof_right = ftdc;
+            //    }
+            // } // if(ch == ch_utof_right)
+            if(ch == ch_utof_left){
+               ftdc = tdc64_h.tdc * tdc64h_to_ns; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける
+               // ftdc_int = tdc64_h.tdc>>10; // HR TDCのLSBが0.9765625 ps = 1/2^10 nsなので、(0.9765625 * 0.001)を掛ける代わりに2^10を掛ける
+               #if DEBUG_LFTDC
+               std::cout << funcname << "(double) utof left: ch = " << ch << ", tdc     - lftdc = " << ftdc - lftdc << std::endl;
+               std::cout << funcname << "(int)    utof left: ch = " << ch << ", tdc_int - lftdc = " << static_cast<int>(ftdc_int) - static_cast<int>(lftdc) << std::endl;
+               #endif
+
+               #if FILEOUT_LFTDC
+               if(fabs(ftdc - lftdc) < min_diff_utof_left){
+                  min_diff_utof_left = ftdc - lftdc;
+               }
+               #endif
+
+               utof_left_times.push_back(ftdc);
+               // if(ftdc >= tdc_min && ftdc <= tdc_max){
+               //    nTDC_utof_left++;
+               //    time_utof_left = ftdc;
+               // }
+            } // if(ch == ch_utof_left)
+         } // for(uint32_t iTDC=0; iTDC<nTDC; ++iTDC)
+      } // if(stfHeader->femType == SubTimeFrame::TDC64H_V3)
+   } // for(auto& stf : tf)
+
+   #if FILEOUT_LFTDC
+   if(min_diff_utof_right < 1e6){
+      fDebugFile << 10 << " " << min_diff_utof_right << std::endl;
+   }
+   if(min_diff_utof_left < 1e6){
+      fDebugFile << 8 << " " << min_diff_utof_left << std::endl;
+   }
+   #endif
+
+
+   #if DEBUG_LFTDC
+   if(nTDC_utof_right > 0 || nTDC_utof_left > 0){
+      std::cout << funcname << "UTOF hit in range [lftdc-2, lftdc+2] = [" << lftdc << " - 2, " << lftdc <<  " + 2]" << std::endl;
+      std::cout << "\tutof right: nTDC = " << nTDC_utof_right << ", time = " << time_utof_right << std::endl;
+      std::cout << "\tutof left: nTDC = " << nTDC_utof_left << ", time = " << time_utof_left << std::endl;
+   }
+   #endif
+
+   // ================================
+   // Scan, searching for KLDC with hit time after the coincidence TDC from LogicFilter block
+   // ================================
+   // define the standard time for the start time of drift time calculation
+   int nStandardTime = utof_left_times.size();
+   #if FILEOUT_ELAPSED_TIME_TREE
+   fTree_nUTOF = nStandardTime;
+   fTree_elapsed_time_setstandardtime_.reserve(nStandardTime);
+   fTree_elapsed_time_clustering_.reserve(nStandardTime);
+   fTree_elapsed_time_maketrack_.reserve(nStandardTime);
+   fTree_elapsed_time_fitting_.reserve(nStandardTime);
+   fTree_nCombi_.reserve(nStandardTime);
+   #endif
+   int standardTime = 0;
+   if(nStandardTime > 0){
+      standardTime = static_cast<int>(*std::min_element(utof_left_times.begin(), utof_left_times.end()));
+   }
+   else{
+      return false;
+   }
+
+   // scan
+   uint8_t femId_ip3rd = 0;
+   uint8_t femId_ip4th = 0;
+   uint32_t keyFEtoDET;
+   const uint8_t kldc_detname_index = 0x06;
+   std::vector<DCRawHit> kldcRawHits;
+   for(auto& stf : tf){
+      auto stfHeader = stf->GetHeader();
+      if(stfHeader->femType == SubTimeFrame::TDC64L_V3){
+         // std::cout << "TDC64L_V3 FEM found. femId = " << std::hex << femId << std::dec << std::endl;
+         auto& hbf = stf->at(0);
+         // auto hbfHeader = hbf->GetHeader();
+         uint32_t nData = hbf->GetNumData();
+         femId = stfHeader->femId;
+         femId_ip3rd = (femId >> 8) & 0xff;
+         femId_ip4th = femId & 0xff;
+
+         TDC64L_V3::tdc64 tdc;
+         for(uint32_t i=0; i<nData; ++i){
+            TDC64L_V3::Unpack(hbf->UncheckedAt(i), &tdc);
+            ch = tdc.ch;
+            ftdc_int = tdc.tdc;
+            ftot_int = tdc.tot;
+            bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
+            if(isFound){
+               detiditem = &fChMap->getDETIdItem(keyFEtoDET);
+               if(detiditem->name == kldc_detname_index){
+                  if(ftdc_int >= standardTime){
+                     DCRawHit hit(detiditem, ftdc_int, ftot_int);
+                     kldcRawHits.push_back(hit);
+                  } // if(ftdc_int >= standardTime)
+               } // if(detiditem->name == kldc_detname_index)
+            } // if(isFound)
+         } // for(uint32_t i=0; i<nData; ++i)
+      } // else if(stfHeader->femType == SubTimeFrame::TDC64L_V3)
+      else{
+         continue; // skip other FEM types
+      } // if(stfHeader->femType == SubTimeFrame::TDC64L_V3)
+   } // for(auto& stf : tf)
+
+   #if 0
+   std::cout << funcname << "Number of KLDC hits after standard time: " << kldcRawHits.size() << std::endl;
+   #endif
+
+   // sort the raw hits, first by segment, then by plane, and finally by channel number
+   std::sort(kldcRawHits.begin(), kldcRawHits.end(), [](const DCRawHit& left, const DCRawHit& right) {
+      if(left.detid->segment != right.detid->segment) {
+         return left.detid->segment < right.detid->segment;
+      } else if(left.detid->plane != right.detid->plane) {
+         return left.detid->plane < right.detid->plane;
+      } else {
+         return left.detid->channel_number < right.detid->channel_number;
+      }
+   });
+
+   #if 0
+   // print the sorted KLDC hits for debugging
+   std::cout << funcname << "\tKLDC hit:" << std::endl;
+   for(const auto& hit : kldcRawHits){
+      std::cout << "\t\tsegment: " << std::dec << std::setfill(' ') << std::setw(2) << static_cast<int>(hit.detid->segment)
+                << ", plane: " << std::setw(2) << static_cast<int>(hit.detid->plane)
+                << ", channel: " << std::setw(3) << hit.detid->channel_number
+                << ", tdc: " << std::setw(10) << hit.tdc
+                << std::endl;
+   } // for(const auto& hit : kldcRawHits)
+   #endif
+
+   // distribute the KLDC hits to its container
+   // clear fKLDCHitContainer before filling it with new hits
+   #if DEBUG_KLDC_TRACK_SEARCH && 0
+   std::cout << funcname << "Before fKLDCHitContainer.Reset()" << std::endl;
+   #endif
+   fKLDCHitContainer.Reset();
+   for(auto& hit : kldcRawHits){
+      const chmap::DETIdItem* detiditem = hit.detid;
+      uint8_t segment = detiditem->segment;
+      uint16_t wireNumber = detiditem->channel_number;
+      uint32_t tdc = hit.tdc;
+      uint32_t tot = hit.tot;
+      double wirePos = 0.0;
+      double wireAngle = 0.0;
+
+      int planeNumber = 4 * (segment - 1) + (detiditem->plane - 1); // planeNumber = 1~8
+      // 0: KLDC1 U, 1: KLDC1 Up, 2: KLDC1 V, 3: KLDC1 Vp, 4: KLDC2 U, 5: KLDC2 Up, 6: KLDC2 V, 7: KLDC2 Vp
+      if(!(fKLDCHitContainer[planeNumber].empty()) && fKLDCHitContainer[planeNumber].back().GetDETIdItem()->channel_number == wireNumber){
+         fKLDCHitContainer[planeNumber].back().AddHit(tdc, tot);
+      }
+      else{
+         if(detiditem->detconf != nullptr){
+            const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
+            if(geomitemdc != nullptr){
+               wirePos = geomitemdc->GetWirePosition();
+               wireAngle = geomitemdc->GetTiltAngle();
+            }
+            DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
+            fKLDCHitContainer[planeNumber].push_back(h);
+         } // if(detiditem->detconf != nullptr)
+      }
+   } // for(auto& hit : kldcRawHits)
+   #if DEBUG_KLDC_TRACK_SEARCH && 0
+   std::cout << funcname << "After distributing raw hits to fKLDCHitContainer" << std::endl;
+   #endif
+
+
+   #if FILEOUT_ELAPSED_TIME_TREE
+   end_time_decode = std::chrono::high_resolution_clock::now();
+   fTree_elapsed_time_decode = std::chrono::duration<double, std::micro>(end_time_decode - start_time_decode).count();
+   #endif
+   // Reconstruct tracks independently for each UTOF reference time in this slice.
+   //
+   // A DCLTrackHit refers to its DCHit's drift-length and flag arrays.  Those
+   // arrays are rebuilt by SetStandardTime(), so candidates must be selected
+   // before processing the next UTOF reference time.
+   for(int iStandardTime=0; iStandardTime<nStandardTime; ++iStandardTime){
+      double standardTimeEach = utof_left_times[iStandardTime];
+      std::vector<DCLocalTrack*> tracksForStandardTime;
+
+      // ================================
+      // calculate drift length
+      // ================================
+      #if DEBUG_KLDC_TRACK_SEARCH
+      std::cout << funcname << "Before calculating drift lengths" << std::endl;
+      #endif
+      #if FILEOUT_ELAPSED_TIME_TREE
+      start_time_setstandardtime = std::chrono::high_resolution_clock::now();
+      #endif
+      fKLDCHitContainer.SetStandardTime(standardTimeEach, fDCTimeRange);
+      #if FILEOUT_ELAPSED_TIME_TREE
+      end_time_setstandardtime = std::chrono::high_resolution_clock::now();
+      fTree_elapsed_time_setstandardtime_.push_back(std::chrono::duration<double, std::micro>(end_time_setstandardtime - start_time_setstandardtime).count());
+      #endif
+      #if DEBUG_KLDC_TRACK_SEARCH
+      std::cout << funcname << "After calculating drift lengths" << std::endl;
+      #endif
+
+      // ================================
+      // clustering
+      // ================================
+      #if FILEOUT_ELAPSED_TIME_TREE
+      start_time_clustering = std::chrono::high_resolution_clock::now();
+      #endif
+      std::vector< std::vector<DCPairHitCluster*> > CandCont;
+      CandCont.resize(npp);
+      for(size_t i=0; i<npp; ++i){
+         std::pair<int, int> ppindex = fKLDCPairPlaneInfo[i];
+         int plane1 = ppindex.first;
+         int plane2 = ppindex.second;
+         MakePairPlaneHitCluster(fKLDCHitContainer[plane1], fKLDCHitContainer[plane2], fKLDCCellSize, CandCont[i]);
+      } // for(size_t i=0; i<npp; ++i)
+
+      // prepare for combinatorial search
+      std::vector<int> nCombi(npp);
+      for(int ipp=0; ipp<npp; ++ipp){
+         nCombi[ipp] = CandCont[ipp].size();
+         if(nCombi[ipp] > fMaxNumClusters){
+            nCombi[ipp] = 0; // T103のKLDCの読み出しボードのクロストークによって計算量が莫大になることを避けるための措置
+         }
+      }
+
+      std::vector<std::vector<int>> CombiIndex = makeindex(npp, &nCombi[0]);
+      int nnCombi = CombiIndex.size();
+      if(nnCombi > fMaxCombi){
+         return false;
+      }
+      #if FILEOUT_ELAPSED_TIME_TREE
+      end_time_clustering = std::chrono::high_resolution_clock::now();
+      fTree_elapsed_time_clustering_.push_back(std::chrono::duration<double, std::micro>(end_time_clustering - start_time_clustering).count());
+      #endif
+
+      #if DEBUG_KLDC_TRACK_SEARCH
+      std::cout << funcname << "After clustering, nnCombi = " << nnCombi << std::endl;
+      for(size_t ipp=0; ipp<npp; ++ipp){
+         std::cout << "\tnCombi[" << ipp << "] = " << nCombi[ipp] << std::endl;
+      }
+      #endif
+
+      #if 0 // check index generation for combinatorial search
+      std::cout << funcname;
+      for(size_t ipp=0; ipp<npp; ++ipp){
+         std::cout << "nCombi[" << ipp << "] = " << nCombi[ipp] << ", ";
+      }
+      std::cout << std::endl;
+      std::cout << funcname << "nnCombi = " << nnCombi << ", and its content: " << std::endl;
+      for(size_t i=0; i<CombiIndex.size(); ++i){
+         std::cout << "\t";
+         for(size_t j=0; j<CombiIndex[i].size(); ++j){
+            std::cout << CombiIndex[i][j] << " ";
+         }
+         std::cout << std::endl;
+      }
+      #endif
+      // ================================
+      // Track making, fitting, and selection(minimum number of hits and chi-square)
+      // ================================
+      #if 1
+      int ntr_try = 0;
+      int ntr_pass1 = 0;
+      int ntr_pass2 = 0;
+      #endif
+      #if FILEOUT_ELAPSED_TIME_TREE
+      double elapsed_time_maketrack = 0.0;
+      double elapsed_time_fitting = 0.0;
+      #endif
+      for(int inCombi=0; inCombi<nnCombi; ++inCombi){
+         #if FILEOUT_ELAPSED_TIME_TREE
+         start_time_maketrack = std::chrono::high_resolution_clock::now();
+         #endif
+         DCLocalTrack* track = MakeTrack(CandCont, &((CombiIndex[inCombi])[0]));
+         #if FILEOUT_ELAPSED_TIME_TREE
+         end_time_maketrack = std::chrono::high_resolution_clock::now();
+         elapsed_time_maketrack += std::chrono::duration<double, std::micro>(end_time_maketrack - start_time_maketrack).count();
+         #endif
+         if(track == nullptr) continue;
+         ntr_try++;
+
+         #if 0
+         bool isBelowMaxChiSquare_beforeAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
+         double chiSquare_beforeAngleCorrection = track->GetChiSquare();
+         bool isBelowMaxChiSquare_afterAngleCorrection = false;
+         #endif
+         #if FILEOUT_ELAPSED_TIME_TREE
+         start_time_fitting = std::chrono::high_resolution_clock::now();
+         #endif
+         if(track->GetNHits() >= DCConstants::DCLocalMinNHits && track->DoFit()){
+            ntr_pass1++;
+            for(int i=0; i<fNumAngleCorrectionIteration; ++i){
+               if(!track->AngleCorrection()) break;
+            }
+            #if 0
+            isBelowMaxChiSquare_afterAngleCorrection = (track->GetChiSquare() < fMaxChisquare);
+            if(isBelowMaxChiSquare_afterAngleCorrection == true && isBelowMaxChiSquare_beforeAngleCorrection == false){
+               std::cout << "[LocalTrackSearch_AngleCorrection] Track improved after angle correction:" << std::endl;
+               std::cout << "\tBefore: " << chiSquare_beforeAngleCorrection << ", After: " << track->GetChiSquare() << std::endl;
+            }
+            #endif
+
+            if(track->GetChiSqr() < fMaxChiSqr){
+               tracksForStandardTime.push_back(track);
+               ntr_pass2++;
+            }
+            else{
+               delete track;
+            }
+         }
+         #if FILEOUT_ELAPSED_TIME_TREE
+         end_time_fitting = std::chrono::high_resolution_clock::now();
+         elapsed_time_maketrack += std::chrono::duration<double, std::micro>(end_time_fitting - start_time_fitting).count();
+         elapsed_time_fitting += std::chrono::duration<double, std::micro>(end_time_fitting - start_time_fitting).count();
+         #endif
+      } // for(int inCombi=0; inCombi<nnCombi; ++inCombi)
+      #if FILEOUT_ELAPSED_TIME_TREE
+      fTree_elapsed_time_maketrack_.push_back(elapsed_time_maketrack);
+      fTree_elapsed_time_fitting_.push_back(elapsed_time_fitting);
+      fTree_nCombi_.push_back(nnCombi);
+      #endif
+
+      for(int i=0; i<npp; ++i){
+         for_each(CandCont[i].begin(), CandCont[i].end(), DeleteObject());
+      }
+
+      // Select independent tracks while their DCHit state still corresponds
+      // to standardTimeEach.  Do not apply this procedure after the next
+      // SetStandardTime(), which would mix fitted parameters from one time
+      // with hit flags and drift lengths from another.
+      for(auto* track : tracksForStandardTime){
+         track->ClearFlags();
+      }
+      std::partial_sort(tracksForStandardTime.begin(), tracksForStandardTime.end(),
+                        tracksForStandardTime.end(), DCLTrackComp1());
+      for(int i=0; i<int(tracksForStandardTime.size()); ++i){
+         DCLocalTrack* track = tracksForStandardTime[i];
+         track->SetFlags();
+         for(int i2=int(tracksForStandardTime.size())-1; i2>i; --i2){
+            DCLocalTrack* other = tracksForStandardTime[i2];
+            if(other->GetNumOfTrueFlags() > 0){
+               delete other;
+               tracksForStandardTime.erase(tracksForStandardTime.begin()+i2);
+            }
+         }
+      }
+      for(auto* track : tracksForStandardTime){
+         track->CalcHitPositions();
+      }
+      fTrackCont.insert(fTrackCont.end(), tracksForStandardTime.begin(), tracksForStandardTime.end());
+   } // for(int iStandardTime=0; iStandardTime<nStandardTime; ++iStandardTime)
+   #if 0
+   std::cout << funcname << "Number of tracks tried: " << ntr_try << std::endl;
+   std::cout << "\tNumber of tracks passed first  selection: " << ntr_pass1 << std::endl;
+   std::cout << "\tNumber of tracks passed second selection: " << ntr_pass2 << std::endl;
+   #endif
+
+   int ntr_after = fTrackCont.size();
+   if(ntr_after > 0){
+   #if CHECK_COUT_ELAPSED_TIME
+   end_time = std::chrono::high_resolution_clock::now();
+      auto elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+      std::cout << funcname << "Number of tracks after filtering: " << ntr_after << std::endl;
+      std::cout << "\tElapsed time: " << elapsed_time << " microseconds" << std::endl;
+      for(int i=0; i<ntr_after; ++i){
+         DCLocalTrack *tp = fTrackCont[i];
+         std::cout << "\ttTrack " << i << ": #Hits = " << tp->GetNHits() << ", ChiSquare = " << tp->GetChiSqr() << ", x0 = " << tp->GetX0() << ", y0 = " << tp->GetY0() << ", dx/dz = " << tp->GetU0() << ", dy/dz = " << tp->GetV0() << std::endl;
+      }
+   #endif
+   #if FILEOUT_ELAPSED_TIME || FILEOUT_ELAPSED_TIME_TREE
+      end_time = std::chrono::high_resolution_clock::now();
+      double elapsed_time = std::chrono::duration<double, std::micro>(end_time - start_time).count();
+   #endif
+   #if FILEOUT_ELAPSED_TIME
+      fThroughputFile << ntr_after << " " << elapsed_time << std::endl;
+      for(int i=0; i<ntr_after; ++i){
+         DCLocalTrack *tp = fTrackCont[i];
+         fThroughputFile << tp->GetNHits() << " " << tp->GetChiSqr() << " " << tp->GetX0() << " " << tp->GetY0() << " " << tp->GetU0() << " " << tp->GetV0() << std::endl;
+      }
+   #endif
+   #if FILEOUT_ELAPSED_TIME_TREE
+   fTree_nt = ntr_after;
+   fTree_elapsed_time = elapsed_time;
+   fTree_elapsed_time_setstandardtime = fTree_elapsed_time_setstandardtime_;
+   fTree_elapsed_time_clustering = fTree_elapsed_time_clustering_;
+   fTree_elapsed_time_maketrack = fTree_elapsed_time_maketrack_;
+   fTree_elapsed_time_fitting = fTree_elapsed_time_fitting_;
+   fTree_nCombi = fTree_nCombi_;
+   fRootTree1->Fill();
+   for(int i=0; i<ntr_after; ++i){
+      DCLocalTrack *tp = fTrackCont[i];
+      fTree_nHits = tp->GetNHits();
+      fTree_chiSqr = tp->GetChiSqr();
+      fTree_x0 = tp->GetX0();
+      fTree_y0 = tp->GetY0();
+      fTree_u0 = tp->GetU0();
+      fTree_v0 = tp->GetV0();
+      int nh = tp->GetNHits();
+      for(int j=0; j<nh; ++j){
+         const DCLTrackHit* dclthit = tp->GetHit(j);
+         int layer;
+// 0: KLDC1V, 1: KLDC1Vp, 2: KLDC1Up, 3: KLDC1U, 4: KLDC2Up, 5: KLDC2U, 6: KLDC2V, 7: KLDC2Vp
+         const chmap::DETIdItem* detiditem = dclthit->GetDETIdItem();
+         if(detiditem->segment == 1){
+            if(detiditem->getDetectorPlane() == "U"){
+               layer = 3;
+            }
+            else if(detiditem->getDetectorPlane() == "Up"){
+               layer = 2;
+            }
+            else if(detiditem->getDetectorPlane() == "V"){
+               layer = 0;
+            }
+            else if(detiditem->getDetectorPlane() == "Vp"){
+               layer = 1;
+            }
+         }
+         else if(detiditem->segment == 2){
+            if(detiditem->getDetectorPlane() == "U"){
+               layer = 5;
+            }
+            else if(detiditem->getDetectorPlane() == "Up"){
+               layer = 4;
+            }
+            else if(detiditem->getDetectorPlane() == "V"){
+               layer = 6;
+            }
+            else if(detiditem->getDetectorPlane() == "Vp"){
+               layer = 7;
+            }
+         } // if(detiditem->segment == 1) ... else if(detiditem->segment == 2)
+         fTree_iLayer = layer;
+         fTree_iWire = detiditem->channel_number;
+         double residual = tp->GetResidual(j);
+         fTree_Residual = residual;
+         fRootTree3->Fill();
+      } // for(int j=0; j<nh; ++j)
+   } // for(int i=0; i<ntr_after; ++i)
+   fRootTree2->Fill();
+   #endif
+   }
+
+#if 0
+   int doKeep = false;
+
+   if (tf[0]->GetHeader()->femid == /* some module */) {
+      auto& hbf = tf[0]->at(0)); //
+      uint64_t nData = hbf->GetNumData();
+      for (int i = 0; i < nData; ++i) {
+         // unpack data
+         // Unpack(hbf->UncheckedAt(i),tdc);
+      //
+      }
+      // judge
+      doKeep = true;
+   }
+
+   if (!doKeep) {
+      return false;
+   }
+#endif
+
+   // clear fTrackCont
+   for(int i=0; i<int(fTrackCont.size()); ++i){
+      DCLocalTrack *tp = fTrackCont[i];
+      delete tp;
+   }
+   fTrackCont.clear();
+
+   if(ntr_after > 0){
+      return true;
+   }
+   else{
+      return false;
+   }
+} // bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
+
+int FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry(std::string_view filename)
+{
+   /*
+   input file format
+   - ignore lines starting with '#'
+   - each line contains the following fields:
+     detectorID detectorname x y z tiltangle rotationangle1 rotationangle2 length resolution wirecenternumber wirepitch offset
+      - fields are separated by whitespace
+   - wirecenternumber is the number of wires where the center of Drift Chamber is located
+      - 4.5 means the center is between wire 4 and wire 5
+   */
+   const std::string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry] ";
+   std::ifstream ifs(filename.data());
+   if(!ifs.is_open()){
+      std::cerr << funcName << "Failed to open file: " << filename << std::endl;
+      return -1;
+   }
+
+   std::string line;
+   while(std::getline(ifs, line)){
+      if(line.empty() || line.front() == '#'){
+         continue;
+      }
+
+      std::istringstream iss(line);
+
+      int detectoridentifier{0};
+      std::string detectorname;
+      double x{0.0}, y{0.0}, z{0.0};
+      double tiltangle{0.0}, rotationangle1{0.0}, rotationangle2{0.0};
+      double length{0.0}, resolution{0.0}, wirecenternumber{0.0}, wirepitch{0.0}, offset{0.0};
+
+      if(!(iss >> detectoridentifier >> detectorname >> x >> y >> z >> tiltangle >> rotationangle1 >> rotationangle2 >> length >> resolution >> wirecenternumber >> wirepitch >> offset)){
+         std::cerr << funcName << "Failed to parse line: " << line << std::endl;
+         continue;
+      }
+      fTemporaryGeometries.push_back({detectoridentifier, detectorname, x, y, z, tiltangle, rotationangle1, rotationangle2, length, resolution, wirecenternumber, wirepitch, offset});
+   } // while(std::getline(ifs, line))
+
+   std::cout << funcName << "Parsed " << fTemporaryGeometries.size() << " geometry entries from file: " << filename << std::endl;
+
+   return fTemporaryGeometries.size();
+} // int FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry(std::string_view filename)
+
+int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCTdcCalib(std::string_view filename)
+{
+   /*
+   input file format
+   - ignore lines starting with '#'
+   - each line contains the following fields:
+     detectorID wireID scale offset
+      - fields are separated by whitespace
+   */
+   const std::string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCTdcCalib] ";
+   std::ifstream ifs(filename.data());
+   if(!ifs.is_open()){
+      std::cerr << funcName << "Failed to open file: " << filename << std::endl;
+      return -1;
+   }
+
+
+   std::string line;
+   while(std::getline(ifs, line)){
+      if(line.empty() || line.front() == '#'){
+         continue;
+      }
+
+      std::istringstream iss(line);
+
+      int detectoridentifier{0};
+      int wireidentifier{0};
+      double offset{0.0}, scale{0.0};
+
+      if(!(iss >> detectoridentifier >> wireidentifier >> scale >> offset)){
+         std::cerr << funcName << "Failed to parse line: " << line << std::endl;
+         continue;
+      }
+      fTemporaryDCTdcCalibs.push_back({detectoridentifier, wireidentifier, offset, scale});
+   } // while(std::getline(ifs, line))
+
+   std::cout << funcName << "Parsed " << fTemporaryDCTdcCalibs.size() << " TDC calibration entries from file: " << filename << std::endl;
+
+   return fTemporaryDCTdcCalibs.size();
+} // int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCTdcCalib(std::string_view filename)
+
+int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCDriftParam(std::string_view filename)
+{
+   const std::string_view funcName = "[FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCDriftParam] ";
+   std::ifstream ifs(filename.data());
+   if(!ifs.is_open()){
+      std::cerr << funcName << "Failed to open file: " << filename << std::endl;
+      return -1;
+   }
+
+   std::string line;
+   while(std::getline(ifs, line)){
+      if(line.empty() || line.front() == '#'){
+         continue;
+      }
+
+      std::istringstream iss(line);
+
+      int detectoridentifier{0};
+      int wireidentifier{0};
+      int approxOrder{0};
+      std::vector<double> coefficients;
+
+      int buf;
+
+      if(!(iss >> detectoridentifier >> buf >> approxOrder >> buf)){
+         std::cerr << funcName << "Failed to parse line: " << line << std::endl;
+         continue;
+      }
+      coefficients.resize(approxOrder);
+      for(int i = 0; i < approxOrder; ++i){
+         if(!(iss >> coefficients[i])){
+            std::cerr << funcName << "Failed to parse coefficient " << i << " in line: " << line << std::endl;
+            continue;
+         }
+      }
+      fTemporaryDCDriftParams.push_back({detectoridentifier, approxOrder, coefficients});
+      #if 0
+      std::cout << "{detectoridentifier, approxOrder, coefficients} = {" << detectoridentifier << ", " << approxOrder << ", {";
+      for(int i = 0; i < approxOrder; ++i){
+         std::cout << coefficients[i];
+         if(i < approxOrder - 1){
+            std::cout << ", ";
+         }
+      }
+      std::cout << "}}" << std::endl;
+      #endif
+   } // while(std::getline(ifs, line))
+
+   std::cout << funcName << "Parsed " << fTemporaryDCDriftParams.size() << " drift parameter entries from file: " << filename << std::endl;
+
+   return fTemporaryDCDriftParams.size();
+} // int FilterTimeFrameSliceByTrack::LoadDetectorConfig_DCDriftParam(std::string_view filename)
+
+void FilterTimeFrameSliceByTrack::DefineDetectorIdMap()
+{
+   {
+      detectorNameMap[101] = "bdc";
+      detectorNameMap[102] = "bdc";
+      detectorNameMap[103] = "bdc";
+      detectorNameMap[104] = "bdc";
+      detectorNameMap[105] = "bdc";
+      detectorNameMap[106] = "bdc";
+      detectorNameMap[107] = "bdc";
+      detectorNameMap[108] = "bdc";
+
+      detectorNameMap[201] = "kldc";
+      detectorNameMap[202] = "kldc";
+      detectorNameMap[203] = "kldc";
+      detectorNameMap[204] = "kldc";
+      detectorNameMap[205] = "kldc";
+      detectorNameMap[206] = "kldc";
+      detectorNameMap[207] = "kldc";
+      detectorNameMap[208] = "kldc";
+
+      detectorNameMap[301] = "bft";
+      detectorNameMap[302] = "bft";
+      detectorNameMap[303] = "bft";
+      detectorNameMap[304] = "bft";
+      detectorNameMap[305] = "bft";
+      detectorNameMap[306] = "bft";
+   } // detectorNameMap
+
+   {
+      detectorPlaneMap[101] = "X";
+      detectorPlaneMap[102] = "Xp";
+      detectorPlaneMap[103] = "U";
+      detectorPlaneMap[104] = "V";
+      detectorPlaneMap[105] = "X";
+      detectorPlaneMap[106] = "Xp";
+      detectorPlaneMap[107] = "U";
+      detectorPlaneMap[108] = "V";
+
+      // detectorPlaneMap[201] = "V";
+      // detectorPlaneMap[202] = "Vp";
+      // detectorPlaneMap[203] = "U";
+      // detectorPlaneMap[204] = "Up";
+      // detectorPlaneMap[205] = "Up";
+      // detectorPlaneMap[206] = "U";
+      // detectorPlaneMap[207] = "Vp";
+      // detectorPlaneMap[208] = "V";
+
+      detectorPlaneMap[201] = "V";
+      detectorPlaneMap[202] = "Vp";
+      detectorPlaneMap[203] = "Up";
+      detectorPlaneMap[204] = "U";
+      detectorPlaneMap[205] = "Up";
+      detectorPlaneMap[206] = "U";
+      detectorPlaneMap[207] = "V";
+      detectorPlaneMap[208] = "Vp";
+
+      detectorPlaneMap[301] = "X";
+      detectorPlaneMap[302] = "U";
+      detectorPlaneMap[303] = "V";
+      detectorPlaneMap[304] = "X";
+      detectorPlaneMap[305] = "U";
+      detectorPlaneMap[306] = "V";
+   } // detectorPlaneMap
+
+   {
+      detectorSegmentMap[101] = 1;
+      detectorSegmentMap[102] = 1;
+      detectorSegmentMap[103] = 1;
+      detectorSegmentMap[104] = 1;
+      detectorSegmentMap[105] = 2;
+      detectorSegmentMap[106] = 2;
+      detectorSegmentMap[107] = 2;
+      detectorSegmentMap[108] = 2;
+
+      detectorSegmentMap[201] = 1;
+      detectorSegmentMap[202] = 1;
+      detectorSegmentMap[203] = 1;
+      detectorSegmentMap[204] = 1;
+      detectorSegmentMap[205] = 2;
+      detectorSegmentMap[206] = 2;
+      detectorSegmentMap[207] = 2;
+      detectorSegmentMap[208] = 2;
+
+      detectorSegmentMap[301] = 1;
+      detectorSegmentMap[302] = 1;
+      detectorSegmentMap[303] = 1;
+      detectorSegmentMap[304] = 2;
+      detectorSegmentMap[305] = 2;
+      detectorSegmentMap[306] = 2;
+   } // detectorSegmentMap
+} // void FilterTimeFrameSliceByTrack::DefineDetectorIdMap()
+
+bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
+{
+   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry] ";
+   std::cout << "\n" << funcname << "Registering geometry configurations...(# of items: " << fTemporaryGeometries.size() << ")" << std::endl;
+
+   int registered_count_geomitemdc_kldc = 0;
+   // Loop over loaded temporary geometries
+   for(const auto& geom : fTemporaryGeometries){
+      #if CHECK_COUT_DETCONF_REGISTERING
+      std::cout << funcname << "Registering geometry for detector ID: " << geom.detectoridentifier << std::endl;
+      #endif
+
+      // geom -> local variables
+      int detectorId = geom.detectoridentifier;
+      double x = geom.x;
+      double y = geom.y;
+      double z = geom.z;
+      double tiltAngle = geom.tiltangle;
+      double rotationAngle1 = geom.rotationangle1;
+      double rotationAngle2 = geom.rotationangle2;
+      double length = geom.length;
+      double resolution = geom.resolution;
+      double wireCenterNumber = geom.wirecenternumber-1; // convert to 0-indexed wire number
+      double wirePitch = geom.wirepitch;
+      double offset = geom.offset;
+
+      // prepare channel map information
+      std::string DetectorName = detectorNameMap[detectorId];
+      std::string PlaneName = detectorPlaneMap[detectorId];
+      uint8_t SegmentNumber = detectorSegmentMap[detectorId];
+      std::string ChannelName = "0";
+
+      int missing_count_FEAddrItem = 0;
+      int missing_count_DETIdItem = 0;
+      // Register KLDC
+      if(DetectorName == "kldc"){
+         std::cout << "\tRegistering geometry for KLDC wire 33 to 96 (1-indexed)..." << std::endl;
+         for(int i=0; i<128; ++i){
+            int ChannelNumber = i; // 0-indexed channel number
+            std::unique_ptr<chmap::GeomItemDC> geomitemdc = std::make_unique<chmap::GeomItemDC>();
+            geomitemdc->SetGlobalPosition(x, y, z);
+            geomitemdc->SetResolution(resolution, resolution, resolution);
+            geomitemdc->SetRotationAngles(tiltAngle, rotationAngle1, rotationAngle2);
+            geomitemdc->SetWireGeometry(wireCenterNumber, wirePitch, offset);
+            geomitemdc->CalcWirePosition(ChannelNumber);
+
+            uint32_t dopeKey_DETtoFE;
+            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, std::string("0"), static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE); // map has data based on 0-indexed channel number
+            if(found_DETtoFE){
+               chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+               uint32_t dopeKeyFEtoDET;
+               bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
+               if(found_FEtoDET){
+                  fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::membername_geom);
+
+                  chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
+                  #if 0
+                  if(ChannelNumber == detiditem.channel_number){
+                     std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
+                  }
+                  #endif
+                  const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
+                  #if 0
+                  std::cout << "pointer address of geomitemdc after move: " << geomitemdc.get() << std::endl;
+                  std::cout << "pointer address of detiditem.detconf: " << detiditem.detconf << std::endl;
+                  std::cout << "pointer address of detiditem.detconf->membername_geom.get(): " << detiditem.detconf->membername_geom.get() << std::endl;
+                  std::cout << "pointer address of retrieved_geomitemdc: " << retrieved_geomitemdc << std::endl;
+                  #endif
+                  if(retrieved_geomitemdc != nullptr){
+                     registered_count_geomitemdc_kldc++;
+                  }
+                  else{
+                     std::cerr << funcname << "Failed to register GeomItemDC for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
+                  }
+               } // if(found_FEtoDET)
+               else{
+                  ++missing_count_DETIdItem;
+               }
+            } // if(found_DETtoFE)
+            else{
+               ++missing_count_FEAddrItem;
+            }
+         } // for(int i=33; i<=128-32; ++i)
+         if(missing_count_DETIdItem > 0){
+            std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
+         }
+         if(missing_count_DETIdItem > 0){
+            std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
+         }
+      } // if(DetectorName == "kldc")
+   } // for(const auto& geom : fTemporaryGeometries)
+
+   std::cout << funcname << "Registered " << registered_count_geomitemdc_kldc << " geometry entries of KLDC" << std::endl;
+   return true;
+} // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
+
+bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
+{
+   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib] ";
+   std::cout << "\n" << funcname << "Registering TDC calibration configurations...(# of items: " << fTemporaryDCTdcCalibs.size() << ")" << std::endl;
+
+   int missing_count_FEAddrItem = 0;
+   int missing_count_DETIdItem = 0;
+   int registered_count_dctdccalib_kldc = 0;
+   bool isFirstEntry = true;
+
+   // Loop over loaded temporary DC TDC calibration entries
+   for(const auto& calib : fTemporaryDCTdcCalibs){
+      // calib -> local variables
+      int detectorId = calib.detectoridentifier;
+      int wireId = calib.wireidentifier - 1; // convert to 0-index
+      double offset = calib.offset + 1000.0; // もともとのコードではUTOF Lを1000 nsにしているので、それに準ずる。
+      double scale = calib.scale;
+
+      // prepare channel map information
+      std::string DetectorName = detectorNameMap[detectorId];
+      std::string PlaneName = detectorPlaneMap[detectorId];
+      uint8_t SegmentNumber = detectorSegmentMap[detectorId];
+      std::string ChannelName = std::string("0");
+      if(isFirstEntry){
+         std::cout << funcname << "Registering first tdccalib for KLDC detector ID: " << detectorId << std::endl;
+         std::cout << "\t" << DetectorName << ", " << PlaneName << ", Segment: " << static_cast<int>(SegmentNumber) << ",wire: " << wireId << std::endl;
+         isFirstEntry = false;
+      }
+
+      // Create CalibrationItem_DCTdcCalib and set its properties
+      std::unique_ptr<chmap::CalibrationItem_DCTdcCalib> calibitem_dctdccalib = std::make_unique<chmap::CalibrationItem_DCTdcCalib>();
+/* CLASS DEFINITION
+    class CalibrationItem_DCTdcCalib : public CalibrationItem {
+        public:
+            virtual ~CalibrationItem_DCTdcCalib() = default;
+            void SetTdcCalibration(double offset_, double scale_) {
+                offset = offset_;
+                scale = scale_;
+            }
+        private:
+            double offset, scale; // relative time = (absolute time * scale) + offset
+    };
+*/
+      calibitem_dctdccalib->SetTdcCalibration(offset, scale);
+
+
+      // Register KLDC
+      if(DetectorName == "kldc"){
+         int ChannelNumber = wireId; // wireId is 0-indexed, ChannelNumber is also 0-indexed
+         uint32_t dopeKey_DETtoFE;
+         bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, ChannelName, static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE);
+         if(found_DETtoFE){
+            chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+            uint32_t dopeKeyFEtoDET;
+            bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
+            if(found_FEtoDET){
+               chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
+               #if 0
+               if(ChannelNumber == detiditem.channel_number){
+                  std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
+               }
+               #endif
+               bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
+               #if 0
+               if(registered){
+                  std::cout << funcname << "Registered TDC calibration for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
+               }
+               else{
+                  std::cout << funcname << "Failed to register TDC calibration for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
+               }
+               #endif
+               registered_count_dctdccalib_kldc++;
+            } // if(found_FEtoDET)
+            else{
+               ++missing_count_DETIdItem;
+            }
+         } // if(found_DETtoFE)
+         else{
+            ++missing_count_FEAddrItem;
+         }
+      } // if(DetectorName == "kldc")
+   } // for(const auto& calib : fTemporaryDCTdcCalibs)
+
+   if(missing_count_FEAddrItem > 0){
+      std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
+   }
+   if(missing_count_DETIdItem > 0){
+      std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
+   }
+
+   std::cout << funcname << "Registered " << registered_count_dctdccalib_kldc << " TDC calibration entries of KLDC." << std::endl;
+   return true;
+} // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
+
+bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
+{
+   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam] ";
+   std::cout << "\n" << funcname << "Registering drift parameter configurations...(# of items: " << fTemporaryDCDriftParams.size() << ")" << std::endl;
+
+   int registered_count_geomitemdc_kldc = 0;
+   // Loop over loaded temporary DC drift length parameter entries
+   for(const auto& drift : fTemporaryDCDriftParams){
+      #if 0
+      std::cout << funcname << "detectorID: " << drift.detectoridentifier << ", approxOrder: " << drift.approxOrder << ", coefficients: {";
+      for(int i = 0; i < drift.approxOrder; ++i){
+         std::cout << drift.coefficients[i];
+         if(i < drift.approxOrder - 1){
+            std::cout << ", ";
+         }
+      }
+      std::cout << "}" << std::endl;
+      #endif
+      // drift -> local variables
+      int detectorId = drift.detectoridentifier;
+      int approxOrder = drift.approxOrder;
+      const std::vector<double>& coefficients = drift.coefficients;
+
+      std::string DetectorName = detectorNameMap[detectorId];
+      std::string PlaneName = detectorPlaneMap[detectorId];
+      uint8_t SegmentNumber = detectorSegmentMap[detectorId];
+
+      // prepare channel map information
+      std::string ChannelName = std::string("0");
+/* CLASS DEFINITION
+    class CalibrationItem_DCDriftLength : public CalibrationItem {
+        public:
+            virtual ~CalibrationItem_DCDriftLength() = default;
+            void SetApproximation(int approxOrder_, const std::vector<double>& coeffs_) {
+                approxOrder = approxOrder_;
+                coeffs = coeffs_;
+            }
+        private:
+            int approxOrder; // the number of coefficients for polynomial approximation of drift length
+            std::vector<double> coeffs; // coefficients for polynomial approximation of drift length
+            // dLen(t) = coeffs[0] + coeffs[1]*t + coeffs[2]*t^2 + ... + coeffs[n]*t^n
+    };
+*/
+
+      int missing_count_FEAddrItem = 0;
+      int missing_count_DETIdItem = 0;
+      // Register KLDC
+      if(DetectorName == "kldc"){
+         std::cout << "\tRegistering drift parameter for KLDC wire 0 to 127 (0-indexed)..." << std::endl;
+         for(int i=0; i<128; ++i){
+            // Create CalibrationItem_DCDriftLength and set its properties
+            std::unique_ptr<chmap::CalibrationItem_DCDriftLength> calibitem_dcdriftlength = std::make_unique<chmap::CalibrationItem_DCDriftLength>();
+            calibitem_dcdriftlength->SetApproximation(approxOrder, coefficients);
+            int ChannelNumber = i; // i is 0-indexed, ChannelNumber is 0-indexed
+            uint32_t dopeKey_DETtoFE;
+            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
+            if(found_DETtoFE){
+               chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+               uint32_t dopeKeyFEtoDET;
+               bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
+               if(found_FEtoDET){
+                  chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
+                  #if 0
+                  if(ChannelNumber == detiditem.channel_number){
+                     std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
+                  }
+                  #endif
+                  bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCDriftLength>(dopeKeyFEtoDET, std::move(calibitem_dcdriftlength), &chmap::DETConfItem::membername_calib_dcdriftlen);
+                  registered_count_geomitemdc_kldc++;
+                  #if 0
+                  if(registered){
+                     std::cout << funcname << "Registered drift parameter for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
+                  }
+                  else{
+                     std::cout << funcname << "Failed to register drift parameter for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
+                  }
+                  #endif
+               } // if(found_FEtoDET)
+               else{
+                  ++missing_count_DETIdItem;
+               }
+            } // if(found_DETtoFE)
+            else{
+               ++missing_count_FEAddrItem;
+            }
+         } // for(int i=32; i<=128-32; ++i)
+         if(missing_count_FEAddrItem > 0){
+            std::cout << funcname << "Missing FEAddrItem count: " << missing_count_FEAddrItem << std::endl;
+         }
+         if(missing_count_DETIdItem > 0){
+            std::cout << funcname << "Missing DETIdItem count: " << missing_count_DETIdItem << std::endl;
+         }
+      } // if(DetectorName == "kldc")
+   } // for(const auto& drift : fTemporaryDCDriftParams)
+
+   std::cout << funcname << "Registered " << registered_count_geomitemdc_kldc << " drift parameter entries." << std::endl;
+   return true;
+} // bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
+
+////////////////////////////////////////////////////
+// override runDevice
+////////////////////////////////////////////////////
+
+void addCustomOptions(bpo::options_description& options)
+{
+   using opt = FilterTimeFrameSliceByTrack::OptionKey;
+
+   options.add_options()
+      (opt::InputChannelName.data(),
+       bpo::value<std::string>()->default_value("in"),
+       "Name of the input channel")
+      (opt::OutputChannelName.data(),
+       bpo::value<std::string>()->default_value("out"),
+       "Name of the output channel")
+      (opt::DQMChannelName.data(),
+       bpo::value<std::string>()->default_value("dqm"),
+       "Name of the data quality monitoring channel")
+      (opt::PollTimeout.data(),
+       bpo::value<std::string>()->default_value("1"),
+       "Timeout of polling (in msec)")
+      (opt::SplitMethod.data(),
+       bpo::value<std::string>()->default_value("1"),
+       "STF split method")
+      (opt::ChannelMapDataFile.data(),
+       bpo::value<std::string>()->default_value("channel_map.dat"),
+       "Path to the channel map data file")
+      (opt::GeometryConfigFile.data(),
+       bpo::value<std::string>()->default_value(""),
+       "Geometry configuration file")
+      (opt::DCTdcCalibConfigFile.data(),
+       bpo::value<std::string>()->default_value(""),
+       "DC TDC calibration file")
+      (opt::DCDriftParamConfigFile.data(),
+       bpo::value<std::string>()->default_value(""),
+       "DC drift parameter file")
+      ;
+
+}
+
+
+
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)
+{
+    return std::make_unique<FilterTimeFrameSliceByTrack>();
+}
+
+void KLDCHitContainer::Reset(){
+   for(auto& std_vector_dchit : *this){
+      for(auto& dchit : std_vector_dchit){
+         dchit.Clear();
+      }
+      std_vector_dchit.clear();
+   }
+   this->clear();
+   this->resize(npairplane);
+} // void KLDCHitContainer::Reset()
+
+void KLDCHitContainer::SetStandardTime(double standardTime, const DCTimeRange& DCTimeRange){
+   for(auto& std_vector_dchit : *this){
+      for(auto& dchit : std_vector_dchit){
+         dchit.ClearDriftResults();
+         dchit.CalcDriftTimes(standardTime, DCTimeRange);
+      } // for(auto& dchit : std_vector_dchit)
+   }
+} // void nestdaq::FilterTimeFrameSliceByTrack::KLDCHitContainer::SetStandardTime(int standardTime)
+
+bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(std::vector<DCHit>& HC1, std::vector<DCHit>& HC2, double CellSize, std::vector<DCPairHitCluster*>& Cont)
+{
+   const std::string_view funcname = "[FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster] ";
+
+   int nh1=HC1.size(), nh2=HC2.size();
+   std::vector<int> UsedFlag(nh2,0);
+
+   for( int i1=0; i1<nh1; ++i1 ){
+      DCHit *hit1=&HC1[i1];
+
+      double wp1=hit1->GetWirePos();
+      bool flag=false;
+      for( int i2=0; i2<nh2; ++i2 ){
+         DCHit *hit2=&HC2[i2];
+         double wp2=hit2->GetWirePos();
+         #if CHECK_COUT_MAKEPAIRPLANEHITCLUSTER && 0
+         std::cout << funcname << "i1: " << i1 << ", i2: " << i2 << ", fabs(wp1-wp2) = |" << wp1 << " - " << wp2 << "| = " << fabs(wp1-wp2) << ", CellSize: " << CellSize << std::endl;
+         std::cout << "\tCellSize condition: " << (fabs(wp1-wp2)<CellSize ? "true" : "false") << std::endl;
+         #endif
+         if( fabs(wp1-wp2)<CellSize ){
+            int multi1 = hit1->GetNumMultiHit();
+            int multi2 = hit2->GetNumMultiHit();
+            #if CHECK_COUT_MAKEPAIRPLANEHITCLUSTER
+            std::cout << "\tMultiHit condition: multi1: " << multi1 << ", multi2: " << multi2 << std::endl;
+            #endif
+            for (int m1=0; m1<multi1; m1++) {
+               for (int m2=0; m2<multi2; m2++) {
+                  #if CHECK_COUT_DUPLICATE
+                  if( multi1>0 && multi2>0 )
+                  std::cout << "\ti1: " << i1 << ", i2: " << i2 << ", multi1: " << multi1 << ", multi2: " << multi2 << std::endl;
+                  #endif
+                  double x1,x2;
+                  int lr1, lr2;
+                  if( wp1<wp2 ){
+                     x1=wp1;
+                     lr1 = +1;
+                     x2=wp2;
+                     lr2 = -1;
+                  } // if( wp1<wp2 )
+                  else {
+                     x1=wp1;
+                     lr1 = -1;
+                     x2=wp2;
+                     lr2 = +1;
+                  }
+                  //  std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1,wp1: " << wp1 << ", lr1: " << lr1 << ", m1: " << m1 << "), new DCLTrackHit(hit2,wp2: " << wp2 << ", lr2: " << lr2 << ", m2: " << m2 << ") ) );" << std::endl;
+                  Cont.push_back( new DCPairHitCluster(new DCLTrackHit(hit1, m1, x1, lr1), new DCLTrackHit(hit2, m2, x2, lr2)) );
+                  flag=true;
+                  ++UsedFlag[i2];
+               } // for (int m2=0; m2<multi2; m2++)
+            } // for (int m1=0; m1<multi1; m1++)
+         } // if( fabs(wp1-wp2)<CellSize )
+      } // for( int i2=0; i2<nh2; ++i2 )
+      #if 1
+      if(!flag){
+         int multi1 = hit1->GetNumMultiHit();
+         for (int m1=0; m1<multi1; m1++) {
+            #if CHECK_COUT_DUPLICATE
+            if( multi1>0 )
+            std::cout << "\ti1: " << i1 << ", multi1: " << multi1 << std::endl;
+            #endif
+            // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1,wp1: " << wp1 << ", lr: " << +1 << ", m1: " << m1 << ") ) );" << std::endl;
+            // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1,wp1: " << wp1 << ", lr: " << -1 << ", m1: " << m1 << ") ) );" << std::endl;
+            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1, m1, wp1, +1) ) );
+            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit1, m1, wp1, -1) ) );
+         } // for (int m1=0; m1<multi1; m1++)
+      } // if(!flag)
+      #endif
+   } // for( int i1=0; i1<nh1; ++i1 )
+   #if 1
+   for( int i2=0; i2<nh2; ++i2 ){
+      if( UsedFlag[i2]==0 ) {
+         DCHit *hit2=&HC2[i2];
+         int multi2 = hit2->GetNumMultiHit();
+         for (int m2=0; m2<multi2; m2++) {
+            #if CHECK_COUT_DUPLICATE
+            if( multi2>0 )
+            std::cout << "\ti2: " << i2 << ", multi2: " << multi2 << std::endl;
+            #endif
+
+            double wp=hit2->GetWirePos();
+            // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2,wp: " << wp << ", lr: " << +1 << ", m2: " << m2 << ") ) );" << std::endl;
+            // std::cout << "Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2,wp: " << wp << ", lr: " << -1 << ", m2: " << m2 << ") ) );" << std::endl;
+            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2, m2, wp, +1) ) );
+            Cont.push_back( new DCPairHitCluster( new DCLTrackHit(hit2, m2, wp, -1) ) );
+         } // for (int m2=0; m2<multi2; m2++)
+      } // if( UsedFlag[i2]==0 )
+   } // for( int i2=0; i2<nh2; ++i2 )
+   #endif
+
+   return true;
+} // bool FilterTimeFrameSliceByTrack::MakePairPlaneHitCluster(const std::vector<DCHit>& HC1, const std::vector<DCHit>& HC2, double cellSize, std::vector<DCPairHitCluster*>& Cont)
+
+std::vector<std::vector<int>> FilterTimeFrameSliceByTrack::makeindex(int npp, const int* index1) {
+   if(npp == 1){
+      std::vector< std::vector<int> > index2;
+      for( int i=-1; i<index1[0]; ++i ){
+         std::vector <int> elem(1,i);
+         index2.push_back(elem);
+      }
+      return index2;
+   }
+
+   std::vector< std::vector<int> >
+   index2=makeindex( npp-1, index1+1 );
+
+   std::vector< std::vector<int> > index;
+   int n2=index2.size();
+   for( int j=0; j<n2; ++j ){
+      for( int i=-1; i<index1[0]; ++i ){
+         std::vector <int> elem;
+         int n3=index2[j].size();
+         elem.reserve(n3+1);
+         elem.push_back(i);
+         for( int k=0; k<n3; ++k ){
+            elem.push_back(index2[j][k]);
+         }
+         index.push_back(elem);
+         int size1=index.size();
+      }
+   }
+
+   return index;
+} // std::vector<std::vector<int>> FilterTimeFrameSliceByTrack::makeindex(int npp, const int* index1)
+
+DCLocalTrack* FilterTimeFrameSliceByTrack::MakeTrack(const std::vector<std::vector<DCPairHitCluster*>> &CandCont, const int *combination )
+{
+   static const std::string funcname = "[MakeTrack]";
+
+   DCLocalTrack *tp=new DCLocalTrack();
+   if(tp == nullptr){
+      std::cerr << funcname << ": new fail" << std::endl;
+      return nullptr;
+   }
+
+   int n=CandCont.size();
+
+   for( int i=0; i<n; ++i ){
+      int m=combination[i];
+      DCPairHitCluster *cluster=0;
+      if(m>=0) cluster=CandCont[i][m];
+#if 0
+      std::cout << funcname << ":" << std::setw(3)
+                << i << std::setw(3) << m  << " "
+                << CandCont[i][m] << std::endl;
+#endif
+
+      if(cluster){
+         int mm=cluster->NumberOfHits();
+         for(int j=0; j<mm; ++j ){
+            DCLTrackHit *hitp=cluster->GetHit(j);
+            if(hitp) tp->AddHit( hitp );
+         }
+      }
+   }
+
+   return tp;
+} // DCLocalTrack* FilterTimeFrameSliceByTrack::MakeTrack(const std::vector<std::vector<DCPairHitCluster*>> &CandCont, const int *combination )

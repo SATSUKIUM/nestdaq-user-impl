@@ -1,0 +1,56 @@
+#ifndef DCLTrackHit_h
+#define DCLTrackHit_h 1
+
+#include "DCMathConstants.h"
+#include "DCMathTools.h"
+#include <chmap/channel_map_dopeness.hpp>
+#include <chmap/item.hpp>
+
+namespace nestdaq{
+    class DCHit;
+    class DCLTrackHit{
+    public:
+        DCLTrackHit(DCHit* acutualhit, int nth_, double w_, int leftright);
+        ~DCLTrackHit() = default;
+
+    private:
+        DCHit* actualhit{nullptr}; // pointer to the actual DCHit object
+        int nth{0}; // トラックに属する「ヒット」がacutualhitのTDC/TOTの何番目かを示すインデックス
+        double w{0.0}; // 測定軸方向の座標, ヒット位置
+        int leftright{0}; // -1, 1
+
+    private:
+        // position and slope calculated with the track fit result
+        double x0{0.0}, y0{0.0}; // position, position
+        double x1{0.0}, y1{0.0}; // position, position
+    public:
+        void SetCalPosition(double x_, double y_){
+            x1 = x_;
+            y1 = y_;
+        }
+        void SetCalPositionAtTarget(double x_, double y_){
+            x0 = x_;
+            y0 = y_;
+        }
+
+    public:
+        double GetWirePosition() const;
+        double GetWireAngle() const;
+        double GetDriftLength() const;
+        double GetResolution() const;
+        int GetLeftRight() const { return leftright; };
+        const chmap::DETIdItem* GetDETIdItem() const;
+
+        double GetGlobalZ() const;
+
+        // トラックに属するかどうかのフラグを管理
+        void clearFlag();
+        void setFlag();
+        bool showFlag() const;
+
+
+
+    }; // class nestdaq::DCLTrackHit
+} // namespace nestdaq
+
+#endif // DCLTrackHit_h

@@ -143,7 +143,8 @@ if(FairLogger_INCDIR)
 endif()
 
 #==============================================================================
-find_package(ROOT REQUIRED COMPONENTS RIO RHTTP Hist)
+find_package(ROOT REQUIRED COMPONENTS RIO RHTTP Hist Tree)
+find_package(ChannelMap CONFIG REQUIRED)
 
 # ROOT dictionary
 if(ROOT_FOUND)
@@ -191,11 +192,6 @@ foreach(lvar IN ITEMS
 # onlinedisplay;
   FilterTimeFrameSliceABC;
 #  FilterTimeFrameSliceBySomething;
-  FilterTimeFrameSliceByTOT;  # Add this line           2024/7/15
-  FilterTimeFrameSliceByTOF;  # Add this line           2024/7/15
-  FilterTimeFrameSliceByMultiplicity;  # Add this line  2024/7/15
-  
-  FilterTimeFrameSliceByTracking;  # Add this line           2024/7/18
   InputRegister;
 #  AmQStrTdcDqm;
   Scaler;
@@ -205,6 +201,10 @@ foreach(lvar IN ITEMS
   add_executable(${EXEC} 
     ${EXEC}.cxx;
   )
+
+  if(EXEC STREQUAL "FilterTimeFrameSliceABC")
+    target_link_libraries(${EXEC} PUBLIC ChannelMap::ChannelMap ROOT::RIO ROOT::Tree)
+  endif()
 
   target_include_directories(${EXEC} PUBLIC 
     ${Boost_INCLUDE_DIRS};  
@@ -346,6 +346,7 @@ else()
   add_subdirectory(LogicFilter/CPU)
 endif()
 ##
+add_subdirectory(FilterTimeFrameSliceByTrack)
 add_subdirectory(TriggerView)
 add_subdirectory(emulator)
 add_subdirectory(sqlite)
