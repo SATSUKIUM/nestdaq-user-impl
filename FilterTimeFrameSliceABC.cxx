@@ -34,10 +34,10 @@ void addCustomOptions(bpo::options_description& options)
        bpo::value<std::string>()->default_value("1"),
        "Timeout of polling (in msec)")
       (opt::SplitMethod.data(),
-       bpo::value<std::string>()->default_value("1"),
-       "STF split method")
+        bpo::value<std::string>()->default_value("1"),
+        "STF split method")
       ;
-   
+
 }
 
 

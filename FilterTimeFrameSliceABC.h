@@ -1,12 +1,14 @@
-/*
- * @file FilterTimeFrameSliceABC.icxx
- * @brief Slice Timeframe by Logic timing for NestDAQ
- * @date Created : 2024-05-04 12:31:55 JST
- *       Last Modified : 2024-07-21 02:23:44 JST (furukawa)
+/**
+ * @file FilterTimeFrameSliceABC.h
+ * @brief Abstract base class for filtering time frame slice
+ * @date Created : 2024-05-04 12:27:57 JST
+ *       Last Modified : 2024-05-23 07:19:25 JST
  *
  * @author Shinsuke OTA <ota@rcnp.osaka-u.ac.jp>
- * @comment Added geoToIndex function for VDC channel map loading
+ *
  */
+
+
 #ifndef NESTDAQ_FILTERTIMEFRAMESLICEABC_H
 #define NESTDAQ_FILTERTIMEFRAMESLICEABC_H
 
@@ -18,29 +20,29 @@
 #include "HeartbeatFrameHeader.h"
 #include "FrameContainer.h"
 
+#include <TFile.h>
+#include <TTree.h>
+
+#include <chrono>
+
+#include <chmap/item.hpp>
+
 namespace nestdaq {
    class FilterTimeFrameSliceABC;
 }
 
-struct Wire_map {
-    int catid = -1;
-    int id = -1;
-    int sh = -1;
-    int fp = -1;
-    int det = -1;
-    uint64_t geo = -1;
-    int ch = -1;
-};
 
 class nestdaq::FilterTimeFrameSliceABC : public fair::mq::Device {
 public:
    FilterTimeFrameSliceABC();
    virtual ~FilterTimeFrameSliceABC() override = default;
-   
+
    virtual void PreRun() override;
    virtual void InitTask() override;
    virtual bool ConditionalRun() override;
    virtual void PostRun() override;
+   virtual void ResetTask() override;
+
 
    struct OptionKey {
       static constexpr std::string_view InputChannelName {"in-chan-name"};
@@ -51,13 +53,16 @@ public:
    };
 
 protected:
+
    virtual bool ParseMessages(FairMQParts& inParts);
+
    virtual bool ProcessSlice(TTF& ) { return true; }
-   
+
    std::string fInputChannelName;
    std::string fOutputChannelName;
    std::string fName;
-   uint32_t fId;
+   uint32_t fID;
+
 
    // control
    uint32_t fNextIdx;
@@ -65,23 +70,44 @@ protected:
    std::vector<KTimer> fKTimer;
    bool fDoCheck;
 
-   // time frame
-   std::vector<TTF> fTFs; 
+   std::vector<TTF> fTFs; // time frame
 
-   // Maximum number of wires on each plane 
-   static const int maxCh = 112; 
-
-   // Number of amaneq units = 8
-   std::array<std::array<Wire_map, maxCh + 1>, 8> wireMapArray;
-
-
-   int geoToIndex(uint64_t geo);
+   // ================================
+   // for catching the Coincidence TDC from LogicFilter block
+   // ================================
+   TLF fLF;
+   std::vector<TLF> fLFs;
+   uint32_t fLFTDC4n; // 4ns-unit TDC of Coincidence
 
    // output
-   int fNumDestination {0};  
-   uint32_t fDirection {0};  
-   int fPollTimeoutMS  {0}; 
+   int fNumDestination {0};
+   uint32_t fDirection {0};
+   int fPollTimeoutMS  {0};
    int fSplitMethod    {0};
+
+   // ================================
+   // Throughput measurement
+   // ================================
+   std::chrono::high_resolution_clock::time_point fStartTime, fEndTime;
+   std::chrono::high_resolution_clock::time_point fBeforeReceive, fAfterReceive;
+   std::chrono::high_resolution_clock::time_point fStartTimeSlice, fEndTimeSlice;
+   double fElapsedTime{0.0};
+   double fElapsedTimeReceive{0.0};
+   TFile* fRootFile{nullptr};
+   TTree* fRootTree1{nullptr};
+   const std::string fRootFileName{"./fileout/tracking/ConditionalRun_throughput.root"};
+
+   double fTree_elapsed_time{0.0};
+   int fTree_nslice{0};
+   int fTree_npassslice{0};
+   std::vector<double> fTree_elapsed_time_per_slice;
+   double  fTree_sizeSlice{0};
+   double fTree_sizeTF{0};
+   double fTree_sizeMessage{0};
+   std::vector<double> fTree_sizeSlice_per_slice;
+
+
 };
+
 
 #endif  // NESTDAQ_FILTERTIMEFRAMESLICEABC_H
