@@ -142,8 +142,13 @@ private:
 void LogicFilter::InitTask()
 {
 	using opt = OptionKey;
-    fHbfBatchSize = fConfig->GetProperty<uint32_t>(opt::HbfBatchSize.data());
-    if (!fHbfBatchSize || fHbfBatchSize > 4) throw std::invalid_argument("hbf-batch-size must be 1..4");
+    // ParameterConfigPlugin supplies custom Redis options as strings.
+    const auto batchOption = fConfig->GetProperty<std::string>(opt::HbfBatchSize.data());
+    size_t parsed = 0;
+    const auto batchSize = std::stoul(batchOption, &parsed);
+    if (parsed != batchOption.size() || batchSize < 1 || batchSize > 4)
+        throw std::invalid_argument("hbf-batch-size must be 1..4");
+    fHbfBatchSize = static_cast<uint32_t>(batchSize);
     LOG(info) << "Elapsed times are saved at STOP to "
               << LOGICFILTER_ELAPSED_DIR << "/logicfilter-elapsed-<id>-hbf<batch-size>.txt";
 
@@ -929,7 +934,7 @@ void addCustomOptions(bpo::options_description& options)
 		(opt::RemoveHB.data(),
 			bpo::value<std::string>()->default_value("false"),
 			"Remove HB without hit")
-		(opt::HbfBatchSize.data(), bpo::value<uint32_t>()->default_value(4),
+		(opt::HbfBatchSize.data(), bpo::value<std::string>()->default_value("4"),
          "Independent HBF regions per GPU batch (1..4)")
 		(opt::PollTimeout.data(), 
 			bpo::value<std::string>()->default_value("1"),
