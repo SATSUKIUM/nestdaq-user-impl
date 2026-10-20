@@ -18,7 +18,9 @@ foreach(lvar IN ITEMS
   )
 
   if(EXEC STREQUAL "LogicFilter")
-      target_link_libraries(${EXEC} PUBLIC ROOT::RIO ROOT::Tree)
+      target_compile_definitions(${EXEC} PRIVATE
+          LOGICFILTER_ELAPSED_DIR="${CMAKE_SOURCE_DIR}/test"
+      )
       target_sources(${EXEC} PRIVATE
           SignalParser.cxx
       )

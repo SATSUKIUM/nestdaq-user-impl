@@ -53,3 +53,14 @@ root -l -b -q 'test/plot_logicfilter_elapsed.C("test/logicfilter-elapsed-0-hbf4.
 
 800x600、200 bins、line width 3でPNG/PDF/ROOTを出力する。
 以前のROOTによる詳細計測・箱庭比較は`6379b07`時点の実装と結果を参照。
+
+## CPU版
+
+CPU版も同じ範囲をvectorに記録し、STOP時に
+`test/logicfilter-elapsed-0-cpu.txt`へ保存する。
+GPUの`hbf-batch-size`設定はCPU処理には使用しない。
+ROOT詳細計測の`performance-output`は指定しない。
+CPU/GPU切り替え時は、start_device.shが参照する2か所のLogicFilterを更新する。
+GPUビルドは従来のbuildに、CPUビルドは
+`/tmp/nestdaq-simple-elapsed-cpu-build`に分けてある。
+実行中のDAQは自動で切り替わらないため、通常のSTOP・終了後に再起動する。
