@@ -89,11 +89,10 @@ inline void CheckCuda(cudaError_t result)
 }
 
 // One worker per input word. Formats match UnpackTdc.h (leading TDC only).
-__global__ void devMark(const uint64_t* words, size_t count, uint32_t fem,
+__device__ void markWord(const uint64_t* words, size_t count, uint32_t fem,
     uint32_t type, const cudamap::FEEAddrDecoder* decoder,
-    uint32_t* mainTR, uint32_t* subTR, uint32_t size, uint32_t nSub)
+    uint32_t* mainTR, uint32_t* subTR, uint32_t size, uint32_t nSub, size_t i)
 {
-    size_t i = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
     if (i >= count) return;
     uint64_t word = words[i];
     if ((word >> 58) != TDC64H::T_TDC) return;
@@ -124,6 +123,37 @@ __global__ void devMark(const uint64_t* words, size_t count, uint32_t fem,
         else if (config.iSubTimeRegion < nSub)
             atomicAnd(subTR + size_t(config.iSubTimeRegion) * size + bin, ~config.hitBit);
     }
+}
+
+struct MarkSegment {
+    size_t offset, count;
+    uint32_t fem, type, firstBlock;
+};
+
+__global__ void devMark(const uint64_t* words, size_t count, uint32_t fem,
+    uint32_t type, const cudamap::FEEAddrDecoder* decoder,
+    uint32_t* mainTR, uint32_t* subTR, uint32_t size, uint32_t nSub)
+{
+    markWord(words, count, fem, type, decoder, mainTR, subTR, size, nSub,
+        size_t(blockIdx.x) * blockDim.x + threadIdx.x);
+}
+
+// Each block belongs to one segment, so all its threads share FEM/type.
+// A large segment receives multiple blocks; small segments still get one.
+__global__ void devMarkBatch(const uint64_t* words, const MarkSegment* segments,
+    uint32_t nSegments, const cudamap::FEEAddrDecoder* decoder,
+    uint32_t* mainTR, uint32_t* subTR, uint32_t size, uint32_t nSub)
+{
+    uint32_t lo = 0, hi = nSegments;
+    while (lo + 1 < hi) {
+        uint32_t mid = lo + (hi - lo) / 2;
+        if (segments[mid].firstBlock <= blockIdx.x) lo = mid;
+        else hi = mid;
+    }
+    const auto seg = segments[lo];
+    markWord(words + seg.offset, seg.count, seg.fem, seg.type, decoder,
+        mainTR, subTR, size, nSub,
+        size_t(blockIdx.x - seg.firstBlock) * blockDim.x + threadIdx.x);
 }
 
 // Keep LookUp's out-of-range=false behavior, including bits outside the LUT.
@@ -233,6 +263,9 @@ private:
 	cudamap::TriggerConfig* devTriggerConfigs = nullptr;
     uint64_t* devMarkWords = nullptr;
     size_t fMarkWordCapacity = 0;
+    MarkSegment* devMarkSegments = nullptr;
+    size_t fMarkSegmentCapacity = 0;
+    std::vector<MarkSegment> fMarkSegments;
 
 	static constexpr int numThreadsPerBlock = 256;
 	int numBlocks = 0;
@@ -263,6 +296,7 @@ Trigger::~Trigger()
     cudaFree(devHitCount);
     cudaFree(devScanTemp);
     cudaFree(devMarkWords);
+    cudaFree(devMarkSegments);
     cudaFree(devTimeRegion);
     cudaFree(devSubTimeRegions);
     cudaFree(devNEntryInSubTimeRegion);
@@ -583,7 +617,7 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
         devMarkWords, count, uint32_t(fem), type, devDecoderPtr,
         devTimeRegion, devSubTimeRegions, fTimeRegionSize, fNSubTimeRegions);
     CheckCuda(cudaGetLastError());
-    CheckCuda(cudaDeviceSynchronize());
+    // Default-stream ordering protects the input buffer; Scan waits for results.
 }
 
 std::vector<uint32_t> *Trigger::Scan()
@@ -623,13 +657,52 @@ void Trigger::ScanSubTRandMarkMainTR()
 
 std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 {
-	for (auto &seg : hbf) {
-		//fTrig->Mark(
-		//	reinterpret_cast<unsigned char *>(inParts[mindex].GetData()),
-		//	inParts[mindex].GetSize(),
-		//	vfemid, dbl->Type);
-		Trigger::Mark(seg.data, seg.size, seg.femId, seg.femType);
-	}
+    size_t totalWords = 0, totalBlocks = 0;
+    fMarkSegments.clear();
+    fMarkSegments.reserve(hbf.size());
+    for (const auto& seg : hbf) {
+        if (seg.size < int(sizeof(uint64_t))) continue;
+        const size_t count = size_t(seg.size) / sizeof(uint64_t);
+        const size_t blocks = (count + numThreadsPerBlock - 1) / numThreadsPerBlock;
+        if (totalBlocks + blocks > size_t(INT_MAX) ||
+            count > std::numeric_limits<size_t>::max() / sizeof(uint64_t) - totalWords)
+            throw std::overflow_error("Batched Mark input exceeds capacity");
+        fMarkSegments.push_back({totalWords, count, seg.femId, seg.femType, uint32_t(totalBlocks)});
+        totalWords += count;
+        totalBlocks += blocks;
+    }
+    if (totalWords && !devDecoderPtr) throw std::runtime_error("FEEAddrDecoder is not initialized");
+    if (totalWords > fMarkWordCapacity) {
+        CheckCuda(cudaFree(devMarkWords));
+        devMarkWords = nullptr;
+        fMarkWordCapacity = 0;
+        CheckCuda(cudaMalloc(&devMarkWords, totalWords * sizeof(uint64_t)));
+        fMarkWordCapacity = totalWords;
+    }
+    if (fMarkSegments.size() > fMarkSegmentCapacity) {
+        CheckCuda(cudaFree(devMarkSegments));
+        devMarkSegments = nullptr;
+        fMarkSegmentCapacity = 0;
+        CheckCuda(cudaMalloc(&devMarkSegments, fMarkSegments.size() * sizeof(MarkSegment)));
+        fMarkSegmentCapacity = fMarkSegments.size();
+    }
+    // All copies and the single Mark launch share the default stream.
+    // Scan waits for the result before buffers can be reused for the next HBF.
+    if (totalWords) {
+        size_t index = 0;
+        for (const auto& seg : hbf) {
+            if (seg.size < int(sizeof(uint64_t))) continue;
+            const auto& dst = fMarkSegments[index++];
+            CheckCuda(cudaMemcpyAsync(devMarkWords + dst.offset, seg.data,
+                dst.count * sizeof(uint64_t), cudaMemcpyHostToDevice, 0));
+        }
+        CheckCuda(cudaMemcpyAsync(devMarkSegments, fMarkSegments.data(),
+            fMarkSegments.size() * sizeof(MarkSegment), cudaMemcpyHostToDevice, 0));
+        devMarkBatch<<<uint32_t(totalBlocks), numThreadsPerBlock>>>(devMarkWords,
+            this->devMarkSegments, uint32_t(fMarkSegments.size()), devDecoderPtr,
+            devTimeRegion, devSubTimeRegions, fTimeRegionSize, fNSubTimeRegions);
+        CheckCuda(cudaGetLastError());
+    }
 
 	#if 0
 	uint32_t *tr = fTrig->GetTimeRegion();
@@ -657,7 +730,7 @@ std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 	std::cout << std::endl;
 	#endif
 
-	return Trigger::Scan();
+    return Trigger::Scan();
 }
 
 
