@@ -8,6 +8,8 @@
 #include <vector>
 #include <map>
 #include <limits>
+#include <climits>
+#include <stdexcept>
 
 #include <string.h>
 #include <assert.h>
@@ -22,6 +24,7 @@
 #include <cuda_runtime.h>
 #include <cuda/cmath>
 #include <cudamap.h>
+#include <cub/device/device_scan.cuh>
 
 
 struct HBFIndex {
@@ -52,9 +55,8 @@ __global__ void devCleanUpSubTimeRegion(uint32_t* subTimeRegions, const uint32_t
 
 	if (workerIndex < totalWorkers) {
 		uint32_t iSubTimeRegion = workerIndex / subTimeRegionSize;
-		uint32_t iiSubTimeRegion = workerIndex % subTimeRegionSize;
 		uint32_t nEntry = nEntryInSubTimeRegion[iSubTimeRegion];
-		subTimeRegions[workerIndex] = (uint32_t(1u) << nEntry) - uint32_t(1u);
+		subTimeRegions[workerIndex] = nEntry == 32 ? UINT32_MAX : (uint32_t(1u) << nEntry) - uint32_t(1u);
 		return;
 	}
 	else{
@@ -81,27 +83,72 @@ __global__ void devScanSubTRandMarkMainTR(const uint32_t timeRegionSize, const u
 	}
 }
 
-__global__ void testDecoder(const cudamap::FEEAddrDecoder* decoder)
+inline void CheckCuda(cudaError_t result)
 {
-	uint32_t key;
+    if (result != cudaSuccess) throw std::runtime_error(cudaGetErrorString(result));
+}
 
-	if (decoder->getKey(0xc0a802a9, 8, key)) {
-		printf("%d.%d.%d.%d, %d -> key=%u\n", 0xc0, 0xa8, 0x02, 0xa9, 8, key);
-		auto config = decoder->getTriggerConfig(key);
-		config.print();
-	}
-	else {
-		printf("Failed to get key for 192.168.2.169, ch 8\n");
-	}
+// One worker per input word. Formats match UnpackTdc.h (leading TDC only).
+__global__ void devMark(const uint64_t* words, size_t count, uint32_t fem,
+    uint32_t type, const cudamap::FEEAddrDecoder* decoder,
+    uint32_t* mainTR, uint32_t* subTR, uint32_t size, uint32_t nSub)
+{
+    size_t i = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (i >= count) return;
+    uint64_t word = words[i];
+    if ((word >> 58) != TDC64H::T_TDC) return;
+    uint8_t ch;
+    int time;
+    if (type == SubTimeFrame::TDC64H || type == SubTimeFrame::TDC64H_V3) {
+        ch = (word >> 51) & 0x7f;
+        time = (word & 0x1fffffffULL) >> 12;
+    } else if (type == SubTimeFrame::TDC64L) {
+        ch = (word >> 51) & 0x7f;
+        time = (word & 0x00000007fffc0000ULL) >> 18;
+    } else if (type == SubTimeFrame::TDC64L_V3) {
+        ch = (word >> 50) & 0xff;
+        time = (word & 0x00000003fffe0000ULL) >> 17;
+    } else return;
+    uint32_t key;
+    if (!decoder->getKey(fem, ch, key)) return;
+    auto config = decoder->getTriggerConfig(key);
+    if (!config.isValid()) return;
+    int hit = time + config.delay;
+    int halfWidth = config.width / 2;
+    // Preserve the CPU window admission rule; clip individual bins at zero.
+    if (hit < 0 || hit >= int(size) - halfWidth) return;
+    for (int bin = hit - halfWidth; bin <= hit + halfWidth; ++bin) {
+        if (bin < 0 || bin >= int(size)) continue;
+        if (config.iSubTimeRegion == cudamap::NO_SUBGROUP)
+            atomicOr(mainTR + bin, config.hitBit);
+        else if (config.iSubTimeRegion < nSub)
+            atomicAnd(subTR + size_t(config.iSubTimeRegion) * size + bin, ~config.hitBit);
+    }
+}
 
-	if (decoder->getKey(0xc0a802aa, 16, key)) {
-		printf("%d.%d.%d.%d, %d -> key=%u\n", 0xc0, 0xa8, 0x02, 0xaa, 16, key);
-		auto config = decoder->getTriggerConfig(key);
-		config.print();
-	}
-	else {
-		printf("Failed to get key for 192.168.2.170, ch 16\n");
-	}
+// Keep LookUp's out-of-range=false behavior, including bits outside the LUT.
+__device__ bool devLookUp(uint32_t value, const uint8_t* lut, size_t lutSize)
+{
+    return value < lutSize && lut[value] != 0;
+}
+
+__global__ void devFindRisingEdges(const uint32_t* timeRegion, uint32_t size,
+    const uint8_t* lut, size_t lutSize, uint32_t* flags)
+{
+    size_t bin = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (bin >= size) return;
+    // The CPU scan does not report bin 0, even if its LUT value is true.
+    flags[bin] = bin > 0 && devLookUp(timeRegion[bin], lut, lutSize)
+        && !devLookUp(timeRegion[bin - 1], lut, lutSize);
+}
+
+__global__ void devCompactRisingEdges(const uint32_t* flags, const uint32_t* offsets,
+    uint32_t size, uint32_t* hits, uint32_t* hitCount)
+{
+    size_t bin = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (bin >= size) return;
+    if (flags[bin]) hits[offsets[bin]] = uint32_t(bin);
+    if (bin == size - 1) *hitCount = offsets[bin] + flags[bin];
 }
 
 
@@ -146,25 +193,25 @@ private:
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChRightWidth; // [T - leftwidth, T + rightwidth]
 	std::map<std::pair<uint32_t, uint32_t>, int> fEntryCounts; // key: (gp_id, subgp_id), value: count of entry
 	std::map< uint32_t, std::vector<uint32_t> > fEntryChiSubTimeRegion; // key: fem, value: list of iSubTimeRegion
-	uint32_t* fiSubTimeRegionMainTimeRegion; // key: iSubTimeRegion, value: iMainTimeRegion
+	uint32_t* fiSubTimeRegionMainTimeRegion = nullptr; // key: iSubTimeRegion, value: iMainTimeRegion
 	uint32_t* deviSubTimeRegionMainTimeRegion = nullptr; // key: iSubTimeRegion, value: iMainTimeRegion
 
-	uint32_t* fNEntryInSubTimeRegion; // key: iSubTimeRegion, value: nEntryInSubTimeRegion
-	uint32_t* devNEntryInSubTimeRegion; // key: iSubTimeRegion, value: nEntryInSubTimeRegion
+	uint32_t* fNEntryInSubTimeRegion = nullptr; // key: iSubTimeRegion, value: nEntryInSubTimeRegion
+	uint32_t* devNEntryInSubTimeRegion = nullptr; // key: iSubTimeRegion, value: nEntryInSubTimeRegion
 
 
 	int fEntryCounts_old = 0;
 	uint32_t fEntryMask = 0;
 
 	int fNentry = 0;
-	uint32_t fTimeRegionSize; // size of main TimeRegion
+	uint32_t fTimeRegionSize = 0; // size of main TimeRegion
 	uint32_t *fTimeRegion = nullptr; // main TimeRegion
-	uint32_t fSubTimeRegionSize; // size of each SubTimeRegion
+	uint32_t fSubTimeRegionSize = 0; // size of each SubTimeRegion
 	// std::vector<uint32_t*> fSubTimeRegions; // vector of SubTimeRegions
-	uint32_t* fSubTimeRegions;
+	uint32_t* fSubTimeRegions = nullptr;
 	uint32_t fNSubTimeRegions = 0; // number of SubTimeRegions
-	uint32_t* devTimeRegion;
-	uint32_t* devSubTimeRegions;
+	uint32_t* devTimeRegion = nullptr;
+	uint32_t* devSubTimeRegions = nullptr;
 
 	//int fMarkCount = 0;
 	//uint32_t fMarkMask = 0;
@@ -172,10 +219,20 @@ private:
 	int fMarkLen = 5;
 
 	TriggerMap fTMap;
+    uint8_t* devLut = nullptr;
+    size_t fLutSize = 0;
+    uint32_t* devEdgeFlags = nullptr;
+    uint32_t* devEdgeOffsets = nullptr;
+    uint32_t* devHits = nullptr;
+    uint32_t* devHitCount = nullptr;
+    void* devScanTemp = nullptr;
+    size_t fScanTempBytes = 0;
 
 	cudamap::FEEAddrDecoder fFEEAddrDecoder;
 	cudamap::FEEAddrDecoder* devDecoderPtr = nullptr;
 	cudamap::TriggerConfig* devTriggerConfigs = nullptr;
+    uint64_t* devMarkWords = nullptr;
+    size_t fMarkWordCapacity = 0;
 
 	static constexpr int numThreadsPerBlock = 256;
 	int numBlocks = 0;
@@ -195,36 +252,73 @@ Trigger::~Trigger()
 		cudaFree(devTriggerConfigs);
 	}
 	if (fTimeRegion != nullptr) {
-		delete[] fTimeRegion;
+		cudaFreeHost(fTimeRegion);
 		fTimeRegion = nullptr;
 	}
+
+    cudaFree(devLut);
+    cudaFree(devEdgeFlags);
+    cudaFree(devEdgeOffsets);
+    cudaFree(devHits);
+    cudaFree(devHitCount);
+    cudaFree(devScanTemp);
+    cudaFree(devMarkWords);
+    cudaFree(devTimeRegion);
+    cudaFree(devSubTimeRegions);
+    cudaFree(devNEntryInSubTimeRegion);
+    cudaFree(deviSubTimeRegionMainTimeRegion);
+    cudaFreeHost(fSubTimeRegions);
+    cudaFreeHost(fNEntryInSubTimeRegion);
+    cudaFreeHost(fiSubTimeRegionMainTimeRegion);
 
 	return;
 }
 
 void Trigger::SetfnEntryInSubTimeRegion(const uint32_t* nEntryInSubTimeRegion, const int nSubTimeRegions){
-	fNSubTimeRegions = nSubTimeRegions;
-	cudaMallocHost(&fNEntryInSubTimeRegion, fNSubTimeRegions * sizeof(uint32_t));
+	if (nSubTimeRegions < 0) throw std::invalid_argument("Negative subgroup count");
+    for (int i = 0; i < nSubTimeRegions; ++i)
+        if (nEntryInSubTimeRegion[i] == 0 || nEntryInSubTimeRegion[i] > 32)
+            throw std::invalid_argument("Subgroup must contain 1..32 signals");
+    cudaFreeHost(fNEntryInSubTimeRegion);
+    cudaFree(devNEntryInSubTimeRegion);
+    fNEntryInSubTimeRegion = nullptr;
+    devNEntryInSubTimeRegion = nullptr;
+    fNSubTimeRegions = nSubTimeRegions;
+    if (!nSubTimeRegions) return;
+	CheckCuda(cudaMallocHost(&fNEntryInSubTimeRegion, fNSubTimeRegions * sizeof(uint32_t)));
 	for(int i = 0; i < nSubTimeRegions; i++){
 		fNEntryInSubTimeRegion[i] = nEntryInSubTimeRegion[i];
 	}
-	cudaMalloc(&devNEntryInSubTimeRegion, fNSubTimeRegions * sizeof(uint32_t));
-	cudaMemcpy(devNEntryInSubTimeRegion, fNEntryInSubTimeRegion, fNSubTimeRegions * sizeof(uint32_t), cudaMemcpyHostToDevice);
+	CheckCuda(cudaMalloc(&devNEntryInSubTimeRegion, fNSubTimeRegions * sizeof(uint32_t)));
+	CheckCuda(cudaMemcpy(devNEntryInSubTimeRegion, fNEntryInSubTimeRegion, fNSubTimeRegions * sizeof(uint32_t), cudaMemcpyHostToDevice));
 }
 
 void Trigger::SetfiSubTimeRegionMainTimeRegion(const uint32_t* iSubTimeRegionMainTimeRegion, const int nSubTimeRegions){
-	cudaMallocHost(&fiSubTimeRegionMainTimeRegion, fNSubTimeRegions * sizeof(uint32_t));
+    if (nSubTimeRegions != int(fNSubTimeRegions)) throw std::invalid_argument("Subgroup count mismatch");
+    cudaFreeHost(fiSubTimeRegionMainTimeRegion);
+    cudaFree(deviSubTimeRegionMainTimeRegion);
+    fiSubTimeRegionMainTimeRegion = nullptr;
+    deviSubTimeRegionMainTimeRegion = nullptr;
+    if (!nSubTimeRegions) return;
+	CheckCuda(cudaMallocHost(&fiSubTimeRegionMainTimeRegion, fNSubTimeRegions * sizeof(uint32_t)));
 	for(int i = 0; i < nSubTimeRegions; i++){
 		fiSubTimeRegionMainTimeRegion[i] = iSubTimeRegionMainTimeRegion[i];
 	}
-	cudaMalloc(&deviSubTimeRegionMainTimeRegion, fNSubTimeRegions * sizeof(uint32_t));
-	cudaMemcpy(deviSubTimeRegionMainTimeRegion, fiSubTimeRegionMainTimeRegion, fNSubTimeRegions * sizeof(uint32_t), cudaMemcpyHostToDevice);
+	CheckCuda(cudaMalloc(&deviSubTimeRegionMainTimeRegion, fNSubTimeRegions * sizeof(uint32_t)));
+	CheckCuda(cudaMemcpy(deviSubTimeRegionMainTimeRegion, fiSubTimeRegionMainTimeRegion, fNSubTimeRegions * sizeof(uint32_t), cudaMemcpyHostToDevice));
 }
 
 //void Trigger::SetLogic(int nsignal, std::string formula)
 void Trigger::MakeTable(std::string & formula)
 {
 	fTMap.MakeTable(formula);
+    auto bytes = fTMap.GetLutBytes();
+    CheckCuda(cudaFree(devLut));
+    devLut = nullptr;
+    fLutSize = 0;
+    CheckCuda(cudaMalloc(&devLut, bytes.size()));
+    CheckCuda(cudaMemcpy(devLut, bytes.data(), bytes.size(), cudaMemcpyHostToDevice));
+    fLutSize = bytes.size();
 	return;
 }
 
@@ -232,31 +326,27 @@ void Trigger::InitializeFEEAddrDecoder(
 	const std::vector<cudamap::FEEAddr>& feeAddrs,
 	const std::vector<cudamap::TriggerConfig>& triggerConfigs)
 {
-	fFEEAddrDecoder.initialize(feeAddrs, triggerConfigs);
+	if (!fFEEAddrDecoder.initialize(feeAddrs, triggerConfigs))
+        throw std::runtime_error("FEEAddrDecoder initialization failed");
 
 	const uint32_t nConfigs = fFEEAddrDecoder.getSizeSpaceOfKey();
-	cudaMalloc(&devTriggerConfigs, nConfigs * sizeof(cudamap::TriggerConfig));
-	cudaMemcpy(
+	CheckCuda(cudaMalloc(&devTriggerConfigs, nConfigs * sizeof(cudamap::TriggerConfig)));
+	CheckCuda(cudaMemcpy(
 		devTriggerConfigs,
 		fFEEAddrDecoder.getTriggerConfigArray(),
 		nConfigs * sizeof(cudamap::TriggerConfig),
-		cudaMemcpyHostToDevice);
+		cudaMemcpyHostToDevice));
 
 	cudamap::FEEAddrDecoder devDecoder = fFEEAddrDecoder;
 	devDecoder.setTriggerConfigArray(devTriggerConfigs);
 
-	cudaMalloc(&devDecoderPtr, sizeof(cudamap::FEEAddrDecoder));
-	cudaMemcpy(
+	CheckCuda(cudaMalloc(&devDecoderPtr, sizeof(cudamap::FEEAddrDecoder)));
+	CheckCuda(cudaMemcpy(
 		devDecoderPtr,
 		&devDecoder,
 		sizeof(cudamap::FEEAddrDecoder),
-		cudaMemcpyHostToDevice);
+		cudaMemcpyHostToDevice));
 
-	#if 1
-	// Test the decoder on GPU
-	testDecoder<<<1, 1>>>(devDecoderPtr);
-	cudaDeviceSynchronize();
-	#endif
 }
 
 void Trigger::InitParam()
@@ -274,50 +364,52 @@ void Trigger::InitParam()
 
 bool Trigger::SetTimeRegion(uint32_t size)
 {
+	if (!size || size > uint32_t(INT_MAX)) throw std::invalid_argument("TimeRegion size must be 1..INT_MAX");
+    cudaFree(devTimeRegion);
+    devTimeRegion = nullptr;
 	fTimeRegionSize = size;
 	if (fTimeRegion != nullptr) {
-		delete[] fTimeRegion;
+		cudaFreeHost(fTimeRegion);
 		fTimeRegion = nullptr;
 	}
-	cudaMallocHost(&fTimeRegion, fTimeRegionSize * sizeof(uint32_t));
-	cudaMalloc(&devTimeRegion, fTimeRegionSize * sizeof(uint32_t));
+	CheckCuda(cudaMallocHost(&fTimeRegion, fTimeRegionSize * sizeof(uint32_t)));
+	CheckCuda(cudaMalloc(&devTimeRegion, fTimeRegionSize * sizeof(uint32_t)));
+
+    CheckCuda(cudaFree(devEdgeFlags)); devEdgeFlags = nullptr;
+    CheckCuda(cudaFree(devEdgeOffsets)); devEdgeOffsets = nullptr;
+    CheckCuda(cudaFree(devHits)); devHits = nullptr;
+    CheckCuda(cudaFree(devHitCount)); devHitCount = nullptr;
+    CheckCuda(cudaFree(devScanTemp)); devScanTemp = nullptr;
+    CheckCuda(cudaMalloc(&devEdgeFlags, size_t(size) * sizeof(uint32_t)));
+    CheckCuda(cudaMalloc(&devEdgeOffsets, size_t(size) * sizeof(uint32_t)));
+    // Rising edges cannot be adjacent; bin 0 is excluded, so floor(N/2) suffices.
+    if (size / 2) CheckCuda(cudaMalloc(&devHits, size_t(size / 2) * sizeof(uint32_t)));
+    CheckCuda(cudaMalloc(&devHitCount, sizeof(uint32_t)));
+    fScanTempBytes = 0;
+    CheckCuda(cub::DeviceScan::ExclusiveSum(nullptr, fScanTempBytes,
+        devEdgeFlags, devEdgeOffsets, int(size)));
+    if (fScanTempBytes) CheckCuda(cudaMalloc(&devScanTemp, fScanTempBytes));
+    fHits.clear();
+    fHits.reserve(size / 2);
 
 	numBlocks = cuda::ceil_div(fTimeRegionSize, numThreadsPerBlock);
 	devCleanUpTimeRegion<<<numBlocks, numThreadsPerBlock>>>(devTimeRegion, fTimeRegionSize);
-	cudaDeviceSynchronize();
+    CheckCuda(cudaGetLastError());
+	CheckCuda(cudaDeviceSynchronize());
 
 	return true;
 }
 
 bool Trigger::SetSubTimeRegion(uint32_t subTimeRegionSize, const uint32_t* nEntryInSubTimeRegion, const int nSubTimeRegions){
-	// set the size of each SubTimeRegion
-	fSubTimeRegionSize = subTimeRegionSize;
-	// set the number of SubTimeRegions
-	fNSubTimeRegions = nSubTimeRegions;
-	// allocate memory for fSubTimeRegions and devSubTimeRegions
-	cudaMallocHost(&fSubTimeRegions, nSubTimeRegions * fTimeRegionSize * sizeof(uint32_t*));
-	cudaMalloc(&devSubTimeRegions, nSubTimeRegions * fTimeRegionSize * sizeof(uint32_t*));
-	// allocate memory for devNEntryInSubTimeRegion and copy nEntryInSubTimeRegion to device
-	cudaMalloc(&devNEntryInSubTimeRegion, nSubTimeRegions * sizeof(uint32_t));
-	cudaMemcpy(devNEntryInSubTimeRegion, nEntryInSubTimeRegion, nSubTimeRegions * sizeof(uint32_t), cudaMemcpyHostToDevice);
-
-	numBlocks = cuda::ceil_div(nSubTimeRegions * fTimeRegionSize, numThreadsPerBlock);
-	devCleanUpSubTimeRegion<<<numBlocks, numThreadsPerBlock>>>(devSubTimeRegions, fSubTimeRegionSize, nEntryInSubTimeRegion, nSubTimeRegions);
-	cudaDeviceSynchronize();
-
-	// for(size_t iSubTimeRegion = 0; iSubTimeRegion < nSubTimeRegions; ++iSubTimeRegion){
-	// 	uint32_t nEntryInSubTimeRegion = nEntryInSubTimeRegion[iSubTimeRegion];
-	// 	#if 0
-	// 	std::cout << "#D SubTimeRegion " << iSubTimeRegion << " has " << nEntryInSubTimeRegion << " entries." << std::endl;
-	// 	#endif
-	// 	uint32_t initialValue = (uint32_t(1u) << nEntryInSubTimeRegion) - uint32_t(1u); // nEntryInSubTimeRegion個の下位ビットが立っている値
-
-	// 	uint32_t* subTimeRegion = new uint32_t[subTimeRegionSize];
-	// 	for( uint32_t i = 0 ; i < subTimeRegionSize ; i++) {
-	// 		subTimeRegion[i] = initialValue;
-	// 	}
-	// 	fSubTimeRegions[iSubTimeRegion] = subTimeRegion;
-	// }
+    if (subTimeRegionSize != fTimeRegionSize) throw std::invalid_argument("TimeRegion sizes must match");
+    fSubTimeRegionSize = subTimeRegionSize;
+    SetfnEntryInSubTimeRegion(nEntryInSubTimeRegion, nSubTimeRegions);
+    cudaFree(devSubTimeRegions);
+    devSubTimeRegions = nullptr;
+    if (nSubTimeRegions) {
+        CheckCuda(cudaMalloc(&devSubTimeRegions, size_t(nSubTimeRegions) * subTimeRegionSize * sizeof(uint32_t)));
+        CleanUpSubTimeRegion(nEntryInSubTimeRegion, nSubTimeRegions);
+    }
 
 	return true;
 
@@ -327,18 +419,25 @@ void Trigger::CleanUpTimeRegion()
 {
 	int numBlocks = cuda::ceil_div(fTimeRegionSize, numThreadsPerBlock);
 	devCleanUpTimeRegion<<<numBlocks, numThreadsPerBlock>>>(devTimeRegion, fTimeRegionSize);
+    CheckCuda(cudaGetLastError());
 	return;
 }
 
 void Trigger::CleanUpSubTimeRegion(const uint32_t* nEntryInSubTimeRegion, const int nSubTimeRegions)
 {
-	int numBlocks = cuda::ceil_div(fSubTimeRegionSize * nSubTimeRegions, numThreadsPerBlock);
-	devCleanUpSubTimeRegion<<<numBlocks, numThreadsPerBlock>>>(devSubTimeRegions, fSubTimeRegionSize, nEntryInSubTimeRegion, nSubTimeRegions);
+	if (nSubTimeRegions != int(fNSubTimeRegions)) throw std::invalid_argument("Subgroup count mismatch");
+    if (!nSubTimeRegions) return;
+    CheckCuda(cudaMemcpy(devNEntryInSubTimeRegion, nEntryInSubTimeRegion, nSubTimeRegions * sizeof(uint32_t), cudaMemcpyHostToDevice));
+    int numBlocks = cuda::ceil_div(size_t(fSubTimeRegionSize) * nSubTimeRegions, size_t(numThreadsPerBlock));
+	devCleanUpSubTimeRegion<<<numBlocks, numThreadsPerBlock>>>(devSubTimeRegions, fSubTimeRegionSize, devNEntryInSubTimeRegion, nSubTimeRegions);
+    CheckCuda(cudaGetLastError());
 	return;
 } // void Trigger::CleanUpSubTimeRegion(const std::map<uint32_t, uint32_t>& nEntryInSubTimeRegion)
 
 uint32_t *Trigger::GetTimeRegion()
 {
+    // Explicit diagnostic access only; the normal Scan path copies compacted hits.
+    CheckCuda(cudaMemcpy(fTimeRegion, devTimeRegion, size_t(fTimeRegionSize) * sizeof(uint32_t), cudaMemcpyDeviceToHost));
 	return fTimeRegion;
 }
 
@@ -468,231 +567,59 @@ bool Trigger::CheckEntryFEM(uint32_t fem)
 
 void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
 {
-	if (fEntryCh.count(fem) >= 1) {
-		uint64_t *tdcval;
-		tdcval = reinterpret_cast<uint64_t *>(pdata);
-
-		for (unsigned int i = 0 ; i < fEntryCh[fem].size() ; i++) {
-			int ch = fEntryCh[fem][i];
-			int delay = fEntryChDelay[fem][i];
-			uint32_t leftwidth = fEntryChLeftWidth[fem][i];
-			uint32_t rightwidth = fEntryChRightWidth[fem][i];
-			uint32_t markbit = fEntryChBit[fem][i];
-			uint32_t iSubTimeRegion = fEntryChiSubTimeRegion[fem][i];
-			bool isMemberOfSubGroup = (iSubTimeRegion != UINT32_MAX); // true for member of subgroup, false for not of subgroup
-
-			#if 0
-			std::cout << "#DD Trigger::Mark " 
-				<< " FEM: " << std::hex << fem
-				<< " Ch: " << std::dec << ch
-				<< " MarkBit: " << markbit << std::endl;
-			#endif
-
-			for (unsigned int j = 0 ; j < (len / sizeof(uint64_t)) ; j++) {
-
-				if (type == SubTimeFrame::TDC64H) {
-					struct TDC64H::tdc64 tdc;
-					if (TDC64H::Unpack(tdcval[j], &tdc) == TDC64H::T_TDC) {
-						if (tdc.ch == ch) {
-							uint32_t hit = tdc.tdc4n + delay;
-
-							#if 0
-							std::cout << "#D Mark"
-								<< " FEM: " << std::hex << fem
-								<< " Ch: " << std::dec << ch
-								<< " Hit: " << hit
-								<< std::endl;
-							#endif
-
-							if (hit < fTimeRegionSize - leftwidth) {
-								for (int k = -static_cast<int>(leftwidth) ; k < static_cast<int>(rightwidth) + 1 ; k++) {
-									if ((hit + k) < fTimeRegionSize) {
-										if(isMemberOfSubGroup){
-											fSubTimeRegions[iSubTimeRegion][hit + k] &= ~markbit; // サブTimeRegionのビットを降ろす
-										}
-										else{
-											fTimeRegion[hit + k] |= markbit;
-										}
-									} else if ((static_cast<int>(hit) + k) >= 0) {
-										std::cout << "#E Over range hit!"
-											<< " FEM: " << std::hex << fem
-											<< " Ch: " << std::dec << ch
-											<< " Hit: " << hit
-											<< std::endl;
-									}
-								}
-							}
-						}
-					}
-				} else
-				if (type == SubTimeFrame::TDC64L) {
-					struct TDC64L::tdc64 tdc;
-					if (TDC64L::Unpack(tdcval[j], &tdc) == TDC64L::T_TDC) {
-						if (tdc.ch == ch) {
-							uint32_t hit = tdc.tdc4n + delay;
-
-							//std::cout << "#D Mark Ch: " << std::dec << ch
-							//	<< " Hit: " << hit << std::endl;
-
-							if (hit < fTimeRegionSize - leftwidth) {
-								for (int k = -static_cast<int>(leftwidth) ; k < static_cast<int>(rightwidth) + 1 ; k++) {
-									if ((hit + k) < fTimeRegionSize) {
-										if(isMemberOfSubGroup){
-											fSubTimeRegions[iSubTimeRegion][hit + k] &= ~markbit; // サブTimeRegionのビットを降ろす
-										}
-										else{
-											fTimeRegion[hit + k] |= markbit;
-										}
-									} else if ((static_cast<int>(hit) + k) >= 0) {
-										std::cout << "#E Over range hit!"
-											<< " FEM: " << std::hex << fem
-											<< " Ch: " << std::dec << ch
-											<< " Hit: " << hit
-											<< std::endl;
-									}
-								}
-							}
-						}
-					}
-				} else
-
-				if (type == SubTimeFrame::TDC64H_V3) {
-					struct TDC64H_V3::tdc64 tdc;
-					if (TDC64H_V3::Unpack(tdcval[j], &tdc) == TDC64H_V3::T_TDC) {
-						if (tdc.ch == ch) {
-							uint32_t hit = tdc.tdc4n + delay;
-
-							#if 0
-							std::cout << "#D Mark"
-								<< " FEM: " << std::hex << fem
-								<< " Ch: " << std::dec << ch
-								<< " Hit: " << hit
-								<< std::endl;
-							#endif
-
-							if (hit < fTimeRegionSize - rightwidth) {
-								for (int k = -static_cast<int>(leftwidth) ; k < static_cast<int>(rightwidth) + 1 ; k++) {
-									if ((hit + k) < fTimeRegionSize) {
-										if(isMemberOfSubGroup){
-											fSubTimeRegions[iSubTimeRegion][hit + k] &= ~markbit; // サブTimeRegionのビットを降ろす
-										}
-										else{
-											fTimeRegion[hit + k] |= markbit;
-										}
-									} else if ((static_cast<int>(hit) + k) >= 0) {
-										std::cout << "#E Over range hit!"
-											<< " FEM: " << std::hex << fem
-											<< " Ch: " << std::dec << ch
-											<< " Hit: " << hit
-											<< " Mark: " << static_cast<int>(hit) + k
-											<< std::endl;
-									}
-								}
-							}
-						}
-					}
-				} else
-				if (type == SubTimeFrame::TDC64L_V3) {
-					struct TDC64L_V3::tdc64 tdc;
-					if (TDC64L_V3::Unpack(tdcval[j], &tdc) == TDC64L_V3::T_TDC) {
-						if (tdc.ch == ch) {
-							uint32_t hit = tdc.tdc4n + delay;
-
-							//std::cout << "#D Mark Ch: " << std::dec << ch
-							//	<< " Hit: " << hit << std::endl;
-
-							if (hit < fTimeRegionSize - leftwidth) {
-								for (int k = -static_cast<int>(leftwidth) ; k < static_cast<int>(rightwidth) + 1 ; k++) {
-									if ((hit + k) < fTimeRegionSize) {
-										if(isMemberOfSubGroup){
-											fSubTimeRegions[iSubTimeRegion][hit + k] &= ~markbit; // サブTimeRegionのビットを降ろす
-										}
-										else{
-											fTimeRegion[hit + k] |= markbit;
-										}
-									} else if ((static_cast<int>(hit) + k) >= 0) {
-										std::cout << "#E Over range hit!"
-											<< " FEM: " << std::hex << fem
-											<< " Ch: " << std::dec << ch
-											<< " Hit: " << hit
-											<< std::endl;
-									}
-								}
-							}
-						}
-					}
-				}
-
-			}
-
-			//fMarkMask |= (0x1 << fMarkCount);
-			//fMarkCount++;
-			//std::cout << "#D Trig Mark entry : Module: " << fem << " Ch: " << ch << std::endl;
-			//if (static_cast<unsigned int>(fMarkCount) > sizeof(uint32_t)) {
-			//	std::cerr << "Entry Ch. exceed " << sizeof(uint32_t) << std::endl;
-			//}
-			//assert(fMarkCount <= static_cast<int>(sizeof(uint32_t)));
-		}
-	}
-
-
-	return;
+    if (len <= 0) return;
+    if (!devDecoderPtr) throw std::runtime_error("FEEAddrDecoder is not initialized");
+    size_t count = size_t(len) / sizeof(uint64_t);
+    if (!count) return;
+    if (count > fMarkWordCapacity) {
+        CheckCuda(cudaFree(devMarkWords));
+        devMarkWords = nullptr;
+        fMarkWordCapacity = 0;
+        CheckCuda(cudaMalloc(&devMarkWords, count * sizeof(uint64_t)));
+        fMarkWordCapacity = count;
+    }
+    CheckCuda(cudaMemcpy(devMarkWords, pdata, count * sizeof(uint64_t), cudaMemcpyHostToDevice));
+    devMark<<<(count + numThreadsPerBlock - 1) / numThreadsPerBlock, numThreadsPerBlock>>>(
+        devMarkWords, count, uint32_t(fem), type, devDecoderPtr,
+        devTimeRegion, devSubTimeRegions, fTimeRegionSize, fNSubTimeRegions);
+    CheckCuda(cudaGetLastError());
+    CheckCuda(cudaDeviceSynchronize());
 }
 
 std::vector<uint32_t> *Trigger::Scan()
 {
-	// --------------------------------
-	// Process AND logic
-	// --------------------------------
-	Trigger::ScanSubTRandMarkMainTR();
-	// --------------------------------
-	// Finish processing AND logic, and marking MainTimeRegion
-	// --------------------------------
-	//std::cout << "#D Scan fMarkMask: " << std::hex << fMarkMask << std::endl;
-	//std::cout << "#D Scan fEntryMask: " << std::hex << fEntryMask << std::endl;
-	fHits.clear();
-	fHits.resize(0);
-
-	for (unsigned int i = 0 ; i < fTimeRegionSize - 1; i++) {
-		#if 0
-		if (((fEntryMask & fTimeRegion[i]) != fEntryMask)
-		&& ((fEntryMask & fTimeRegion[i + 1]) == fEntryMask)) {
-			fHits.emplace_back(i + 1);
-		}
-		#else
-		if ((! fTMap.LookUp(fTimeRegion[i]))
-		 && (fTMap.LookUp(fTimeRegion[i + 1]))) {
-			fHits.emplace_back(i + 1);
-		}
-		#endif
-
-		#if 0
-		if (fTimeRegion[i] != 0) {
-			std::cout << "#D Scan Time: " << std::dec << i
-				<< " Bits: " << std::hex << fTimeRegion[i]
-				//<< " Mask: " << fMarkMask << std::endl;
-				<< " Mask: " << fEntryMask << std::endl;
-		}
-		#endif
-	}
-
-	return &fHits;
+    if (!devLut) throw std::runtime_error("Trigger LUT is not initialized");
+    if (!fTimeRegionSize) throw std::runtime_error("TimeRegion is not initialized");
+    ScanSubTRandMarkMainTR();
+    const auto blocks = (size_t(fTimeRegionSize) + numThreadsPerBlock - 1) / numThreadsPerBlock;
+    devFindRisingEdges<<<blocks, numThreadsPerBlock>>>(devTimeRegion,
+        fTimeRegionSize, devLut, fLutSize, devEdgeFlags);
+    CheckCuda(cudaGetLastError());
+    CheckCuda(cub::DeviceScan::ExclusiveSum(devScanTemp, fScanTempBytes,
+        devEdgeFlags, devEdgeOffsets, int(fTimeRegionSize)));
+    devCompactRisingEdges<<<blocks, numThreadsPerBlock>>>(devEdgeFlags,
+        devEdgeOffsets, fTimeRegionSize, devHits, devHitCount);
+    CheckCuda(cudaGetLastError());
+    uint32_t count = 0;
+    CheckCuda(cudaMemcpy(&count, devHitCount, sizeof(count), cudaMemcpyDeviceToHost));
+    if (count > fTimeRegionSize / 2) throw std::runtime_error("Rising edge count exceeds capacity");
+    fHits.resize(count);
+    if (count) CheckCuda(cudaMemcpy(fHits.data(), devHits,
+        size_t(count) * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+    return &fHits;
 }
 
 void Trigger::ScanSubTRandMarkMainTR()
 {
-	for(const auto &p : fiSubTimeRegionMainTimeRegion){
-		uint32_t iSubTimeRegion = p.first; // index of SubTimeRegion
-		uint32_t iMainTimeRegion = p.second; // a bit in MainTimeRegion reserved by this SubTimeRegion
-
-		for(uint32_t i = 0; i < fSubTimeRegionSize; ++i){
-			if(fSubTimeRegions[iSubTimeRegion][i] == uint32_t(0u)){
-				fTimeRegion[i] |= iMainTimeRegion;
-			}
-		}
-	}
-	return;
-} // void Trigger::ScanSubTRandMarkMainTR()
+    if (fNSubTimeRegions) {
+        if (!deviSubTimeRegionMainTimeRegion) throw std::runtime_error("Subgroup bit mapping is not initialized");
+        size_t count = size_t(fNSubTimeRegions) * fTimeRegionSize;
+        devScanSubTRandMarkMainTR<<<(count + numThreadsPerBlock - 1) / numThreadsPerBlock, numThreadsPerBlock>>>(
+            fTimeRegionSize, devSubTimeRegions, devTimeRegion,
+            deviSubTimeRegionMainTimeRegion, fNSubTimeRegions);
+        CheckCuda(cudaGetLastError());
+    }
+}
 
 std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 {

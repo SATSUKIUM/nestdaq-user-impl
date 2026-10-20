@@ -76,6 +76,15 @@ struct LogicFilter : fair::mq::Device
 		fKt4 = new KTimer(1000);
 	}
 
+    ~LogicFilter() override {
+        delete fTrig;
+        delete fKt1;
+        delete fKt2;
+        delete fKt3;
+        delete fKt4;
+        cudaFreeHost(fNEntryInSubTimeRegion);
+        cudaFreeHost(fiSubTimeRegionMainTimeRegion);
+    }
 	void InitTask() override;
 #if 0
 	void InitTask() override
@@ -165,9 +174,9 @@ private:
 	KTimer *fKt3;
 	KTimer *fKt4;
 
-	uint32_t* fNEntryInSubTimeRegion; // key: iSubTR, value: # of signals in iSubTR
+	uint32_t* fNEntryInSubTimeRegion = nullptr; // key: iSubTR, value: # of signals in iSubTR
 	int fNSubTimeRegions {0};
-	uint32_t* fiSubTimeRegionMainTimeRegion; // key: iSubTR, value: iMainTR
+	uint32_t* fiSubTimeRegionMainTimeRegion = nullptr; // key: iSubTR, value: iMainTR
 
     std::vector<cudamap::FEEAddr> feeAddrs;
     std::vector<cudamap::TriggerConfig> triggerConfigs;
@@ -225,7 +234,9 @@ void LogicFilter::InitTask()
 	int window_width = std::stoi(fConfig->GetProperty<std::string>(opt::TriggerWidth.data()));
 
 	LOG(info) << "Trigger windows width: " << window_width;
-	fTrig->SetMarkLen(window_width);
+	if (window_width <= 0 || window_width > UINT8_MAX)
+        throw std::invalid_argument("Trigger width must be 1..255");
+    fTrig->SetMarkLen(window_width);
 
 	std::vector<struct SignalParser::psig> signals = SignalParser::Parsing(str_signals);
 
@@ -235,8 +246,13 @@ void LogicFilter::InitTask()
 	std::cout << "\n[LogicFilter::InitTask] Distributing signals into groups... " << std::endl;
 	std::vector<std::vector<struct SignalParser::psig>> groups;
 	uint32_t max_group_id = 0;
+    std::unordered_set<uint64_t> registeredAddresses;
 	for(auto &sig : signals){
-		if(sig.group_id > max_group_id) max_group_id = sig.group_id;
+		if (!registeredAddresses.insert((uint64_t(sig.femId) << 32) | sig.channel).second)
+            throw std::invalid_argument("FEEAddrDecoder supports only one configuration per FEM/channel");
+        if (sig.group_id >= 32 || sig.channel > UINT8_MAX || sig.offset < INT16_MIN || sig.offset > INT16_MAX)
+            throw std::invalid_argument("Signal exceeds decoder field limits");
+        if(sig.group_id > max_group_id) max_group_id = sig.group_id;
 	}
 	groups.resize(max_group_id + 1);
 	for(auto &sig : signals){
@@ -308,7 +324,7 @@ void LogicFilter::InitTask()
 				if(last_subgroup_ != std::make_pair(sig.group_id, sig.subgroup_id)){ // 前のgroup-subgroupのペアと異なれば
 					iSubTimeRegion_++;
 					nEntryInSubTimeRegion.push_back(1);
-					iSubTimeRegionMainTimeRegion.push_back(iGroupId);
+					iSubTimeRegionMainTimeRegion.push_back(uint32_t(1u) << iGroupId);
 					last_subgroup_ = std::make_pair(sig.group_id, sig.subgroup_id);
 					std::cout << "\t\tgroup " << sig.group_id << " has subgroup " << sig.subgroup_id << " assigned to SubTimeRegion " << iSubTimeRegion_ << std::endl;
 				}
@@ -324,7 +340,9 @@ void LogicFilter::InitTask()
 					<< " offset=" << sig.offset
 					<< " window_width=" << window_width
 					<< std::endl;
-				cudamap::stageItem(sig.femId, static_cast<uint8_t>(sig.channel), static_cast<uint32_t>(1u << (nEntryInSubTimeRegion[iSubTimeRegion_] - 1)), static_cast<uint8_t>(window_width), static_cast<int16_t>(sig.offset), static_cast<uint8_t>(iSubTimeRegion_), feeAddrs, triggerConfigs);
+				if (nEntryInSubTimeRegion[iSubTimeRegion_] > 32 || iSubTimeRegion_ >= cudamap::NO_SUBGROUP)
+                    throw std::invalid_argument("Too many subgroup signals or subgroups");
+                cudamap::stageItem(sig.femId, static_cast<uint8_t>(sig.channel), static_cast<uint32_t>(1u << (nEntryInSubTimeRegion[iSubTimeRegion_] - 1)), static_cast<uint8_t>(window_width), static_cast<int16_t>(sig.offset), static_cast<uint8_t>(iSubTimeRegion_), feeAddrs, triggerConfigs);
 			} // if(sig.subgroup_id != SignalParser::NO_SUBGROUP)
 			else{ // subgroupに属していなければ
 				std::cout << "\t\tRegistering signal: group_id=" << sig.group_id
@@ -366,7 +384,7 @@ void LogicFilter::InitTask()
 	}
 	std::cout << "\tNumber of SubTimeRegions: " << fNSubTimeRegions << std::endl;
 
-	fTrig->SetfnEntryInSubTimeRegion(fNEntryInSubTimeRegion, fNSubTimeRegions);
+
 
 	fTrig->InitializeFEEAddrDecoder(feeAddrs, triggerConfigs);
 
@@ -378,6 +396,7 @@ void LogicFilter::InitTask()
 	// --------------------------------
 	std::cout << "\n[LogicFilter::InitTask] Setting SubTimeRegions... " << std::endl;
 	fTrig->SetSubTimeRegion(timeRegionSize, fNEntryInSubTimeRegion, fNSubTimeRegions);
+    fTrig->SetfiSubTimeRegionMainTimeRegion(fiSubTimeRegionMainTimeRegion, fNSubTimeRegions);
 	std::cout << "\tDone." << std::endl;
 
 	// --------------------------------
@@ -1218,7 +1237,7 @@ bool LogicFilter::ConditionalRun()
 
 			//Trigger process
 			fTrig->CleanUpTimeRegion();
-			fTrig->CleanUpSubTimeRegion(fNEntryInSubTimeRegion_, fNSubTimeRegions);
+			fTrig->CleanUpSubTimeRegion(fNEntryInSubTimeRegion, fNSubTimeRegions);
 			std::vector<uint32_t> *hits = fTrig->Exec(hbf_list);
 			fltdata.emplace_back(*hits);
 			int nhits = hits->size();
@@ -1265,7 +1284,7 @@ bool LogicFilter::ConditionalRun()
 		}
 		#endif
 
-		#if 1
+		#if 0
 		if (totalhits > 0) {
 			std::cout << "#D TotalHits: " << std::setw(4) << totalhits << " :";
 			for (int i = 0 ; i < totalhits / 50 ; i++) std::cout << ".";
