@@ -16,6 +16,9 @@
 #include <stdexcept>
 #include <unordered_set>
 #include <cassert>
+#include <filesystem>
+#include <fstream>
+#include <vector>
 
 #include <cstring>
 
@@ -68,12 +71,14 @@ struct LogicFilter : fair::mq::Device
 	}
 
     ~LogicFilter() override {
+        WriteElapsedTimes();
         delete fTrig;
         delete fKt1;
         delete fKt3;
         delete fKt4;
         cudaFreeHost(fNEntryInSubTimeRegion);
         cudaFreeHost(fiSubTimeRegionMainTimeRegion);
+
     }
 	void InitTask() override;
 
@@ -82,6 +87,9 @@ struct LogicFilter : fair::mq::Device
 	void PostRun() override;
 
 private:
+    using ElapsedClock = std::chrono::steady_clock;
+    std::vector<double> fElapsedTimes; // Microseconds; saved at STOP or device destruction.
+    void WriteElapsedTimes();
 	int IsHartBeat(uint64_t, uint32_t);
 	void CheckMultiPart(FairMQParts &);
 	int MakeBlockMap(FairMQParts &,
@@ -132,6 +140,8 @@ private:
 void LogicFilter::InitTask()
 {
 	using opt = OptionKey;
+    LOG(info) << "Elapsed times are saved at STOP to "
+              << LOGICFILTER_ELAPSED_DIR << "/logicfilter-elapsed-<id>.txt";
 
 	fInputChannelName  = fConfig->GetValue<std::string>(opt::InputChannelName.data());
 	fOutputChannelName = fConfig->GetValue<std::string>(opt::OutputChannelName.data());
@@ -402,33 +412,33 @@ int LogicFilter::IsHartBeat(uint64_t val, uint32_t type)
 
 void LogicFilter::CheckMultiPart(FairMQParts &inParts)
 {
-	std::cout << "#Nmsg: " << std::dec << inParts.Size() << std::endl;
-	std::cout << "# " << std::dec;
-	for(int i = 0 ; i < inParts.Size() ; i++) {
-		uint64_t *top = reinterpret_cast<uint64_t *>(inParts[i].GetData());
-		struct TimeFrame::Header *tbh
-			= reinterpret_cast<TimeFrame::Header *>(inParts[i].GetData());
-		struct SubTimeFrame::Header *stbh
-			= reinterpret_cast<SubTimeFrame::Header *>(inParts[i].GetData());
-		struct HeartbeatFrame::Header *hbh
-			= reinterpret_cast<HeartbeatFrame::Header *>(inParts[i].GetData());
-		if (tbh->magic == TimeFrame::MAGIC) {
-			std::cout << "TF Id: "
-				<< tbh->timeFrameId  << " Nsrc: " << tbh->numSource;
-		} else
-		if (stbh->magic == SubTimeFrame::MAGIC) {
-			std::cout << std::endl << "* STF: TFid: 0x" << std::hex
-				<< std::setw(8) << stbh->timeFrameId << " :"; 
-		} else
-		if (hbh->magic == HeartbeatFrame::MAGIC) {
-			std::cout << " HB:" << std::dec
-				<< std::setw(8) << inParts[i].GetSize() << " :"; 
-		} else {
-			std::cout << "UK " << std::setw(8) << std::setfill('0')
-				<< IsHartBeat(top[0], SubTimeFrame::TDC64H);
-		}
-	}
-	std::cout << std::dec << std::endl;
+	// std::cout << "#Nmsg: " << std::dec << inParts.Size() << std::endl;
+	// std::cout << "# " << std::dec;
+	// for(int i = 0 ; i < inParts.Size() ; i++) {
+	// 	uint64_t *top = reinterpret_cast<uint64_t *>(inParts[i].GetData());
+	// 	struct TimeFrame::Header *tbh
+	// 		= reinterpret_cast<TimeFrame::Header *>(inParts[i].GetData());
+	// 	struct SubTimeFrame::Header *stbh
+	// 		= reinterpret_cast<SubTimeFrame::Header *>(inParts[i].GetData());
+	// 	struct HeartbeatFrame::Header *hbh
+	// 		= reinterpret_cast<HeartbeatFrame::Header *>(inParts[i].GetData());
+	// 	if (tbh->magic == TimeFrame::MAGIC) {
+	// 		std::cout << "TF Id: "
+	// 			<< tbh->timeFrameId  << " Nsrc: " << tbh->numSource;
+	// 	} else
+	// 	if (stbh->magic == SubTimeFrame::MAGIC) {
+	// 		std::cout << std::endl << "* STF: TFid: 0x" << std::hex
+	// 			<< std::setw(8) << stbh->timeFrameId << " :";
+	// 	} else
+	// 	if (hbh->magic == HeartbeatFrame::MAGIC) {
+	// 		std::cout << " HB:" << std::dec
+	// 			<< std::setw(8) << inParts[i].GetSize() << " :";
+	// 	} else {
+	// 		std::cout << "UK " << std::setw(8) << std::setfill('0')
+	// 			<< IsHartBeat(top[0], SubTimeFrame::TDC64H);
+	// 	}
+	// }
+	// std::cout << std::dec << std::endl;
 
 	return;
 }
@@ -646,6 +656,7 @@ bool LogicFilter::ConditionalRun()
 	std::chrono::system_clock::time_point sw_start, sw_end;
 
 	if (Receive(inParts, fInputChannelName, 0, 1000) > 0) {
+        const auto elapsedStart = ElapsedClock::now();
 		assert(inParts.Size() >= 2);
 		sw_start = std::chrono::system_clock::now();
 
@@ -848,13 +859,40 @@ bool LogicFilter::ConditionalRun()
 			}
 		}
 
+        fElapsedTimes.push_back(std::chrono::duration<double, std::micro>(
+            ElapsedClock::now() - elapsedStart).count());
 	}
 
 	return true;
 }
 
+void LogicFilter::WriteElapsedTimes()
+{
+    if (!fElapsedTimes.empty()) {
+        std::error_code error;
+        const std::filesystem::path directory(LOGICFILTER_ELAPSED_DIR);
+        std::filesystem::create_directories(directory, error);
+        const auto path = directory / ("logicfilter-elapsed-" + std::to_string(fId) + ".txt");
+        if (error) {
+            LOG(error) << "Cannot create test directory: " << error.message();
+        } else {
+            std::ofstream output(path);
+            output << "# ConditionalRun elapsed_us: Receive excluded; Send included\n";
+            output << std::setprecision(17);
+            for (double elapsed : fElapsedTimes) output << elapsed << '\n';
+            output.flush();
+            if (!output) LOG(error) << "Failed to write elapsed times: " << path;
+            else {
+                LOG(info) << "Saved " << fElapsedTimes.size() << " elapsed times to " << path;
+                fElapsedTimes.clear();
+            }
+        }
+    }
+}
+
 void LogicFilter::PostRun()
 {
+    WriteElapsedTimes();
 	LOG(info) << "Post Run";
 	return;
 }
