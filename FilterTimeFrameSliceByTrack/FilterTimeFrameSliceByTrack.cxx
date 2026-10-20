@@ -449,6 +449,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
 
 } // void FilterTimeFrameSliceByTrack::InitTask()
 
+#if 0
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::ProcessSlice] ";
@@ -1023,6 +1024,13 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       return false;
    }
 } // bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
+#endif
+#if 1
+bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
+{
+   return false;
+}
+#endif
 
 int FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry(std::string_view filename)
 {
