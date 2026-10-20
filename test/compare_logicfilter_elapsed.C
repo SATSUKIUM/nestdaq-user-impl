@@ -31,7 +31,6 @@ void compare_logicfilter_elapsed() {
     const std::string prefix = "test/logicfilter-elapsed-comparison";
     std::ofstream summary(prefix + "-summary.csv");
     summary << "mode,samples,mean_us,median_us,p95_us,p99_us,min_us,max_us\n" << std::setprecision(15);
-    double maximum = 0;
     for (auto& s : samples) {
         const std::string path = "test/logicfilter-elapsed-0-" + s.key + ".txt";
         std::ifstream input(path);
@@ -48,7 +47,6 @@ void compare_logicfilter_elapsed() {
         const size_t n = s.values.size();
         s.mean = std::accumulate(s.values.begin(), s.values.end(), 0.) / n;
         s.median = n % 2 ? s.values[n/2] : (s.values[n/2-1] + s.values[n/2]) / 2.;
-        maximum = std::max(maximum, s.values.back());
         summary << s.key << ',' << n << ',' << s.mean << ',' << s.median << ','
                 << s.values[size_t(.95*(n-1))] << ',' << s.values[size_t(.99*(n-1))] << ','
                 << s.values.front() << ',' << s.values.back() << '\n';
@@ -97,8 +95,8 @@ void compare_logicfilter_elapsed() {
         canvas.SaveAs((prefix + suffix + ".pdf").c_str());
         canvas.Write(("canvas" + suffix).c_str());
     };
-    draw("", 0, 8000, true);
+    draw("", 0, 8000, false);
     draw("-zoom", 400, 1200, false);
-    draw("-full", 0, std::ceil(maximum / 1000.)*1000., true);
+    draw("-full", 0, 8000, false);
     output.Close();
 }
