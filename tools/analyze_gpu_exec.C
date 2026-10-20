@@ -44,7 +44,11 @@ void analyze_gpu_exec(const char* detailPath, const char* controlPath,
             for (size_t j = 0; j < hostNames.size() - 1; ++j) row.host.push_back(value(hostNames[j]));
             row.host.push_back(outerTotal - internalTotal);
             for (const auto& name : deviceNames) row.device.push_back(value(name));
-            for (const auto& name : countNames) row.count.push_back(value(name));
+            for (const auto& name : countNames) {
+                // Older single-HBF files predate the explicit scan_calls counter.
+                row.count.push_back(name == "scan_calls" && !tree->GetLeaf("gpu_exec_scan_calls")
+                    ? value("count_d2h_bytes") / 4 : value(name));
+            }
             for (const auto& values : {row.host, row.device, row.count})
                 for (double x : values)
                     if (!std::isfinite(x) || x < -1e-4) throw std::runtime_error("Invalid Exec detail value");
@@ -52,7 +56,7 @@ void analyze_gpu_exec(const char* detailPath, const char* controlPath,
                 throw std::runtime_error("Host stage sum does not reproduce outer Exec time");
             if (row.count[0] != leaf(tree, "segment_count")->GetValue() ||
                 row.count[1] != 8 * leaf(tree, "trigger_input_words")->GetValue() ||
-                row.count[2] != 4 * leaf(tree, "hbf_count")->GetValue() ||
+                row.count[2] != 4 * row.count.back() || row.count.back() > leaf(tree, "hbf_count")->GetValue() ||
                 row.count[3] != 4 * leaf(tree, "triggers")->GetValue())
                 throw std::runtime_error("Exec transfer counters disagree with processed input/output");
             rows.push_back(std::move(row));

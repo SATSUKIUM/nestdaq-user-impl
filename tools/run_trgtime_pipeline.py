@@ -101,6 +101,7 @@ def main():
     parser.add_argument('--timeout', type=float, default=180)
     parser.add_argument('--gpu-exec-cuda-events', action='store_true', help='Also insert CUDA events (implies --gpu-exec-details, adds overhead)')
     parser.add_argument('--gpu-exec-details', action='store_true', help='Profile host stages within GPU Exec')
+    parser.add_argument('--gpu-hbf-batch-size', type=int, choices=range(1, 5), help='GPU HBF batch size (default: 4; use 1 for sequential reference)')
     parser.add_argument('--performance', action='store_true', help='Save LogicFilter timing/data TTree as logicfilter.root')
     args = parser.parse_args()
     if args.gpu_exec_cuda_events:
@@ -116,6 +117,8 @@ def main():
     variant = 'GPU' if mode.group(1).upper() in {'1', 'ON', 'TRUE', 'YES'} else 'CPU'
     if args.gpu_exec_details and (not args.performance or variant != 'GPU'):
         parser.error('--gpu-exec-details requires --performance and a GPU build')
+    if args.gpu_hbf_batch_size is not None and variant != 'GPU':
+        parser.error('--gpu-hbf-batch-size requires a GPU build')
     logic = build / f'LogicFilter/{variant}/LogicFilter'
     track = build / 'FilterTimeFrameSliceByTrack/FilterTimeFrameSliceByTrack'
     for binary in [logic, track, *(build / name for name in ['FileSink', 'TFBFilePlayer', 'TimeFrameSlicerByLogicTiming'])]:
@@ -173,6 +176,8 @@ def main():
                ['--time-offset-begin', '-250', '--time-offset-end', '250'],
                [channel('in', 'pull', 'bind', 1), channel('out', 'push', 'connect', 2)])
         performance_options = ['--performance-output', str(work / 'logicfilter.root')] if args.performance else []
+        if variant == 'GPU':
+            performance_options += ['--hbf-batch-size', str(args.gpu_hbf_batch_size or 4)]
         if args.gpu_exec_details:
             performance_options += ['--exec-details', 'true']
         if args.gpu_exec_cuda_events:

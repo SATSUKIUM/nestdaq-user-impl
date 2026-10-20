@@ -57,6 +57,7 @@ struct LogicFilter : fair::mq::Device
         static constexpr std::string_view PerformanceOutput {"performance-output"};
         static constexpr std::string_view ExecDetails {"exec-details"};
         static constexpr std::string_view ExecCudaEvents {"exec-cuda-events"};
+        static constexpr std::string_view HbfBatchSize {"hbf-batch-size"};
 	};
 
 	struct DataBlock {
@@ -189,6 +190,7 @@ private:
     std::string fPerformanceOutput;
     bool fExecDetails = false;
     bool fExecCudaEvents = false;
+    uint32_t fHbfBatchSize = 4;
 
 
 	uint32_t* fNEntryInSubTimeRegion = nullptr; // key: iSubTR, value: # of signals in iSubTR
@@ -221,6 +223,8 @@ void LogicFilter::InitTask()
     fExecCudaEvents = events == "true" || events == "1";
     if (fExecCudaEvents && !fExecDetails) throw std::invalid_argument("exec-cuda-events requires exec-details");
     fTrig->EnableExecDetails(fExecDetails, fExecCudaEvents);
+    fHbfBatchSize = fConfig->GetProperty<uint32_t>(opt::HbfBatchSize.data());
+    if (!fHbfBatchSize || fHbfBatchSize > 4) throw std::invalid_argument("hbf-batch-size must be 1..4");
 
 	fInputChannelName  = fConfig->GetValue<std::string>(opt::InputChannelName.data());
 	fOutputChannelName = fConfig->GetValue<std::string>(opt::OutputChannelName.data());
@@ -674,37 +678,8 @@ int LogicFilter::RemoveData(fair::mq::Parts &parts, int index)
 	return rval;
 }
 
-void LogicFilter::CheckMultiPart(FairMQParts &inParts)
+void LogicFilter::CheckMultiPart(FairMQParts&)
 {
-	std::cout << "#Nmsg: " << std::dec << inParts.Size() << std::endl;
-	std::cout << "# " << std::dec;
-	for(int i = 0 ; i < inParts.Size() ; i++) {
-		uint64_t *top = reinterpret_cast<uint64_t *>(inParts[i].GetData());
-		struct TimeFrame::Header *tbh
-			= reinterpret_cast<TimeFrame::Header *>(inParts[i].GetData());
-		struct SubTimeFrame::Header *stbh
-			= reinterpret_cast<SubTimeFrame::Header *>(inParts[i].GetData());
-		struct HeartbeatFrame::Header *hbh
-			= reinterpret_cast<HeartbeatFrame::Header *>(inParts[i].GetData());
-		if (tbh->magic == TimeFrame::MAGIC) {
-			std::cout << "TF Id: "
-				<< tbh->timeFrameId  << " Nsrc: " << tbh->numSource;
-		} else
-		if (stbh->magic == SubTimeFrame::MAGIC) {
-			std::cout << std::endl << "* STF: TFid: 0x" << std::hex
-				<< std::setw(8) << stbh->timeFrameId << " :"; 
-		} else
-		if (hbh->magic == HeartbeatFrame::MAGIC) {
-			std::cout << " HB:" << std::dec
-				<< std::setw(8) << inParts[i].GetSize() << " :"; 
-		} else {
-			std::cout << "UK " << std::setw(8) << std::setfill('0')
-				<< IsHartBeat(top[0], SubTimeFrame::TDC64H);
-		}
-	}
-	std::cout << std::dec << std::endl;
-
-	return;
 }
 
 int LogicFilter::MakeBlockMap(
@@ -1204,7 +1179,7 @@ void LogicFilter::PreRun()
     fPerformance.Open(fPerformanceOutput, true,
         fConfig->GetProperty<std::string>(OptionKey::TriggerSignals.data()),
         fConfig->GetProperty<std::string>(OptionKey::TriggerExpression.data()),
-        std::stoi(fConfig->GetProperty<std::string>(OptionKey::TriggerWidth.data())), fExecDetails, fExecCudaEvents);
+        std::stoi(fConfig->GetProperty<std::string>(OptionKey::TriggerWidth.data())), fExecDetails, fExecCudaEvents, fHbfBatchSize);
 }
 
 bool LogicFilter::ConditionalRun()
@@ -1284,21 +1259,22 @@ bool LogicFilter::ConditionalRun()
 
         if (fPerformance.Enabled()) fPerformance.sample.hbf_count = bsize_min;
 
-		// Trigger processing in unit of HBF
-		std::vector< std::vector<uint32_t> > fltdata;
-		int totalhits = 0;
-		for (size_t i = 0 ; i < bsize_min ; i++) {
+        // Independent HBF regions share one Mark/LUT/scan/compaction launch.
+        std::vector<std::vector<uint32_t>> fltdata;
+        fltdata.reserve(bsize_min);
+        int totalhits = 0;
+        for (size_t begin = 0; begin < bsize_min; begin += fHbfBatchSize) {
+            const size_t batchSize = std::min(size_t(fHbfBatchSize), bsize_min - begin);
+            std::vector<std::vector<HBFIndex>> hbfs(batchSize);
+            for (size_t frame = 0; frame < batchSize; ++frame)
+                BuildHBF(hbfs[frame], block_map, inParts, begin + frame);
 
-			//HBF building
-			std::vector<struct HBFIndex> hbf_list;
-			BuildHBF(hbf_list, block_map, inParts, i);
-
-			//Trigger process
             fTriggerStart = PerformanceClock::now();
-			fTrig->CleanUpTimeRegion();
-			fTrig->CleanUpSubTimeRegion(fNEntryInSubTimeRegion, fNSubTimeRegions);
+            fTrig->PrepareHbfBatch(uint32_t(batchSize));
+            fTrig->CleanUpTimeRegion();
+            fTrig->CleanUpSubTimeRegion(fNEntryInSubTimeRegion, fNSubTimeRegions);
             fCleanupEnd = PerformanceClock::now();
-			std::vector<uint32_t> *hits = fTrig->Exec(hbf_list);
+            auto* hits = fTrig->ExecBatch(hbfs);
             fTriggerEnd = PerformanceClock::now();
             if (fPerformance.Enabled()) {
                 fPerformance.sample.cleanup_host_us += fPerformance.Microseconds(fTriggerStart, fCleanupEnd);
@@ -1308,32 +1284,21 @@ bool LogicFilter::ConditionalRun()
             }
             if (fPerformance.Enabled()) {
                 fAccountingStart = PerformanceClock::now();
-                fPerformance.CountSegments(hbf_list);
+                for (const auto& hbf : hbfs) fPerformance.CountSegments(hbf);
                 fPerformance.sample.accounting_us += fPerformance.Microseconds(fAccountingStart, PerformanceClock::now());
             }
 
-			fltdata.emplace_back(*hits);
-			int nhits = hits->size();
-
-			#if 0
-			if (nhits > 0) {
-				std::cout << "#D1 Hits : " << hits->size() << " ";
-				for (unsigned int ii = 0 ; ii < hits->size() ; ii++) {
-					std::cout << " " << std::dec << (*hits)[ii];
-					if (ii > 10) {
-						std::cout << "...";
-						break;
-					}
-				}
-				std::cout << std::endl;
-			}
-			#endif
-
-			// mark sending flag for STF
-			MarkFlagSending(block_map, i, nhits, flag_sending);
-
-			totalhits += nhits;
-		}
+            // Compaction returns sorted global bins. Restore HBF-local TrgTime
+            // and preserve an empty output block for an HBF without hits.
+            for (size_t frame = 0; frame < batchSize; ++frame) fltdata.emplace_back();
+            const uint32_t regionSize = fTrig->GetTimeRegionSize();
+            for (uint32_t bin : *hits) fltdata[begin + bin / regionSize].push_back(bin % regionSize);
+            for (size_t frame = 0; frame < batchSize; ++frame) {
+                const int nhits = fltdata[begin + frame].size();
+                MarkFlagSending(block_map, begin + frame, nhits, flag_sending);
+                totalhits += nhits;
+            }
+        }
 
 		#if 0
 		if (fKt2->Check()) {
@@ -1683,6 +1648,8 @@ void addCustomOptions(bpo::options_description& options)
 	using opt = LogicFilter::OptionKey;
 
 	options.add_options()
+        (opt::HbfBatchSize.data(), bpo::value<uint32_t>()->default_value(4),
+         "Maximum HBFs per GPU batch (1..4; 1 retains sequential HBF processing)")
         (opt::ExecCudaEvents.data(), bpo::value<std::string>()->default_value("false"),
          "Also record CUDA-event stream intervals (higher instrumentation overhead)")
         (opt::ExecDetails.data(), bpo::value<std::string>()->default_value("false"),

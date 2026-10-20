@@ -15,7 +15,7 @@ struct ExecProfileData {
     X(h2d_device_us) X(mark_device_us) X(subtr_device_us) X(lut_device_us) \
     X(scan_device_us) X(compact_device_us) X(count_d2h_device_us) X(hits_d2h_device_us)
 #define LF_EXEC_COUNT_FIELDS(X) \
-    X(mark_calls) X(h2d_bytes) X(count_d2h_bytes) X(hits_d2h_bytes) X(buffer_growths) X(mark_launches) X(metadata_h2d_bytes)
+    X(mark_calls) X(h2d_bytes) X(count_d2h_bytes) X(hits_d2h_bytes) X(buffer_growths) X(mark_launches) X(metadata_h2d_bytes) X(scan_calls)
 #define LF_EXEC_DOUBLE(name) double name{};
     LF_EXEC_HOST_FIELDS(LF_EXEC_DOUBLE)
     LF_EXEC_DEVICE_FIELDS(LF_EXEC_DOUBLE)

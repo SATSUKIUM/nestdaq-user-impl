@@ -44,7 +44,7 @@ public:
     bool Enabled() const { return bool(fFile); }
 
     void Open(const std::string& path, bool cuda, const std::string& signals,
-              const std::string& expression, int width, bool execDetails = false, bool execCudaEvents = false) {
+              const std::string& expression, int width, bool execDetails = false, bool execCudaEvents = false, int hbfBatchSize = 1) {
         Close(false);
         if (path.empty()) return;
         TDirectory::TContext context;
@@ -93,6 +93,7 @@ public:
         TParameter<int>("schema_version", 1).Write();
         TParameter<int>("exec_detail_enabled", execDetails).Write();
         TParameter<int>("exec_cuda_events_enabled", execCudaEvents).Write();
+        TParameter<int>("hbf_batch_size", hbfBatchSize).Write();
         TParameter<int>("completed", 0).Write();
     }
 
