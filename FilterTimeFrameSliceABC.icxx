@@ -10,6 +10,8 @@
 #include "FilterTimeFrameSliceABC.h"
 #include "utility/MessageUtil.h"
 #include "UnpackTdc.h"
+#include <cstdlib>
+#include <stdexcept>
 
 
 #define DEBUG 0
@@ -26,6 +28,8 @@ FilterTimeFrameSliceABC::FilterTimeFrameSliceABC()
 
 void FilterTimeFrameSliceABC::ResetTask()
 {
+   // An interrupted/reset run intentionally has no END record.
+   if (fTrgTimeOutput.is_open()) fTrgTimeOutput.close();
    if(fRootFile != nullptr){
       fRootFile->cd();
       if(fRootTree1 != nullptr){
@@ -53,6 +57,11 @@ void FilterTimeFrameSliceABC::InitTask()
    fNumDestination = GetNumSubChannels(fOutputChannelName);
    fPollTimeoutMS  = std::stoi(fConfig->GetProperty<std::string>(opt::PollTimeout.data()));
 
+   fTrgTimeOutputPath = fConfig->GetProperty<std::string>(opt::TrgTimeOutput.data());
+   if (fTrgTimeOutputPath.empty()) {
+      if (const char* path = std::getenv("NESTDAQ_TRGTIME_OUTPUT")) fTrgTimeOutputPath = path;
+   }
+
    #if FILEOUT_THROUGHPUT
    // Throughput measurement
    fRootFile = new TFile(fRootFileName.c_str(), "RECREATE");
@@ -71,6 +80,15 @@ void FilterTimeFrameSliceABC::InitTask()
 
 void FilterTimeFrameSliceABC::PreRun()
 {
+   fTraceMessages = fTraceMetas = fTraceTriggers = fTraceSlices = 0;
+   if (fTrgTimeOutput.is_open()) fTrgTimeOutput.close();
+   if (!fTrgTimeOutputPath.empty()) {
+      fTrgTimeOutput.clear();
+      fTrgTimeOutput.open(fTrgTimeOutputPath, std::ios::out | std::ios::trunc);
+      if (!fTrgTimeOutput) throw std::runtime_error("Cannot open TrgTime output: " + fTrgTimeOutputPath);
+      fTrgTimeOutput << "# nestdaq-trgtime-v1,time_unit=4ns\n";
+      LOG(info) << "Receiver TrgTime output: " << fTrgTimeOutputPath;
+   }
 }
 
 bool FilterTimeFrameSliceABC::ConditionalRun()
@@ -124,7 +142,11 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
       total_size += part->GetSize();
    }
    #endif
-   ParseMessages(inParts);
+   if (!ParseMessages(inParts)) throw std::runtime_error("Failed to parse received time frame slices");
+   if (fTrgTimeOutput.is_open()) {
+      fTrgTimeOutput << "MESSAGE," << fTraceMessages++ << ',' << fTFs.size() << ',' << fLFs.size() << '\n';
+   }
+   if (fLFs.empty()) throw std::runtime_error("Received message has no LogicFilter block");
    #if CHECK_COUT_CONDITIONALRUN
    std::cout << "\tParsed " << fTFs.size() << " time frames" << std::endl;
    #endif
@@ -171,6 +193,7 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          #if CHECK_COUT_CONDITIONALRUN
          std::cout << "\t\tTF type: META" << std::endl;
          #endif
+         if (size_t(idxTFMETA) >= fLFs.size()) throw std::runtime_error("Missing LogicFilter block for META");
          lf = &fLFs[idxTFMETA];
 
          #if CHECK_COUT_LFTDC
@@ -188,6 +211,22 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          std::cout << "\t\tcheck point: idxTFMETA = " << idxTFMETA << std::endl;
          #endif
          lfTdcBlock = lf->at(0); // ContainerFrame TLFにはLF TDC block(DataFrame TTT)が一つだけ入っている(じゃあなんで入れ子にしてるん?)
+         if (fTrgTimeOutput.is_open()) {
+            fTrgTimeOutput << "META," << (fTraceMessages - 1) << ',' << (idxTFMETA - 1)
+               << ',' << tf.GetHeader()->timeFrameId << ',' << lf->GetHeader()->timeFrameId
+               << ',' << lf->GetHeader()->numTrigs << ',' << lf->size() << '\n';
+            ++fTraceMetas;
+            for (size_t block = 0; block < lf->size(); ++block) {
+               auto* times = lf->at(block);
+               for (uint64_t index = 0; index < times->GetNumData(); ++index) {
+                  auto trigger = times->UncheckedAt(index);
+                  fTrgTimeOutput << "TRG," << (fTraceMessages - 1) << ',' << (idxTFMETA - 1)
+                     << ',' << tf.GetHeader()->timeFrameId << ',' << block << ',' << index
+                     << ',' << trigger.time << ',' << trigger.type << '\n';
+                  ++fTraceTriggers;
+               }
+            }
+         }
          #if CHECK_COUT_CONDITIONALRUN
          std::cout << "\t\tlfTdcBlock = lf->at(0)" << std::endl;
          #endif
@@ -215,7 +254,16 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
          std::cout << "\t\t\tcatched" << std::endl;
          // std::cout << "\t\t\tlfTdc.time = " << lfTdc.time << std::endl;
          #endif
-         fLFTDC4n = lfTdcBlock->UncheckedAt(idxTFSLICE).time;
+         if (!lfTdcBlock || uint64_t(idxTFSLICE) >= lfTdcBlock->GetNumData())
+            throw std::runtime_error("SLICE has no corresponding TrgTime");
+         const auto trigger = lfTdcBlock->UncheckedAt(idxTFSLICE);
+         fLFTDC4n = trigger.time;
+         if (fTrgTimeOutput.is_open()) {
+            fTrgTimeOutput << "SLICE," << (fTraceMessages - 1) << ',' << (idxTFMETA - 1)
+               << ',' << tf.GetHeader()->timeFrameId << ',' << idxTFSLICE
+               << ',' << trigger.time << ',' << trigger.type << '\n';
+            ++fTraceSlices;
+         }
          // std::cout << ", with fltdc4n = " << fLFTDC4n << std::endl;
          #if CHECK_COUT_CONDITIONALRUN
          std::cout << "\t\tLF TDC4n: " << fLFTDC4n << std::endl;
@@ -242,6 +290,10 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
       tf.GetHeader()->length = tf.GetRealLength();
       tf.CopyAllTo<copyUnit>(outdata);
    } // for (uint64_t ifrm = 0, nfrm = fTFs.size(); ifrm < nfrm; ++ifrm)
+   if (fTrgTimeOutput.is_open()) {
+      fTrgTimeOutput.flush();
+      if (!fTrgTimeOutput) throw std::runtime_error("Failed to write TrgTime output: " + fTrgTimeOutputPath);
+   }
    // LOG(info) << outdata->size() ;
 
    FairMQMessagePtr msgall(MessageUtil::NewMessage(*this,std::move(outdataptr)));
@@ -299,6 +351,13 @@ bool FilterTimeFrameSliceABC::ConditionalRun()
 
 void FilterTimeFrameSliceABC::PostRun()
 {
+   if (fTrgTimeOutput.is_open()) {
+      fTrgTimeOutput << "END," << fTraceMessages << ',' << fTraceMetas << ','
+         << fTraceTriggers << ',' << fTraceSlices << '\n';
+      fTrgTimeOutput.flush();
+      if (!fTrgTimeOutput) throw std::runtime_error("Failed to finalize TrgTime output: " + fTrgTimeOutputPath);
+      fTrgTimeOutput.close();
+   }
 }
 
 

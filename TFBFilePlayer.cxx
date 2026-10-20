@@ -1,4 +1,7 @@
 #include <functional>
+#include <filesystem>
+#include <thread>
+#include <chrono>
 
 //#include <fmt/core.h>
 //#include <fairmq/FairMQLogger.h>
@@ -34,6 +37,8 @@ void addCustomOptions(bpo::options_description& options)
      "Iteration wait time (ms)")
     (opt::SplitMethod.data(),       bpo::value<std::string>()->default_value("2"),
      "STF split method")
+    (opt::CompletionAckFile.data(), bpo::value<std::string>()->default_value(""),
+     "Optional acknowledgement file to wait for after EOF or max-iterations, keeping sockets alive")
     (opt::EnableRecbe.data(),       bpo::value<std::string>()->default_value("false"),
      "Enable RECBE handling")
     ;
@@ -60,13 +65,18 @@ bool TFBFilePlayer::ConditionalRun()
 
     if (fInputFile.eof()) {
         LOG(warn) << "Reached end of input file. stop RUNNING";
+        WaitForCompletion();
         return false;
     }
 
     uint64_t magic;
     char tempbuf[sizeof(struct Filter::Header)];
     fInputFile.read(reinterpret_cast<char*>(&magic), sizeof(uint64_t));
-    if (fInputFile.eof()) return false;
+    if (fInputFile.eof()) {
+        if (fInputFile.gcount() != 0) throw std::runtime_error("Truncated input record magic");
+        WaitForCompletion();
+        return false;
+    }
     if (! static_cast<bool>(fInputFile)) {
         LOG(error) << "Fail to read " << fInputFileName;
         return false;
@@ -340,6 +350,7 @@ bool TFBFilePlayer::ConditionalRun()
     ++fNumIteration;
     if (fMaxIterations>0 && fMaxIterations <= fNumIteration) {
         LOG(info) << "number of iterations of ConditionalRun() reached maximum.";
+        WaitForCompletion();
         return false;
     }
 
@@ -348,11 +359,23 @@ bool TFBFilePlayer::ConditionalRun()
     return true;
 }
 
+void TFBFilePlayer::WaitForCompletion()
+{
+    if (fCompletionAckFile.empty()) return;
+    LOG(info) << "Input complete after " << fNumIteration
+              << " TFs; waiting for downstream acknowledgement: " << fCompletionAckFile;
+    while (!NewStatePending() && !std::filesystem::exists(fCompletionAckFile))
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+}
+
 //_____________________________________________________________________________
 void TFBFilePlayer::InitTask()
 {
     using opt = OptionKey;
     fInputFileName     = fConfig->GetProperty<std::string>(opt::InputFileName.data());
+    fCompletionAckFile = fConfig->GetProperty<std::string>(opt::CompletionAckFile.data());
+    if (!fCompletionAckFile.empty() && std::filesystem::exists(fCompletionAckFile))
+        throw std::runtime_error("Completion acknowledgement file already exists: " + fCompletionAckFile);
     fOutputChannelName = fConfig->GetProperty<std::string>(opt::OutputChannelName.data());
     fMaxIterations     = std::stoll(fConfig->GetProperty<std::string>(opt::MaxIterations.data()));
     fPollTimeoutMS     = std::stoi(fConfig->GetProperty<std::string>(opt::PollTimeout.data()));

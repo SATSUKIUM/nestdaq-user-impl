@@ -24,6 +24,7 @@
 #include <TTree.h>
 
 #include <chrono>
+#include <fstream>
 
 #include <chmap/item.hpp>
 
@@ -47,9 +48,10 @@ public:
    struct OptionKey {
       static constexpr std::string_view InputChannelName {"in-chan-name"};
       static constexpr std::string_view OutputChannelName {"out-chan-name"};
-      static constexpr std::string_view DQMChannelName {"out-chan-name"};
+      static constexpr std::string_view DQMChannelName {"dqm-chan-name"};
       static constexpr std::string_view PollTimeout        {"poll-timeout"};
       static constexpr std::string_view SplitMethod        {"split"};
+      static constexpr std::string_view TrgTimeOutput      {"trgtime-output"};
    };
 
 protected:
@@ -78,6 +80,14 @@ protected:
    TLF fLF;
    std::vector<TLF> fLFs;
    uint32_t fLFTDC4n; // 4ns-unit TDC of Coincidence
+
+   // Optional receiver-side trace, written before ProcessSlice selects events.
+   std::string fTrgTimeOutputPath;
+   std::ofstream fTrgTimeOutput;
+   uint64_t fTraceMessages{0};
+   uint64_t fTraceMetas{0};
+   uint64_t fTraceTriggers{0};
+   uint64_t fTraceSlices{0};
 
    // output
    int fNumDestination {0};

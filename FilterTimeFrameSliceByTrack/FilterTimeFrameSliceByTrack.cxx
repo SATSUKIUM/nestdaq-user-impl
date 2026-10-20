@@ -449,6 +449,13 @@ void FilterTimeFrameSliceByTrack::InitTask()
 
 } // void FilterTimeFrameSliceByTrack::InitTask()
 
+// Temporary bypass for full-file LogicFilter/TrgTime verification.
+bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF&)
+{
+   return false;
+}
+
+#if 0
 bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
 {
    const std::string_view funcname = "[FilterTimeFrameSliceByTrack::ProcessSlice] ";
@@ -1023,6 +1030,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
       return false;
    }
 } // bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
+#endif
 
 int FilterTimeFrameSliceByTrack::LoadDetectorConfig_Geometry(std::string_view filename)
 {
@@ -1565,6 +1573,9 @@ void addCustomOptions(bpo::options_description& options)
       (opt::PollTimeout.data(),
        bpo::value<std::string>()->default_value("1"),
        "Timeout of polling (in msec)")
+      (opt::TrgTimeOutput.data(),
+       bpo::value<std::string>()->default_value(""),
+       "Receiver TrgTime CSV path (empty: NESTDAQ_TRGTIME_OUTPUT, otherwise disabled)")
       (opt::SplitMethod.data(),
        bpo::value<std::string>()->default_value("1"),
        "STF split method")

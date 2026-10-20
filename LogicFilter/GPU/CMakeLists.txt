@@ -18,6 +18,7 @@ find_library(CUDAMAP_LIBRARY
 
 
 add_executable(LogicFilter LogicFilter.cu;)
+target_link_libraries(LogicFilter PUBLIC ROOT::RIO ROOT::Tree)
 target_sources(LogicFilter PRIVATE
     SignalParser.cxx
 )

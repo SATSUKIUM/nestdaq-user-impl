@@ -21,6 +21,7 @@ public:
         static constexpr std::string_view IterationWait     {"wait"};
         static constexpr std::string_view SplitMethod       {"split"};
         static constexpr std::string_view EnableRecbe       {"recbe"};
+        static constexpr std::string_view CompletionAckFile {"completion-ack-file"};
 
     };
     TFBFilePlayer();
@@ -35,9 +36,11 @@ protected:
     void PreRun() override;
 
 private:
+    void WaitForCompletion();
     std::string fOutputChannelName;
     std::string fInputFileName;
     std::ifstream fInputFile;
+    std::string fCompletionAckFile;
     int64_t fNumIteration  {0};
     int64_t fMaxIterations {0};
     int fDirection         {0};

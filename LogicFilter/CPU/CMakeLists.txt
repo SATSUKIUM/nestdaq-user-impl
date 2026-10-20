@@ -18,6 +18,7 @@ foreach(lvar IN ITEMS
   )
 
   if(EXEC STREQUAL "LogicFilter")
+      target_link_libraries(${EXEC} PUBLIC ROOT::RIO ROOT::Tree)
       target_sources(${EXEC} PRIVATE
           SignalParser.cxx
       )

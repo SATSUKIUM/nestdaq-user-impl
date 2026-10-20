@@ -25,6 +25,7 @@
 #include <cuda/cmath>
 #include <cudamap.h>
 #include <cub/device/device_scan.cuh>
+#include "ExecProfiler.h"
 
 
 struct HBFIndex {
@@ -89,11 +90,10 @@ inline void CheckCuda(cudaError_t result)
 }
 
 // One worker per input word. Formats match UnpackTdc.h (leading TDC only).
-__global__ void devMark(const uint64_t* words, size_t count, uint32_t fem,
+__device__ void markWord(const uint64_t* words, size_t count, uint32_t fem,
     uint32_t type, const cudamap::FEEAddrDecoder* decoder,
-    uint32_t* mainTR, uint32_t* subTR, uint32_t size, uint32_t nSub)
+    uint32_t* mainTR, uint32_t* subTR, uint32_t size, uint32_t nSub, size_t i)
 {
-    size_t i = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
     if (i >= count) return;
     uint64_t word = words[i];
     if ((word >> 58) != TDC64H::T_TDC) return;
@@ -126,6 +126,37 @@ __global__ void devMark(const uint64_t* words, size_t count, uint32_t fem,
     }
 }
 
+struct MarkSegment {
+    size_t offset, count;
+    uint32_t fem, type, firstBlock;
+};
+
+__global__ void devMark(const uint64_t* words, size_t count, uint32_t fem,
+    uint32_t type, const cudamap::FEEAddrDecoder* decoder,
+    uint32_t* mainTR, uint32_t* subTR, uint32_t size, uint32_t nSub)
+{
+    markWord(words, count, fem, type, decoder, mainTR, subTR, size, nSub,
+        size_t(blockIdx.x) * blockDim.x + threadIdx.x);
+}
+
+// Each block belongs to one segment, so all its threads share FEM/type.
+// A large segment receives multiple blocks; small segments still get one.
+__global__ void devMarkBatch(const uint64_t* words, const MarkSegment* segments,
+    uint32_t nSegments, const cudamap::FEEAddrDecoder* decoder,
+    uint32_t* mainTR, uint32_t* subTR, uint32_t size, uint32_t nSub)
+{
+    uint32_t lo = 0, hi = nSegments;
+    while (lo + 1 < hi) {
+        uint32_t mid = lo + (hi - lo) / 2;
+        if (segments[mid].firstBlock <= blockIdx.x) lo = mid;
+        else hi = mid;
+    }
+    const auto seg = segments[lo];
+    markWord(words + seg.offset, seg.count, seg.fem, seg.type, decoder,
+        mainTR, subTR, size, nSub,
+        size_t(blockIdx.x - seg.firstBlock) * blockDim.x + threadIdx.x);
+}
+
 // Keep LookUp's out-of-range=false behavior, including bits outside the LUT.
 __device__ bool devLookUp(uint32_t value, const uint8_t* lut, size_t lutSize)
 {
@@ -156,6 +187,8 @@ class Trigger
 {
 public:
 	Trigger();
+    void EnableExecDetails(bool enabled, bool cudaEvents = false) { fExecProfiler.Enable(enabled, cudaEvents); }
+    const nestdaq::ExecProfileData& GetExecProfile() const { return fExecProfiler.Data(); }
 	virtual ~Trigger();
 	void InitParam();
 	bool SetTimeRegion(uint32_t size);
@@ -233,7 +266,11 @@ private:
 	cudamap::TriggerConfig* devTriggerConfigs = nullptr;
     uint64_t* devMarkWords = nullptr;
     size_t fMarkWordCapacity = 0;
+    MarkSegment* devMarkSegments = nullptr;
+    size_t fMarkSegmentCapacity = 0;
+    std::vector<MarkSegment> fMarkSegments;
 
+    nestdaq::GpuExecProfiler fExecProfiler;
 	static constexpr int numThreadsPerBlock = 256;
 	int numBlocks = 0;
 };
@@ -263,6 +300,7 @@ Trigger::~Trigger()
     cudaFree(devHitCount);
     cudaFree(devScanTemp);
     cudaFree(devMarkWords);
+    cudaFree(devMarkSegments);
     cudaFree(devTimeRegion);
     cudaFree(devSubTimeRegions);
     cudaFree(devNEntryInSubTimeRegion);
@@ -571,41 +609,71 @@ void Trigger::Mark(unsigned char *pdata, int len, int fem, uint32_t type)
     if (!devDecoderPtr) throw std::runtime_error("FEEAddrDecoder is not initialized");
     size_t count = size_t(len) / sizeof(uint64_t);
     if (!count) return;
-    if (count > fMarkWordCapacity) {
-        CheckCuda(cudaFree(devMarkWords));
-        devMarkWords = nullptr;
-        fMarkWordCapacity = 0;
-        CheckCuda(cudaMalloc(&devMarkWords, count * sizeof(uint64_t)));
-        fMarkWordCapacity = count;
+    using Detail = nestdaq::ExecProfileData;
+    if (fExecProfiler.Active()) {
+        ++fExecProfiler.Data().mark_calls;
+        fExecProfiler.Data().h2d_bytes += count * sizeof(uint64_t);
     }
-    CheckCuda(cudaMemcpy(devMarkWords, pdata, count * sizeof(uint64_t), cudaMemcpyHostToDevice));
-    devMark<<<(count + numThreadsPerBlock - 1) / numThreadsPerBlock, numThreadsPerBlock>>>(
-        devMarkWords, count, uint32_t(fem), type, devDecoderPtr,
-        devTimeRegion, devSubTimeRegions, fTimeRegionSize, fNSubTimeRegions);
-    CheckCuda(cudaGetLastError());
-    CheckCuda(cudaDeviceSynchronize());
+    fExecProfiler.Measure(&Detail::buffer_host_us, nullptr, [&] {
+        if (count > fMarkWordCapacity) {
+            if (fExecProfiler.Active()) ++fExecProfiler.Data().buffer_growths;
+            CheckCuda(cudaFree(devMarkWords));
+            devMarkWords = nullptr;
+            fMarkWordCapacity = 0;
+            CheckCuda(cudaMalloc(&devMarkWords, count * sizeof(uint64_t)));
+            fMarkWordCapacity = count;
+        }
+    });
+    fExecProfiler.Measure(&Detail::h2d_host_us, &Detail::h2d_device_us, [&] {
+        CheckCuda(cudaMemcpy(devMarkWords, pdata, count * sizeof(uint64_t), cudaMemcpyHostToDevice));
+    });
+    fExecProfiler.Measure(&Detail::mark_launch_host_us, &Detail::mark_device_us, [&] {
+        devMark<<<(count + numThreadsPerBlock - 1) / numThreadsPerBlock, numThreadsPerBlock>>>(
+            devMarkWords, count, uint32_t(fem), type, devDecoderPtr,
+            devTimeRegion, devSubTimeRegions, fTimeRegionSize, fNSubTimeRegions);
+        CheckCuda(cudaGetLastError());
+    });
+    // Copies, Mark, Scan and the next HBF's cleanup share the default stream.
+    // Stream ordering protects both the reused input buffer and TimeRegion;
+    // Scan's blocking D2H copy waits for the result before returning to the host.
 }
 
 std::vector<uint32_t> *Trigger::Scan()
 {
     if (!devLut) throw std::runtime_error("Trigger LUT is not initialized");
     if (!fTimeRegionSize) throw std::runtime_error("TimeRegion is not initialized");
-    ScanSubTRandMarkMainTR();
+    using Detail = nestdaq::ExecProfileData;
+    fExecProfiler.Measure(&Detail::subtr_launch_host_us, &Detail::subtr_device_us, [&] {
+        ScanSubTRandMarkMainTR();
+    });
     const auto blocks = (size_t(fTimeRegionSize) + numThreadsPerBlock - 1) / numThreadsPerBlock;
-    devFindRisingEdges<<<blocks, numThreadsPerBlock>>>(devTimeRegion,
-        fTimeRegionSize, devLut, fLutSize, devEdgeFlags);
-    CheckCuda(cudaGetLastError());
-    CheckCuda(cub::DeviceScan::ExclusiveSum(devScanTemp, fScanTempBytes,
-        devEdgeFlags, devEdgeOffsets, int(fTimeRegionSize)));
-    devCompactRisingEdges<<<blocks, numThreadsPerBlock>>>(devEdgeFlags,
-        devEdgeOffsets, fTimeRegionSize, devHits, devHitCount);
-    CheckCuda(cudaGetLastError());
+    fExecProfiler.Measure(&Detail::lut_launch_host_us, &Detail::lut_device_us, [&] {
+        devFindRisingEdges<<<blocks, numThreadsPerBlock>>>(devTimeRegion,
+            fTimeRegionSize, devLut, fLutSize, devEdgeFlags);
+        CheckCuda(cudaGetLastError());
+    });
+    fExecProfiler.Measure(&Detail::scan_host_us, &Detail::scan_device_us, [&] {
+        CheckCuda(cub::DeviceScan::ExclusiveSum(devScanTemp, fScanTempBytes,
+            devEdgeFlags, devEdgeOffsets, int(fTimeRegionSize)));
+    });
+    fExecProfiler.Measure(&Detail::compact_launch_host_us, &Detail::compact_device_us, [&] {
+        devCompactRisingEdges<<<blocks, numThreadsPerBlock>>>(devEdgeFlags,
+            devEdgeOffsets, fTimeRegionSize, devHits, devHitCount);
+        CheckCuda(cudaGetLastError());
+    });
     uint32_t count = 0;
-    CheckCuda(cudaMemcpy(&count, devHitCount, sizeof(count), cudaMemcpyDeviceToHost));
+    fExecProfiler.Measure(&Detail::count_d2h_host_us, &Detail::count_d2h_device_us, [&] {
+        CheckCuda(cudaMemcpy(&count, devHitCount, sizeof(count), cudaMemcpyDeviceToHost));
+    });
+    if (fExecProfiler.Active()) fExecProfiler.Data().count_d2h_bytes += sizeof(count);
     if (count > fTimeRegionSize / 2) throw std::runtime_error("Rising edge count exceeds capacity");
-    fHits.resize(count);
-    if (count) CheckCuda(cudaMemcpy(fHits.data(), devHits,
-        size_t(count) * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+    fExecProfiler.Measure(&Detail::hits_resize_host_us, nullptr, [&] { fHits.resize(count); });
+    if (count) {
+        fExecProfiler.Measure(&Detail::hits_d2h_host_us, &Detail::hits_d2h_device_us, [&] {
+            CheckCuda(cudaMemcpy(fHits.data(), devHits, size_t(count) * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+        });
+        if (fExecProfiler.Active()) fExecProfiler.Data().hits_d2h_bytes += size_t(count) * sizeof(uint32_t);
+    }
     return &fHits;
 }
 
@@ -623,13 +691,66 @@ void Trigger::ScanSubTRandMarkMainTR()
 
 std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 {
-	for (auto &seg : hbf) {
-		//fTrig->Mark(
-		//	reinterpret_cast<unsigned char *>(inParts[mindex].GetData()),
-		//	inParts[mindex].GetSize(),
-		//	vfemid, dbl->Type);
-		Trigger::Mark(seg.data, seg.size, seg.femId, seg.femType);
-	}
+    fExecProfiler.Begin(hbf.size());
+    using Detail = nestdaq::ExecProfileData;
+    size_t totalWords = 0, totalBlocks = 0;
+    fExecProfiler.Measure(&Detail::buffer_host_us, nullptr, [&] {
+        fMarkSegments.clear();
+        fMarkSegments.reserve(hbf.size());
+        for (const auto& seg : hbf) {
+            if (seg.size < int(sizeof(uint64_t))) continue;
+            const size_t count = size_t(seg.size) / sizeof(uint64_t);
+            const size_t blocks = (count + numThreadsPerBlock - 1) / numThreadsPerBlock;
+            if (totalBlocks + blocks > size_t(INT_MAX) ||
+                count > std::numeric_limits<size_t>::max() / sizeof(uint64_t) - totalWords)
+                throw std::overflow_error("Batched Mark input exceeds capacity");
+            fMarkSegments.push_back({totalWords, count, seg.femId, seg.femType, uint32_t(totalBlocks)});
+            totalWords += count;
+            totalBlocks += blocks;
+        }
+        if (totalWords && !devDecoderPtr) throw std::runtime_error("FEEAddrDecoder is not initialized");
+        if (totalWords > fMarkWordCapacity) {
+            if (fExecProfiler.Active()) ++fExecProfiler.Data().buffer_growths;
+            CheckCuda(cudaFree(devMarkWords));
+            devMarkWords = nullptr;
+            fMarkWordCapacity = 0;
+            CheckCuda(cudaMalloc(&devMarkWords, totalWords * sizeof(uint64_t)));
+            fMarkWordCapacity = totalWords;
+        }
+        if (fMarkSegments.size() > fMarkSegmentCapacity) {
+            if (fExecProfiler.Active()) ++fExecProfiler.Data().buffer_growths;
+            CheckCuda(cudaFree(devMarkSegments));
+            devMarkSegments = nullptr;
+            fMarkSegmentCapacity = 0;
+            CheckCuda(cudaMalloc(&devMarkSegments, fMarkSegments.size() * sizeof(MarkSegment)));
+            fMarkSegmentCapacity = fMarkSegments.size();
+        }
+    });
+    if (totalWords) {
+        if (fExecProfiler.Active()) {
+            fExecProfiler.Data().mark_calls += fMarkSegments.size();
+            fExecProfiler.Data().h2d_bytes += totalWords * sizeof(uint64_t);
+            ++fExecProfiler.Data().mark_launches;
+            fExecProfiler.Data().metadata_h2d_bytes += fMarkSegments.size() * sizeof(MarkSegment);
+        }
+        fExecProfiler.Measure(&Detail::h2d_host_us, &Detail::h2d_device_us, [&] {
+            size_t index = 0;
+            for (const auto& seg : hbf) {
+                if (seg.size < int(sizeof(uint64_t))) continue;
+                const auto& dst = fMarkSegments[index++];
+                CheckCuda(cudaMemcpyAsync(devMarkWords + dst.offset, seg.data,
+                    dst.count * sizeof(uint64_t), cudaMemcpyHostToDevice, 0));
+            }
+            CheckCuda(cudaMemcpyAsync(devMarkSegments, fMarkSegments.data(),
+                fMarkSegments.size() * sizeof(MarkSegment), cudaMemcpyHostToDevice, 0));
+        });
+        fExecProfiler.Measure(&Detail::mark_launch_host_us, &Detail::mark_device_us, [&] {
+            devMarkBatch<<<uint32_t(totalBlocks), numThreadsPerBlock>>>(devMarkWords,
+                this->devMarkSegments, uint32_t(fMarkSegments.size()), devDecoderPtr,
+                devTimeRegion, devSubTimeRegions, fTimeRegionSize, fNSubTimeRegions);
+            CheckCuda(cudaGetLastError());
+        });
+    }
 
 	#if 0
 	uint32_t *tr = fTrig->GetTimeRegion();
@@ -657,7 +778,9 @@ std::vector<uint32_t> *Trigger::Exec(std::vector<struct HBFIndex> &hbf)
 	std::cout << std::endl;
 	#endif
 
-	return Trigger::Scan();
+    auto* result = Trigger::Scan();
+    fExecProfiler.End();
+    return result;
 }
 
 

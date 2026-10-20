@@ -30,6 +30,8 @@
 #include "SignalParser.h"
 #include "Trigger.cxx"
 #include "KTimer.cxx"
+#include "LogicFilter/PerformanceRecorder.h"
+#include <cstdlib>
 
 #include <cudamap.h> // dependency: https://github.com/SATSUKIUM/light-map-in-cuda.git
 
@@ -52,6 +54,9 @@ struct LogicFilter : fair::mq::Device
 		static constexpr std::string_view TriggerSignals     {"trigger-signals"};
 		static constexpr std::string_view TriggerExpression  {"trigger-expression"};
 		static constexpr std::string_view TriggerWidth       {"trigger-width"};
+        static constexpr std::string_view PerformanceOutput {"performance-output"};
+        static constexpr std::string_view ExecDetails {"exec-details"};
+        static constexpr std::string_view ExecCudaEvents {"exec-cuda-events"};
 	};
 
 	struct DataBlock {
@@ -122,6 +127,8 @@ struct LogicFilter : fair::mq::Device
 #endif
 
 	
+	void PreRun() override;
+    void ResetTask() override { fPerformance.Close(false); }
 	bool ConditionalRun() override;
 	void PostRun() override;
 
@@ -174,6 +181,16 @@ private:
 	KTimer *fKt3;
 	KTimer *fKt4;
 
+    using PerformanceClock = std::chrono::high_resolution_clock;
+    PerformanceClock::time_point fConditionalStart, fReceiveStart, fReceiveEnd;
+    PerformanceClock::time_point fTriggerStart, fCleanupEnd, fTriggerEnd;
+    PerformanceClock::time_point fSendStart, fSendEnd, fAccountingStart;
+    nestdaq::LogicFilterPerformanceRecorder fPerformance;
+    std::string fPerformanceOutput;
+    bool fExecDetails = false;
+    bool fExecCudaEvents = false;
+
+
 	uint32_t* fNEntryInSubTimeRegion = nullptr; // key: iSubTR, value: # of signals in iSubTR
 	int fNSubTimeRegions {0};
 	uint32_t* fiSubTimeRegionMainTimeRegion = nullptr; // key: iSubTR, value: iMainTR
@@ -190,6 +207,20 @@ private:
 void LogicFilter::InitTask()
 {
 	using opt = OptionKey;
+    fPerformanceOutput = fConfig->GetProperty<std::string>(opt::PerformanceOutput.data());
+    if (fPerformanceOutput.empty()) {
+        if (const char* path = std::getenv("NESTDAQ_LOGICFILTER_PERFORMANCE_OUTPUT")) fPerformanceOutput = path;
+    }
+
+
+    const auto details = fConfig->GetProperty<std::string>(opt::ExecDetails.data());
+    fExecDetails = details == "true" || details == "1";
+    if (fExecDetails && fPerformanceOutput.empty())
+        throw std::invalid_argument("exec-details requires performance-output");
+    const auto events = fConfig->GetProperty<std::string>(opt::ExecCudaEvents.data());
+    fExecCudaEvents = events == "true" || events == "1";
+    if (fExecCudaEvents && !fExecDetails) throw std::invalid_argument("exec-cuda-events requires exec-details");
+    fTrig->EnableExecDetails(fExecDetails, fExecCudaEvents);
 
 	fInputChannelName  = fConfig->GetValue<std::string>(opt::InputChannelName.data());
 	fOutputChannelName = fConfig->GetValue<std::string>(opt::OutputChannelName.data());
@@ -1168,8 +1199,18 @@ int LogicFilter::MarkFlagSending(
 }
 
 
+void LogicFilter::PreRun()
+{
+    fPerformance.Open(fPerformanceOutput, true,
+        fConfig->GetProperty<std::string>(OptionKey::TriggerSignals.data()),
+        fConfig->GetProperty<std::string>(OptionKey::TriggerExpression.data()),
+        std::stoi(fConfig->GetProperty<std::string>(OptionKey::TriggerWidth.data())), fExecDetails, fExecCudaEvents);
+}
+
 bool LogicFilter::ConditionalRun()
 {
+    fConditionalStart = PerformanceClock::now();
+    nestdaq::LogicFilterPerformanceRecorder::Iteration performanceIteration(fPerformance, fConditionalStart);
 	//Receive
 	FairMQParts inParts;
 
@@ -1180,7 +1221,21 @@ bool LogicFilter::ConditionalRun()
 	uint32_t tf_tf_id = 0;
 	std::chrono::system_clock::time_point sw_start, sw_end;
 
-	if (Receive(inParts, fInputChannelName, 0, 1000) > 0) {
+    fReceiveStart = PerformanceClock::now();
+    const auto receiveResult = Receive(inParts, fInputChannelName, 0, 1000);
+    fReceiveEnd = PerformanceClock::now();
+    if (fPerformance.Enabled()) {
+        fPerformance.sample.receive_us = fPerformance.Microseconds(fReceiveStart, fReceiveEnd);
+        fPerformance.sample.receive_result = receiveResult;
+        fPerformance.sample.received = receiveResult > 0;
+    }
+	if (receiveResult > 0) {
+        if (fPerformance.Enabled()) {
+            fAccountingStart = PerformanceClock::now();
+            fPerformance.sample.input_parts = inParts.Size();
+            for (const auto& part : inParts) fPerformance.sample.input_bytes += part->GetSize();
+            fPerformance.sample.accounting_us += fPerformance.Microseconds(fAccountingStart, PerformanceClock::now());
+        }
 		assert(inParts.Size() >= 2);
 		sw_start = std::chrono::system_clock::now();
 
@@ -1202,6 +1257,7 @@ bool LogicFilter::ConditionalRun()
 			}
 		}
 		MakeBlockMap(inParts, block_map);
+        if (fPerformance.Enabled()) fPerformance.sample.tf_id = tf_tf_id;
 
 		#if 0 //BlockMap  check
 		if (fKt2->Check()) {
@@ -1226,6 +1282,8 @@ bool LogicFilter::ConditionalRun()
 			}
 		}
 
+        if (fPerformance.Enabled()) fPerformance.sample.hbf_count = bsize_min;
+
 		// Trigger processing in unit of HBF
 		std::vector< std::vector<uint32_t> > fltdata;
 		int totalhits = 0;
@@ -1236,9 +1294,24 @@ bool LogicFilter::ConditionalRun()
 			BuildHBF(hbf_list, block_map, inParts, i);
 
 			//Trigger process
+            fTriggerStart = PerformanceClock::now();
 			fTrig->CleanUpTimeRegion();
 			fTrig->CleanUpSubTimeRegion(fNEntryInSubTimeRegion, fNSubTimeRegions);
+            fCleanupEnd = PerformanceClock::now();
 			std::vector<uint32_t> *hits = fTrig->Exec(hbf_list);
+            fTriggerEnd = PerformanceClock::now();
+            if (fPerformance.Enabled()) {
+                fPerformance.sample.cleanup_host_us += fPerformance.Microseconds(fTriggerStart, fCleanupEnd);
+                fPerformance.sample.exec_us += fPerformance.Microseconds(fCleanupEnd, fTriggerEnd);
+                if (fExecDetails) fPerformance.sample.gpu_exec.Add(fTrig->GetExecProfile());
+                fPerformance.sample.trigger_us += fPerformance.Microseconds(fTriggerStart, fTriggerEnd);
+            }
+            if (fPerformance.Enabled()) {
+                fAccountingStart = PerformanceClock::now();
+                fPerformance.CountSegments(hbf_list);
+                fPerformance.sample.accounting_us += fPerformance.Microseconds(fAccountingStart, PerformanceClock::now());
+            }
+
 			fltdata.emplace_back(*hits);
 			int nhits = hits->size();
 
@@ -1533,13 +1606,22 @@ bool LogicFilter::ConditionalRun()
 		#endif
 
 
+        if (fPerformance.Enabled()) {
+            fAccountingStart = PerformanceClock::now();
+            fPerformance.sample.triggers = totalhits;
+            fPerformance.sample.output_parts = outParts.Size();
+            for (const auto& part : outParts) fPerformance.sample.output_bytes += part->GetSize();
+            fPerformance.sample.accounting_us += fPerformance.Microseconds(fAccountingStart, PerformanceClock::now());
+        }
 		//Send
+        fSendStart = PerformanceClock::now();
 		auto poller = NewPoller(fOutputChannelName);
 		while (!NewStatePending()) {
 			auto direction = (fDirection++) % fNumDestination;
 			poller->Poll(fPollTimeoutMS);
 			if (poller->CheckOutput(fOutputChannelName, direction)) {
 				if (Send(outParts, fOutputChannelName, direction) > 0) {
+                    if (fPerformance.Enabled()) fPerformance.sample.sent = true;
 					// successfully sent
 					break;
 				} else {
@@ -1551,6 +1633,8 @@ bool LogicFilter::ConditionalRun()
 			}
 		}
 
+        fSendEnd = PerformanceClock::now();
+        if (fPerformance.Enabled()) fPerformance.sample.send_us = fPerformance.Microseconds(fSendStart, fSendEnd);
 	}
 
 	return true;
@@ -1558,6 +1642,7 @@ bool LogicFilter::ConditionalRun()
 
 void LogicFilter::PostRun()
 {
+    fPerformance.Close(true);
 	LOG(info) << "Post Run";
 	return;
 }
@@ -1598,6 +1683,12 @@ void addCustomOptions(bpo::options_description& options)
 	using opt = LogicFilter::OptionKey;
 
 	options.add_options()
+        (opt::ExecCudaEvents.data(), bpo::value<std::string>()->default_value("false"),
+         "Also record CUDA-event stream intervals (higher instrumentation overhead)")
+        (opt::ExecDetails.data(), bpo::value<std::string>()->default_value("false"),
+         "Detailed GPU Exec host/CUDA-event profiling (requires performance-output)")
+        (opt::PerformanceOutput.data(), bpo::value<std::string>()->default_value(""),
+         "ROOT TTree output for per-ConditionalRun timings/data counts (empty: disabled or environment)")
 		//("max-iterations", bpo::value<uint64_t>()->default_value(0),
 		//"Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)")
 		(opt::InputChannelName.data(),
