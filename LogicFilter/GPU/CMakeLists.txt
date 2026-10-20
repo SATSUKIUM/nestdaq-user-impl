@@ -18,7 +18,9 @@ find_library(CUDAMAP_LIBRARY
 
 
 add_executable(LogicFilter LogicFilter.cu;)
-target_link_libraries(LogicFilter PUBLIC ROOT::RIO ROOT::Tree)
+target_compile_definitions(LogicFilter PRIVATE
+  LOGICFILTER_ELAPSED_DIR="${CMAKE_SOURCE_DIR}/test"
+)
 target_sources(LogicFilter PRIVATE
     SignalParser.cxx
 )
