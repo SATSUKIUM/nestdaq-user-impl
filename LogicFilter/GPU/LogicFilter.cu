@@ -380,12 +380,12 @@ void LogicFilter::InitTask()
 	fTrig->SetSubTimeRegion(timeRegionSize, fNEntryInSubTimeRegion, fNSubTimeRegions);
 	std::cout << "\tDone." << std::endl;
 
-	// // --------------------------------
-	// // Make LUT
-	// // --------------------------------
-	// LOG(info) << "Trigger Expression: " << expression;
-	// fTrig->MakeTable(expression);
-	// std::cout << "\tMaking table Done." << std::endl;
+	// --------------------------------
+	// Make LUT
+	// --------------------------------
+	LOG(info) << "Trigger Expression: " << expression;
+	fTrig->MakeTable(expression);
+	std::cout << "\tMaking table Done." << std::endl;
 
 }
 
