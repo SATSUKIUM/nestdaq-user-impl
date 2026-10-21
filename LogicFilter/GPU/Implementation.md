@@ -2,7 +2,7 @@
 
 ## 読む順序
 
-`LogicFilter.cu`の`ConditionalRun()` → `BuildHBF()` → `Trigger.cxx`の`Exec()` →
+`LogicFilter.cu`の`ConditionalRun()` → `BuildHBF()` → `Trigger.cxx`の`ExecBatch()` →
 `devMarkBatch()` / `markWord()` → `Scan()`の順で追うと、入力からTrgTimeまでを確認できる。
 CPU版のソースは変更していない。
 
@@ -13,8 +13,12 @@ TFを受信したホスト側で`MakeBlockMap()`が基板ごとのメッセー�
 `HBFIndex`は`femType`、`femId`、元メッセージ内のデータポインタ、バイト数だけを持つ。
 生データはホスト上で詰め直さない。
 
-今回の39 STF × 各4 HBFなら、39入力を持つ`Exec()`を4回呼ぶ。
-各回でTimeRegionとSubTimeRegionを初期化し、1 HBF時刻のコインシデンスを判定する。
+今回の39 STF × 各4 HBFなら、既定の`hbf-batch-size 4`では156入力を持つ
+`ExecBatch()`を1回呼ぶ。`hbf-batch-size 1`なら39入力ずつ4回呼ぶ。
+HBFごとに独立したTimeRegion/SubTimeRegionを使い、バッチ全体をまとめて初期化・処理する。
+`SetTimeRegion(size, nHbf)`のsizeは1 HBF分のbin数で、nHbf個分の容量を確保する。
+`PrepareHbfBatch(nHbf)`は実際に処理する個数を切り替えるだけで、メモリ確保や転送はしない。
+最後が端数の場合も、確保済み容量内で処理する。
 `bsize_min`は各STFのblock_map要素数の最小値であり、今回の入力形式では4。
 区切りを別要素として持つ入力形式では、この値をそのまま物理HBF数と解釈できない。
 
@@ -29,7 +33,7 @@ TFを受信したホスト側で`MakeBlockMap()`が基板ごとのメッセー�
 `devLut`へコピーする。std::vectorオブジェクトをカーネルへ渡す処理はない。
 CPUのLUT生成オブジェクトはこの関数内だけで使う。
 
-## Exec：直接コピーと1回のMark起動
+## ExecBatch：直接コピーと1回のMark起動
 
 まずホストで各segのワード数と必要block数を計算し、`MarkSegment`を作る。
 
@@ -40,6 +44,7 @@ CPUのLUT生成オブジェクトはこの関数内だけで使う。
 | fem | 基板IPアドレス |
 | type | TDCモジュール形式 |
 | firstBlock | このsegに割り当てる先頭CUDA block番号 |
+| hbfIndex | バッチ内のHBF番号。独立した領域を選ぶ |
 
 1 blockは256 threads。各segへ`ceil(count/256)`個のblockを割り当てる。
 例えばAが513 words、Bが2 wordsなら、次の配置になる。
@@ -50,15 +55,17 @@ CPUのLUT生成オブジェクトはこの関数内だけで使う。
 | B | 513 | 2 | 3 | 3 |
 
 GPUの入力バッファと記述子バッファは、容量が不足した場合だけ拡張する。
+ワード用バッファは必要ワード数の2倍を確保し、小さなデータ量増加での再確保を減らす。
 各segの元ポインタから`devMarkWords + offset`へ`cudaMemcpyAsync`で直接コピーする。
 記述子配列も転送し、全seg分の合計block数で`devMarkBatch`を1回起動する。
-39基板×4 HBFでは、生データコピー156回/TF、記述子コピー4回/TF、Mark起動4回/TFとなる。
+39基板×4 HBFをまとめると、生データコピー156回/TF、記述子コピー1回/TF、Mark起動1回/TFとなる。
 `cudaMemcpyAsync`の入力がページ可能メモリなら、ホスト側で待つ場合がある。
 
 ## Mark：segの識別と時間窓の更新
 
 `devMarkBatch()`は`blockIdx.x`以下の最大の`firstBlock`を二分探索し、担当segを特定する。
-同じblock内のthreadsは同じIP・TDC形式を使う。
+同じblock内のthreadsは同じIP・TDC形式・HBF番号を使う。
+`hbfIndex`で領域先頭をずらすので、別HBFの時間窓やサブグループは混ざらない。
 seg内のワード位置は次の式になる。
 
 ```cpp
@@ -90,16 +97,19 @@ SubTimeRegionは初期化時、n信号なら下位n bitsを1にする。n=32はU
 5. 件数だけをD2Hコピーし、ホスト配列をresizeして必要件数の時刻をD2Hコピーする。
 
 例えばflagが`[0,1,0,1]`ならoffsetは`[0,0,1,1]`で、結果は`[1,3]`になる。
-出力はbin順。CPU版に合わせbin 0は出力しない。
-rising edgeは隣接できないため、出力容量は`floor(TimeRegionSize/2)`で足りる。
+出力はバッチ内のglobal bin順。CPU版に合わせ、各HBFのbin 0は出力しない。
+HBF境界をまたいで直前binと比較しない。
+rising edgeは隣接できないため、出力容量は`nHbf * floor(TimeRegionSize/2)`で足りる。
+ホストで`bin / TimeRegionSize`と`bin % TimeRegionSize`に分けて、
+HBF番号とHBF内のTrgTimeへ戻す。ヒットのないHBFの空配列も維持する。
 
 ## 順序とバッファの寿命
 
 Clear・各コピー・Mark・サブグループ集約・LUT・CUB scan・compactionは
 すべて同じデフォルトストリームへ投入する。投入順序でGPU内の依存関係を守るので、
 Markごとの`cudaDeviceSynchronize()`はない。
-件数の同期版D2Hコピーで先行処理の完了を待つ。Execが戻る時には入力のコピーも
-終わっているので、次のHBFでGPUバッファやTimeRegionを再利用できる。
+件数の同期版D2Hコピーで先行処理の完了を待つ。ExecBatchが戻る時には入力のコピーも
+終わっているので、次のHBFバッチでGPUバッファやTimeRegionを再利用できる。
 元メッセージとホスト記述子も、その完了までは維持される。
 初期化時のSetTimeRegionには従来どおり明示的な同期がある。
 
@@ -129,7 +139,7 @@ cmake --build build --target LogicFilter -j4
 
 ### 初期化処理の分担
 
-`SetTimeRegion(size)`はTimeRegion本体の確保とゼロ初期化を行う。
+`SetTimeRegion(size, nHbf)`はnHbf個分のTimeRegion本体の確保とゼロ初期化を行う。
 続けて`InitializeScanBuffers()`を呼び、立ち上がりフラグ、exclusive-scanの
 オフセットと作業領域、圧縮したヒットと個数の格納領域を準備する。
 TimeRegionのサイズを変えたときも`InitializeScanBuffers()`を呼び直す。
@@ -137,3 +147,25 @@ TimeRegionのサイズを変えたときも`InitializeScanBuffers()`を呼び直
 
 `CleanUpSubTimeRegion()`は引数を取らず、初期化時に転送した各SubTimeRegionの
 信号数を使ってビットを復元する。cleanupごとの設定のH2Dコピーは行わない。
+
+### 4 HBFバッチの確認
+
+`LogicFilter/tests/GpuHbfBatchTest.cu`で1 HBFずつの結果と比較する。
+4 TDC形式、39基板×4 HBF、HBF境界、空HBF、SubTimeRegionの独立性、
+処理HBF数4→2→1→3→4での領域再利用、奇数サイズと最大ヒット密度を確認する。
+初期化時に1〜nHbf個のscanに必要な作業領域サイズを問い合わせ、最大値で一度だけ確保する。
+実行中は確保済み領域を使い回す。
+
+```sh
+/usr/local/cuda/bin/nvcc -std=c++17 -arch=sm_86 -rdc=true -I. -ILogicFilter/GPU \
+  -I"$HOME/local/nestdaq/include" LogicFilter/tests/GpuHbfBatchTest.cu \
+  "$HOME/local/nestdaq/lib/libcudamap.a" -o /tmp/gpu-hbf-batch-test
+/tmp/gpu-hbf-batch-test
+```
+
+`hbf-batch-size`はNestDAQのparameter_configに合わせ文字列オプションとし、1〜4を許可する。
+既存のelapsedファイル名は維持しているため、1/4を別runで比較するときは各STOP後に退避する。
+
+取り込み後の確認：run000400.datの先頭1024 TFをwait=1、独立IPCで再生した。
+1 HBF/4 HBFで1024 MESSAGE、4096 META、7879 TrgTime、7879 SLICEが完全一致し、
+全デバイスが正常終了した。結果は`/tmp/logicfilter-hbf-port-{1,4}`に保存している。

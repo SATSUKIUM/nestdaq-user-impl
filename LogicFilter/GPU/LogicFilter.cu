@@ -45,6 +45,7 @@ struct LogicFilter : fair::mq::Device
 		static constexpr std::string_view DQMChannelName     {"dqm-chan-name"};
 		static constexpr std::string_view DataSuppress       {"data-suppress"};
 		static constexpr std::string_view RemoveHB           {"remove-hb"};
+		static constexpr std::string_view HbfBatchSize {"hbf-batch-size"};
 		static constexpr std::string_view PollTimeout        {"poll-timeout"};
 		static constexpr std::string_view SplitMethod        {"split"};
 
@@ -87,6 +88,7 @@ struct LogicFilter : fair::mq::Device
 	void PostRun() override;
 
 private:
+    uint32_t fHbfBatchSize {4};
     using ElapsedClock = std::chrono::steady_clock;
     std::vector<double> fElapsedTimes; // Microseconds; saved at STOP or device destruction.
     void WriteElapsedTimes();
@@ -140,6 +142,12 @@ private:
 void LogicFilter::InitTask()
 {
 	using opt = OptionKey;
+    // ParameterConfigPlugin supplies custom Redis options as strings.
+    const auto batchOption = fConfig->GetProperty<std::string>(opt::HbfBatchSize.data());
+    size_t parsed = 0;
+    const auto batchSize = std::stoul(batchOption, &parsed);
+    if (parsed != batchOption.size() || batchSize < 1 || batchSize > 4) throw std::invalid_argument("hbf-batch-size must be 1..4");
+    fHbfBatchSize = static_cast<uint32_t>(batchSize);
     LOG(info) << "Elapsed times are saved at STOP to "
               << LOGICFILTER_ELAPSED_DIR << "/logicfilter-elapsed-<id>.txt";
 
@@ -178,7 +186,7 @@ void LogicFilter::InitTask()
 	LOG(info) << "InitTask: RemoveHB : " << fIsRemoveHB;
 
 	constexpr int timeRegionSize = 1024 * 128;
-	fTrig->SetTimeRegion(timeRegionSize);
+	fTrig->SetTimeRegion(timeRegionSize, fHbfBatchSize);
     fTrig->InitializeScanBuffers();
 
 	std::string str_signals = fConfig->GetProperty<std::string>(opt::TriggerSignals.data());
@@ -685,26 +693,36 @@ bool LogicFilter::ConditionalRun()
 			}
 		}
 
-		// Trigger processing in unit of HBF
+		// Trigger processing in batches of independent HBFs
 		std::vector< std::vector<uint32_t> > fltdata;
+		fltdata.reserve(bsize_min);
 		int totalhits = 0;
-		for (size_t i = 0 ; i < bsize_min ; i++) {
+		for (size_t i = 0 ; i < bsize_min ; i += fHbfBatchSize) {
 
 			//HBF building
-			std::vector<struct HBFIndex> hbf_list;
-			BuildHBF(hbf_list, block_map, inParts, i);
+			const size_t batchSize = std::min(size_t(fHbfBatchSize), bsize_min - i);
+			std::vector< std::vector<HBFIndex> > hbfs(batchSize);
+			for (size_t iHbf = 0 ; iHbf < batchSize ; iHbf++) {
+				BuildHBF(hbfs[iHbf], block_map, inParts, i + iHbf);
+			}
 
 			//Trigger process
+			fTrig->PrepareHbfBatch(uint32_t(batchSize));
 			fTrig->CleanUpTimeRegion();
 			fTrig->CleanUpSubTimeRegion();
-			std::vector<uint32_t> *hits = fTrig->Exec(hbf_list);
-			fltdata.emplace_back(*hits);
-			int nhits = hits->size();
+			std::vector<uint32_t> *hits = fTrig->ExecBatch(hbfs);
+
+			// Split global bins back into HBF-local TrgTime, keeping empty HBFs.
+			for (size_t iHbf = 0 ; iHbf < batchSize ; iHbf++) fltdata.emplace_back();
+			const uint32_t regionSize = fTrig->GetTimeRegionSize();
+			for (uint32_t bin : *hits) fltdata[i + bin / regionSize].push_back(bin % regionSize);
 
 			// mark sending flag for STF
-			MarkFlagSending(block_map, i, nhits, flag_sending);
-
-			totalhits += nhits;
+			for (size_t iHbf = 0 ; iHbf < batchSize ; iHbf++) {
+				int nhits = fltdata[i + iHbf].size();
+				MarkFlagSending(block_map, i + iHbf, nhits, flag_sending);
+				totalhits += nhits;
+			}
 		}
 
 		sw_end = std::chrono::system_clock::now();
@@ -920,6 +938,8 @@ void addCustomOptions(bpo::options_description& options)
 		(opt::RemoveHB.data(),
 			bpo::value<std::string>()->default_value("false"),
 			"Remove HB without hit")
+		(opt::HbfBatchSize.data(), bpo::value<std::string>()->default_value("4"),
+            "Independent HBF regions per GPU batch (1..4)")
 		(opt::PollTimeout.data(), 
 			bpo::value<std::string>()->default_value("1"),
 			"Timeout of polling (in msec)")
