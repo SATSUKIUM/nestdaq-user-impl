@@ -9,6 +9,7 @@ int main() {
     if (cudaGetDeviceCount(&devices) != cudaSuccess || !devices) return 77;
     Trigger trigger;
     trigger.SetTimeRegion(64);
+    trigger.InitializeScanBuffers();
     std::vector<cudamap::FEEAddr> addresses;
     std::vector<cudamap::TriggerConfig> configs;
     cudamap::stageItem(1, 0, 1, 3, 0, cudamap::NO_SUBGROUP, addresses, configs);
@@ -48,10 +49,22 @@ int main() {
     trigger.CleanUpTimeRegion();
     std::vector<HBFIndex> empty;
     require(trigger.Exec(empty)->empty());
+    // Rebuild scan storage after resizing; SetTimeRegion itself clears only the region.
+    for (uint32_t size : {128u, 64u}) {
+        trigger.SetTimeRegion(size);
+        bool rejected = false;
+        try { trigger.Exec(empty); }
+        catch (const std::runtime_error&) { rejected = true; }
+        require(rejected);
+        trigger.InitializeScanBuffers();
+        require(trigger.Exec(empty)->empty());
+        require(*trigger.Exec(mixed) == reference);
+    }
     // All subgroup bits must clear before its main-region bit is set.
     // Exercise the 32-bit mask boundary and mappings copied during setup.
     Trigger subgroup;
     subgroup.SetTimeRegion(64);
+    subgroup.InitializeScanBuffers();
     std::vector<cudamap::FEEAddr> subAddresses;
     std::vector<cudamap::TriggerConfig> subConfigs;
     std::vector<uint64_t> subWords;
@@ -67,11 +80,11 @@ int main() {
     std::vector<HBFIndex> subSegments = {{SubTimeFrame::TDC64H, 1,
         reinterpret_cast<unsigned char*>(subWords.data()), int(subWords.size() * 8)}};
     subgroup.CleanUpTimeRegion();
-    subgroup.CleanUpSubTimeRegion(&entries, 1);
+    subgroup.CleanUpSubTimeRegion();
     require(*subgroup.Exec(subSegments) == std::vector<uint32_t>({9}));
     subSegments[0].size -= 8;
     subgroup.CleanUpTimeRegion();
-    subgroup.CleanUpSubTimeRegion(&entries, 1);
+    subgroup.CleanUpSubTimeRegion();
     require(subgroup.Exec(subSegments)->empty());
     std::cout << "PASS: four TDC formats, 39 boards x 4 HBFs, mixed FEM/type, multi-block, empty input and 32-signal subgroup\n";
 }

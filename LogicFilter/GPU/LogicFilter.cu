@@ -179,6 +179,7 @@ void LogicFilter::InitTask()
 
 	constexpr int timeRegionSize = 1024 * 128;
 	fTrig->SetTimeRegion(timeRegionSize);
+    fTrig->InitializeScanBuffers();
 
 	std::string str_signals = fConfig->GetProperty<std::string>(opt::TriggerSignals.data());
 	std::string expression = fConfig->GetProperty<std::string>(opt::TriggerExpression.data());
@@ -695,7 +696,7 @@ bool LogicFilter::ConditionalRun()
 
 			//Trigger process
 			fTrig->CleanUpTimeRegion();
-			fTrig->CleanUpSubTimeRegion(fNEntryInSubTimeRegion, fNSubTimeRegions);
+			fTrig->CleanUpSubTimeRegion();
 			std::vector<uint32_t> *hits = fTrig->Exec(hbf_list);
 			fltdata.emplace_back(*hits);
 			int nhits = hits->size();

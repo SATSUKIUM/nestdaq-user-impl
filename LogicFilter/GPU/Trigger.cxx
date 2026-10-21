@@ -56,15 +56,13 @@ __global__ void devScanSubTRandMarkMainTR(const uint32_t timeRegionSize, const u
 	}
 }
 
-inline void CheckCuda(cudaError_t result)
+inline void ErrorHandleCuda(cudaError_t result)
 {
     if (result != cudaSuccess) throw std::runtime_error(cudaGetErrorString(result));
 }
 
 // One worker per input word. Formats match UnpackTdc.h (leading TDC only).
-__device__ void markWord(const uint64_t* words, size_t count, uint32_t fem,
-    uint32_t type, const cudamap::FEEAddrDecoder* decoder,
-    uint32_t* mainTR, uint32_t* subTR, uint32_t size, uint32_t nSub, size_t i)
+__device__ void markWord(const uint64_t* words, size_t count, uint32_t fem, uint32_t type, const cudamap::FEEAddrDecoder* decoder, uint32_t* mainTR, uint32_t* subTR, uint32_t size, uint32_t nSub, size_t i)
 {
     if (i >= count) return;
     uint64_t word = words[i];
@@ -72,19 +70,27 @@ __device__ void markWord(const uint64_t* words, size_t count, uint32_t fem,
     uint8_t ch;
     int time;
     if (type == SubTimeFrame::TDC64H || type == SubTimeFrame::TDC64H_V3) {
+        // 6bit | 7bit | 22bit | 29bit
+        // Data type | Channel | TOT | TDC
+        // TDC LSB = 0.9765625 ps
         ch = (word >> 51) & 0x7f;
-        time = (word & 0x1fffffffULL) >> 12;
+        time = (word & 0x1fffffffULL) >> 12; // &lower 29 bits, then convert to 4 ns bin index
     } else if (type == SubTimeFrame::TDC64L) {
+        // 6bit | 7bit | 16bit | 19bit | 16bit
+        // Data type | Channel | TOT | TDC | Zero padding
         ch = (word >> 51) & 0x7f;
+        // TDC: bits [34:16], 1 ns ticks; padding: bits [15:0].
+        // Keep bits [34:18], discarding the lowest 2 TDC bits; shift by 16 + 2 for 4 ns bins.
         time = (word & 0x00000007fffc0000ULL) >> 18;
     } else if (type == SubTimeFrame::TDC64L_V3) {
+        // 6bit | 8bit | 16bit | 19bit | 15bit
+        // Data type | Channel | TOT | TDC | Zero padding
         ch = (word >> 50) & 0xff;
-        time = (word & 0x00000003fffe0000ULL) >> 17;
+        time = (word & 0x00000003ffff8000ULL) >> 17; // &(19bits 1)(15bits 0), then convert to 4 ns bin index
     } else return;
     uint32_t key;
     if (!decoder->getKey(fem, ch, key)) return;
     auto config = decoder->getTriggerConfig(key);
-    if (!config.isValid()) return;
     int hit = time + config.delay;
     int halfWidth = config.width / 2;
     // Preserve the CPU window admission rule; clip individual bins at zero.
@@ -96,7 +102,7 @@ __device__ void markWord(const uint64_t* words, size_t count, uint32_t fem,
         else if (config.iSubTimeRegion < nSub)
             atomicAnd(subTR + size_t(config.iSubTimeRegion) * size + bin, ~config.hitBit);
     }
-}
+} // __device__ markWord(const uint64_t*, size_t, uint32_t, uint32_t, const cudamap::FEEAddrDecoder*, uint32_t*, uint32_t*, uint32_t, uint32_t, size_t)
 
 struct MarkSegment {
     size_t offset, count; // Offset and length in uint64_t words, not bytes.
@@ -104,12 +110,10 @@ struct MarkSegment {
     uint32_t firstBlock; // First CUDA block assigned to this segment.
 };
 
-// Each block belongs to one segment, so all its threads share FEM/type.
-// A large segment receives multiple blocks; small segments still get one.
-__global__ void devMarkBatch(const uint64_t* words, const MarkSegment* segments,
-    uint32_t nSegments, const cudamap::FEEAddrDecoder* decoder,
-    uint32_t* mainTR, uint32_t* subTR, uint32_t size, uint32_t nSub)
+
+__global__ void devMarkBatch(const uint64_t* words, const MarkSegment* segments, uint32_t nSegments, const cudamap::FEEAddrDecoder* decoder, uint32_t* mainTR, uint32_t* subTR, uint32_t size, uint32_t nSub)
 {
+    // Binary search for the segment that contains this block.
     uint32_t lo = 0, hi = nSegments;
     while (lo + 1 < hi) {
         uint32_t mid = lo + (hi - lo) / 2;
@@ -117,29 +121,27 @@ __global__ void devMarkBatch(const uint64_t* words, const MarkSegment* segments,
         else hi = mid;
     }
     const auto seg = segments[lo];
-    markWord(words + seg.offset, seg.count, seg.fem, seg.type, decoder,
-        mainTR, subTR, size, nSub,
-        size_t(blockIdx.x - seg.firstBlock) * blockDim.x + threadIdx.x);
-}
 
-// Keep LookUp's out-of-range=false behavior, including bits outside the LUT.
+    // Mark where (&words + seg.offset + (blockIdx.x - seg.firstBlock) * blockDim.x + threadIdx.x)
+    // markWord(first word in this segment, # of words in this segment, femId, tdcType, decoder, mainTR, subTR, sizeTR, # of subTRs, word index in this segment)
+    markWord(words + seg.offset, seg.count, seg.fem, seg.type, decoder, mainTR, subTR, size, nSub, size_t(blockIdx.x - seg.firstBlock) * blockDim.x + threadIdx.x);
+} // __global__ void devMarkBatch(const uint64_t*, const MarkSegment*, uint32_t, const cudamap::FEEAddrDecoder*, uint32_t*, uint32_t*, uint32_t, uint32_t, uint32_t)
+
+
 __device__ bool devLookUp(uint32_t value, const uint8_t* lut, size_t lutSize)
 {
     return value < lutSize && lut[value] != 0;
 }
 
-__global__ void devFindRisingEdges(const uint32_t* timeRegion, uint32_t size,
-    const uint8_t* lut, size_t lutSize, uint32_t* flags)
+__global__ void devFindRisingEdges(const uint32_t* timeRegion, uint32_t size, const uint8_t* lut, size_t lutSize, uint32_t* flags)
 {
     size_t bin = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
     if (bin >= size) return;
-    // The CPU scan does not report bin 0, even if its LUT value is true.
-    flags[bin] = bin > 0 && devLookUp(timeRegion[bin], lut, lutSize)
-        && !devLookUp(timeRegion[bin - 1], lut, lutSize);
+    flags[bin] = (bin > 0) && (devLookUp(timeRegion[bin], lut, lutSize)) && (!devLookUp(timeRegion[bin - 1], lut, lutSize));
+    return;
 }
 
-__global__ void devCompactRisingEdges(const uint32_t* flags, const uint32_t* offsets,
-    uint32_t size, uint32_t* hits, uint32_t* hitCount)
+__global__ void devCompactRisingEdges(const uint32_t* flags, const uint32_t* offsets, uint32_t size, uint32_t* hits, uint32_t* hitCount)
 {
     size_t bin = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
     if (bin >= size) return;
@@ -153,13 +155,14 @@ public:
     Trigger() = default;
     ~Trigger();
     bool SetTimeRegion(uint32_t size);
+    void InitializeScanBuffers();
     bool SetSubTimeRegion(uint32_t subTimeRegionSize, const uint32_t* nEntryInSubTimeRegion, int nSubTimeRegions);
     void SetfiSubTimeRegionMainTimeRegion(const uint32_t* mapping, int nSubTimeRegions);
     void InitializeFEEAddrDecoder(const std::vector<cudamap::FEEAddr>& feeAddrs,
         const std::vector<cudamap::TriggerConfig>& triggerConfigs);
     void MakeTable(std::string& formula);
     void CleanUpTimeRegion();
-    void CleanUpSubTimeRegion(const uint32_t* nEntryInSubTimeRegion, int nSubTimeRegions);
+    void CleanUpSubTimeRegion();
     std::vector<uint32_t>* Exec(const std::vector<HBFIndex>& hbf);
 
 private:
@@ -184,6 +187,7 @@ private:
     uint32_t* devHitCount = nullptr;
     void* devScanTemp = nullptr;
     size_t fScanTempBytes = 0;
+    uint32_t fScanRegionSize = 0;
 
     cudamap::FEEAddrDecoder* devDecoderPtr = nullptr;
     cudamap::TriggerConfig* devTriggerConfigs = nullptr;
@@ -223,16 +227,18 @@ Trigger::~Trigger()
 
 void Trigger::SetfnEntryInSubTimeRegion(const uint32_t* nEntryInSubTimeRegion, const int nSubTimeRegions){
 	if (nSubTimeRegions < 0) throw std::invalid_argument("Negative subgroup count");
-    for (int i = 0; i < nSubTimeRegions; ++i)
-        if (nEntryInSubTimeRegion[i] == 0 || nEntryInSubTimeRegion[i] > 32)
+    for (int i = 0; i < nSubTimeRegions; ++i){
+        if (nEntryInSubTimeRegion[i] == 0 || nEntryInSubTimeRegion[i] > 32){
             throw std::invalid_argument("Subgroup must contain 1..32 signals");
+        }
+    }
     cudaFree(devNEntryInSubTimeRegion);
     devNEntryInSubTimeRegion = nullptr;
     fNSubTimeRegions = nSubTimeRegions;
     if (!nSubTimeRegions) return;
 
-	CheckCuda(cudaMalloc(&devNEntryInSubTimeRegion, fNSubTimeRegions * sizeof(uint32_t)));
-	CheckCuda(cudaMemcpy(devNEntryInSubTimeRegion, nEntryInSubTimeRegion, fNSubTimeRegions * sizeof(uint32_t), cudaMemcpyHostToDevice));
+	ErrorHandleCuda(cudaMalloc(&devNEntryInSubTimeRegion, fNSubTimeRegions * sizeof(uint32_t)));
+	ErrorHandleCuda(cudaMemcpy(devNEntryInSubTimeRegion, nEntryInSubTimeRegion, fNSubTimeRegions * sizeof(uint32_t), cudaMemcpyHostToDevice));
 }
 
 void Trigger::SetfiSubTimeRegionMainTimeRegion(const uint32_t* iSubTimeRegionMainTimeRegion, const int nSubTimeRegions){
@@ -241,8 +247,8 @@ void Trigger::SetfiSubTimeRegionMainTimeRegion(const uint32_t* iSubTimeRegionMai
     deviSubTimeRegionMainTimeRegion = nullptr;
     if (!nSubTimeRegions) return;
 
-	CheckCuda(cudaMalloc(&deviSubTimeRegionMainTimeRegion, fNSubTimeRegions * sizeof(uint32_t)));
-	CheckCuda(cudaMemcpy(deviSubTimeRegionMainTimeRegion, iSubTimeRegionMainTimeRegion, fNSubTimeRegions * sizeof(uint32_t), cudaMemcpyHostToDevice));
+	ErrorHandleCuda(cudaMalloc(&deviSubTimeRegionMainTimeRegion, fNSubTimeRegions * sizeof(uint32_t)));
+	ErrorHandleCuda(cudaMemcpy(deviSubTimeRegionMainTimeRegion, iSubTimeRegionMainTimeRegion, fNSubTimeRegions * sizeof(uint32_t), cudaMemcpyHostToDevice));
 }
 
 void Trigger::MakeTable(std::string & formula)
@@ -250,41 +256,32 @@ void Trigger::MakeTable(std::string & formula)
     TriggerMap table;
     table.MakeTable(formula);
     auto bytes = table.GetLutBytes();
-    CheckCuda(cudaFree(devLut));
+    ErrorHandleCuda(cudaFree(devLut));
     devLut = nullptr;
     fLutSize = 0;
-    CheckCuda(cudaMalloc(&devLut, bytes.size()));
-    CheckCuda(cudaMemcpy(devLut, bytes.data(), bytes.size(), cudaMemcpyHostToDevice));
+    ErrorHandleCuda(cudaMalloc(&devLut, bytes.size()));
+    ErrorHandleCuda(cudaMemcpy(devLut, bytes.data(), bytes.size(), cudaMemcpyHostToDevice));
     fLutSize = bytes.size();
 	return;
 }
 
-void Trigger::InitializeFEEAddrDecoder(
-	const std::vector<cudamap::FEEAddr>& feeAddrs,
-	const std::vector<cudamap::TriggerConfig>& triggerConfigs)
+void Trigger::InitializeFEEAddrDecoder(const std::vector<cudamap::FEEAddr>& feeAddrs, const std::vector<cudamap::TriggerConfig>& triggerConfigs)
 {
     cudamap::FEEAddrDecoder decoder;
-	if (!decoder.initialize(feeAddrs, triggerConfigs))
+	if (!decoder.initialize(feeAddrs, triggerConfigs)){
         throw std::runtime_error("FEEAddrDecoder initialization failed");
-
+    }
 	const uint32_t nConfigs = decoder.getSizeSpaceOfKey();
-	CheckCuda(cudaMalloc(&devTriggerConfigs, nConfigs * sizeof(cudamap::TriggerConfig)));
-	CheckCuda(cudaMemcpy(
-		devTriggerConfigs,
-		decoder.getTriggerConfigArray(),
-		nConfigs * sizeof(cudamap::TriggerConfig),
-		cudaMemcpyHostToDevice));
+	ErrorHandleCuda(cudaMalloc(&devTriggerConfigs, nConfigs * sizeof(cudamap::TriggerConfig)));
+	ErrorHandleCuda(cudaMemcpy(devTriggerConfigs, decoder.getTriggerConfigArray(), nConfigs * sizeof(cudamap::TriggerConfig), cudaMemcpyHostToDevice));
 
 	cudamap::FEEAddrDecoder devDecoder = decoder;
 	devDecoder.setTriggerConfigArray(devTriggerConfigs);
 
-	CheckCuda(cudaMalloc(&devDecoderPtr, sizeof(cudamap::FEEAddrDecoder)));
-	CheckCuda(cudaMemcpy(
-		devDecoderPtr,
-		&devDecoder,
-		sizeof(cudamap::FEEAddrDecoder),
-		cudaMemcpyHostToDevice));
+	ErrorHandleCuda(cudaMalloc(&devDecoderPtr, sizeof(cudamap::FEEAddrDecoder)));
+	ErrorHandleCuda(cudaMemcpy(devDecoderPtr, &devDecoder, sizeof(cudamap::FEEAddrDecoder), cudaMemcpyHostToDevice));
 
+    return;
 }
 
 bool Trigger::SetTimeRegion(uint32_t size)
@@ -294,31 +291,41 @@ bool Trigger::SetTimeRegion(uint32_t size)
     devTimeRegion = nullptr;
 	fTimeRegionSize = size;
 
-	CheckCuda(cudaMalloc(&devTimeRegion, fTimeRegionSize * sizeof(uint32_t)));
-
-    CheckCuda(cudaFree(devEdgeFlags)); devEdgeFlags = nullptr;
-    CheckCuda(cudaFree(devEdgeOffsets)); devEdgeOffsets = nullptr;
-    CheckCuda(cudaFree(devHits)); devHits = nullptr;
-    CheckCuda(cudaFree(devHitCount)); devHitCount = nullptr;
-    CheckCuda(cudaFree(devScanTemp)); devScanTemp = nullptr;
-    CheckCuda(cudaMalloc(&devEdgeFlags, size_t(size) * sizeof(uint32_t)));
-    CheckCuda(cudaMalloc(&devEdgeOffsets, size_t(size) * sizeof(uint32_t)));
-    // Rising edges cannot be adjacent; bin 0 is excluded, so floor(N/2) suffices.
-    if (size / 2) CheckCuda(cudaMalloc(&devHits, size_t(size / 2) * sizeof(uint32_t)));
-    CheckCuda(cudaMalloc(&devHitCount, sizeof(uint32_t)));
-    fScanTempBytes = 0;
-    CheckCuda(cub::DeviceScan::ExclusiveSum(nullptr, fScanTempBytes,
-        devEdgeFlags, devEdgeOffsets, int(size)));
-    if (fScanTempBytes) CheckCuda(cudaMalloc(&devScanTemp, fScanTempBytes));
-    fHits.clear();
-    fHits.reserve(size / 2);
+	ErrorHandleCuda(cudaMalloc(&devTimeRegion, fTimeRegionSize * sizeof(uint32_t)));
 
 	const int numBlocks = cuda::ceil_div(fTimeRegionSize, numThreadsPerBlock);
 	devCleanUpTimeRegion<<<numBlocks, numThreadsPerBlock>>>(devTimeRegion, fTimeRegionSize);
-    CheckCuda(cudaGetLastError());
-	CheckCuda(cudaDeviceSynchronize());
+    ErrorHandleCuda(cudaGetLastError());
+	ErrorHandleCuda(cudaDeviceSynchronize());
 
 	return true;
+}
+
+// Allocate rising-edge flags, exclusive-scan workspace and compacted-hit storage.
+void Trigger::InitializeScanBuffers()
+{
+    if (!fTimeRegionSize) throw std::runtime_error("SetTimeRegion must precede InitializeScanBuffers");
+    fScanRegionSize = 0;
+    const uint32_t size = fTimeRegionSize;
+    ErrorHandleCuda(cudaFree(devEdgeFlags)); devEdgeFlags = nullptr;
+    ErrorHandleCuda(cudaFree(devEdgeOffsets)); devEdgeOffsets = nullptr;
+    ErrorHandleCuda(cudaFree(devHits)); devHits = nullptr;
+    ErrorHandleCuda(cudaFree(devHitCount)); devHitCount = nullptr;
+    ErrorHandleCuda(cudaFree(devScanTemp)); devScanTemp = nullptr;
+    ErrorHandleCuda(cudaMalloc(&devEdgeFlags, size_t(size) * sizeof(uint32_t)));
+    ErrorHandleCuda(cudaMalloc(&devEdgeOffsets, size_t(size) * sizeof(uint32_t)));
+    // Rising edges cannot be adjacent; bin 0 is excluded, so floor(N/2) suffices.
+    if (size / 2 > 0) ErrorHandleCuda(cudaMalloc(&devHits, size_t(size / 2) * sizeof(uint32_t)));
+    ErrorHandleCuda(cudaMalloc(&devHitCount, sizeof(uint32_t)));
+
+    // Query the CUB::ExcluSiveSum workspace size, allocate it
+    fScanTempBytes = 0; // CUB::ExcluSiveSum workspace size in bytes
+    ErrorHandleCuda(cub::DeviceScan::ExclusiveSum(nullptr, fScanTempBytes, devEdgeFlags, devEdgeOffsets, int(size)));
+    if (fScanTempBytes) ErrorHandleCuda(cudaMalloc(&devScanTemp, fScanTempBytes));
+
+    fHits.clear();
+    fHits.reserve(size / 2);
+    fScanRegionSize = size;
 }
 
 bool Trigger::SetSubTimeRegion(uint32_t subTimeRegionSize, const uint32_t* nEntryInSubTimeRegion, const int nSubTimeRegions){
@@ -328,53 +335,61 @@ bool Trigger::SetSubTimeRegion(uint32_t subTimeRegionSize, const uint32_t* nEntr
     cudaFree(devSubTimeRegions);
     devSubTimeRegions = nullptr;
     if (nSubTimeRegions) {
-        CheckCuda(cudaMalloc(&devSubTimeRegions, size_t(nSubTimeRegions) * subTimeRegionSize * sizeof(uint32_t)));
-        CleanUpSubTimeRegion(nEntryInSubTimeRegion, nSubTimeRegions);
+        ErrorHandleCuda(cudaMalloc(&devSubTimeRegions, size_t(nSubTimeRegions) * subTimeRegionSize * sizeof(uint32_t)));
+        CleanUpSubTimeRegion();
     }
-
 	return true;
-
 }
 
 void Trigger::CleanUpTimeRegion()
 {
 	int numBlocks = cuda::ceil_div(fTimeRegionSize, numThreadsPerBlock);
 	devCleanUpTimeRegion<<<numBlocks, numThreadsPerBlock>>>(devTimeRegion, fTimeRegionSize);
-    CheckCuda(cudaGetLastError());
+    ErrorHandleCuda(cudaGetLastError());
 	return;
 }
 
-void Trigger::CleanUpSubTimeRegion(const uint32_t* nEntryInSubTimeRegion, const int nSubTimeRegions)
+void Trigger::CleanUpSubTimeRegion()
 {
-	if (nSubTimeRegions != int(fNSubTimeRegions)) throw std::invalid_argument("Subgroup count mismatch");
-    if (!nSubTimeRegions) return;
-    CheckCuda(cudaMemcpy(devNEntryInSubTimeRegion, nEntryInSubTimeRegion, nSubTimeRegions * sizeof(uint32_t), cudaMemcpyHostToDevice));
-    int numBlocks = cuda::ceil_div(size_t(fSubTimeRegionSize) * nSubTimeRegions, size_t(numThreadsPerBlock));
-	devCleanUpSubTimeRegion<<<numBlocks, numThreadsPerBlock>>>(devSubTimeRegions, fSubTimeRegionSize, devNEntryInSubTimeRegion, nSubTimeRegions);
-    CheckCuda(cudaGetLastError());
-	return;
+    if (!fNSubTimeRegions) return;
+
+    const int numBlocks = cuda::ceil_div(size_t(fSubTimeRegionSize) * fNSubTimeRegions, size_t(numThreadsPerBlock));
+    devCleanUpSubTimeRegion<<<numBlocks, numThreadsPerBlock>>>(devSubTimeRegions, fSubTimeRegionSize, devNEntryInSubTimeRegion, fNSubTimeRegions);
+    ErrorHandleCuda(cudaGetLastError());
 }
 
 std::vector<uint32_t> *Trigger::Scan()
 {
     if (!devLut) throw std::runtime_error("Trigger LUT is not initialized");
     if (!fTimeRegionSize) throw std::runtime_error("TimeRegion is not initialized");
+    if (fScanRegionSize != fTimeRegionSize) throw std::runtime_error("InitializeScanBuffers must be called for the current TimeRegion size");
+
+    // Scan SubTR and mark MainTR
     ScanSubTRandMarkMainTR();
+
+    // Find rising edges in mainTR
     const auto blocks = (size_t(fTimeRegionSize) + numThreadsPerBlock - 1) / numThreadsPerBlock;
-    devFindRisingEdges<<<blocks, numThreadsPerBlock>>>(devTimeRegion,
-        fTimeRegionSize, devLut, fLutSize, devEdgeFlags);
-    CheckCuda(cudaGetLastError());
-    CheckCuda(cub::DeviceScan::ExclusiveSum(devScanTemp, fScanTempBytes,
-        devEdgeFlags, devEdgeOffsets, int(fTimeRegionSize)));
-    devCompactRisingEdges<<<blocks, numThreadsPerBlock>>>(devEdgeFlags,
-        devEdgeOffsets, fTimeRegionSize, devHits, devHitCount);
-    CheckCuda(cudaGetLastError());
+    devFindRisingEdges<<<blocks, numThreadsPerBlock>>>(devTimeRegion, fTimeRegionSize, devLut, fLutSize, devEdgeFlags);
+    ErrorHandleCuda(cudaGetLastError());
+
+    // Exclusive scan of rising-edge flags
+    // cub::DeviceScan::ExclusiveSum(workspace, workspaceSize, input, output, numItems)
+    ErrorHandleCuda(cub::DeviceScan::ExclusiveSum(devScanTemp, fScanTempBytes, devEdgeFlags, devEdgeOffsets, int(fTimeRegionSize)));
+
+    // Compact rising edges into hits array
+    // (flags, offsets, size, return hits, return hitCount)
+    devCompactRisingEdges<<<blocks, numThreadsPerBlock>>>(devEdgeFlags, devEdgeOffsets, fTimeRegionSize, devHits, devHitCount);
+    ErrorHandleCuda(cudaGetLastError());
+
+    // Copy hit count and hits to host
     uint32_t count = 0;
-    CheckCuda(cudaMemcpy(&count, devHitCount, sizeof(count), cudaMemcpyDeviceToHost));
+    ErrorHandleCuda(cudaMemcpy(&count, devHitCount, sizeof(count), cudaMemcpyDeviceToHost));
+
     if (count > fTimeRegionSize / 2) throw std::runtime_error("Rising edge count exceeds capacity");
     fHits.resize(count);
-    if (count) CheckCuda(cudaMemcpy(fHits.data(), devHits,
-        size_t(count) * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+    if (count){
+        ErrorHandleCuda(cudaMemcpy(fHits.data(), devHits, size_t(count) * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+    }
     return &fHits;
 }
 
@@ -383,10 +398,8 @@ void Trigger::ScanSubTRandMarkMainTR()
     if (fNSubTimeRegions) {
         if (!deviSubTimeRegionMainTimeRegion) throw std::runtime_error("Subgroup bit mapping is not initialized");
         size_t count = size_t(fNSubTimeRegions) * fTimeRegionSize;
-        devScanSubTRandMarkMainTR<<<(count + numThreadsPerBlock - 1) / numThreadsPerBlock, numThreadsPerBlock>>>(
-            fTimeRegionSize, devSubTimeRegions, devTimeRegion,
-            deviSubTimeRegionMainTimeRegion, fNSubTimeRegions);
-        CheckCuda(cudaGetLastError());
+        devScanSubTRandMarkMainTR<<<(count + numThreadsPerBlock - 1) / numThreadsPerBlock, numThreadsPerBlock>>>(fTimeRegionSize, devSubTimeRegions, devTimeRegion, deviSubTimeRegionMainTimeRegion, fNSubTimeRegions);
+        ErrorHandleCuda(cudaGetLastError());
     }
 }
 
@@ -407,20 +420,30 @@ std::vector<uint32_t> *Trigger::Exec(const std::vector<HBFIndex>& hbf)
         totalBlocks += blocks;
     }
     if (totalWords && !devDecoderPtr) throw std::runtime_error("FEEAddrDecoder is not initialized");
+
+    // check if we need to reallocate the mark buffers
     if (totalWords > fMarkWordCapacity) {
-        CheckCuda(cudaFree(devMarkWords));
+        // Allow 2x headroom to avoid reallocating for small increases in HBF size.
+        constexpr size_t safetyFactor = 2;
+        if (totalWords > std::numeric_limits<size_t>::max() / sizeof(uint64_t) / safetyFactor)
+            throw std::overflow_error("Batched Mark buffer capacity overflow");
+        const size_t capacity = totalWords * safetyFactor;
+        ErrorHandleCuda(cudaFree(devMarkWords));
         devMarkWords = nullptr;
         fMarkWordCapacity = 0;
-        CheckCuda(cudaMalloc(&devMarkWords, totalWords * sizeof(uint64_t)));
-        fMarkWordCapacity = totalWords;
+        ErrorHandleCuda(cudaMalloc(&devMarkWords, capacity * sizeof(uint64_t)));
+        fMarkWordCapacity = capacity;
     }
+
+    // check if we need to reallocate the mark segment buffer
     if (fMarkSegments.size() > fMarkSegmentCapacity) {
-        CheckCuda(cudaFree(devMarkSegments));
+        ErrorHandleCuda(cudaFree(devMarkSegments));
         devMarkSegments = nullptr;
         fMarkSegmentCapacity = 0;
-        CheckCuda(cudaMalloc(&devMarkSegments, fMarkSegments.size() * sizeof(MarkSegment)));
+        ErrorHandleCuda(cudaMalloc(&devMarkSegments, fMarkSegments.size() * sizeof(MarkSegment)));
         fMarkSegmentCapacity = fMarkSegments.size();
     }
+
     // All copies and the single Mark launch share the default stream.
     // Scan waits for the result before buffers can be reused for the next HBF.
     if (totalWords) {
@@ -428,15 +451,11 @@ std::vector<uint32_t> *Trigger::Exec(const std::vector<HBFIndex>& hbf)
         for (const auto& seg : hbf) {
             if (seg.size < int(sizeof(uint64_t))) continue;
             const auto& dst = fMarkSegments[index++];
-            CheckCuda(cudaMemcpyAsync(devMarkWords + dst.offset, seg.data,
-                dst.count * sizeof(uint64_t), cudaMemcpyHostToDevice, 0));
+            ErrorHandleCuda(cudaMemcpyAsync(devMarkWords + dst.offset, seg.data, dst.count * sizeof(uint64_t), cudaMemcpyHostToDevice, 0));
         }
-        CheckCuda(cudaMemcpyAsync(devMarkSegments, fMarkSegments.data(),
-            fMarkSegments.size() * sizeof(MarkSegment), cudaMemcpyHostToDevice, 0));
-        devMarkBatch<<<uint32_t(totalBlocks), numThreadsPerBlock>>>(devMarkWords,
-            this->devMarkSegments, uint32_t(fMarkSegments.size()), devDecoderPtr,
-            devTimeRegion, devSubTimeRegions, fTimeRegionSize, fNSubTimeRegions);
-        CheckCuda(cudaGetLastError());
+        ErrorHandleCuda(cudaMemcpyAsync(devMarkSegments, fMarkSegments.data(), fMarkSegments.size() * sizeof(MarkSegment), cudaMemcpyHostToDevice, 0));
+        devMarkBatch<<<uint32_t(totalBlocks), numThreadsPerBlock>>>(devMarkWords, this->devMarkSegments, uint32_t(fMarkSegments.size()), devDecoderPtr, devTimeRegion, devSubTimeRegions, fTimeRegionSize, fNSubTimeRegions);
+        ErrorHandleCuda(cudaGetLastError());
     }
 
     return Trigger::Scan();

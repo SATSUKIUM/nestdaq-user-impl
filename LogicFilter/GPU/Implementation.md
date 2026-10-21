@@ -126,3 +126,14 @@ cmake --build build --target LogicFilter -j4
 4 TDC形式、39入力×4 HBF、異なるIP・形式・長さ、複数block、空入力、未登録IP、
 32信号サブグループの全成立／1信号欠損を検査する。不要コード削除後にビルドとテストは通過。
 全run000400.datの338701 TrgTime一致は削除前の処理で確認済みであり、今回再実行はしていない。
+
+### 初期化処理の分担
+
+`SetTimeRegion(size)`はTimeRegion本体の確保とゼロ初期化を行う。
+続けて`InitializeScanBuffers()`を呼び、立ち上がりフラグ、exclusive-scanの
+オフセットと作業領域、圧縮したヒットと個数の格納領域を準備する。
+TimeRegionのサイズを変えたときも`InitializeScanBuffers()`を呼び直す。
+初期化されていないサイズでのScanは例外にする。
+
+`CleanUpSubTimeRegion()`は引数を取らず、初期化時に転送した各SubTimeRegionの
+信号数を使ってビットを復元する。cleanupごとの設定のH2Dコピーは行わない。
