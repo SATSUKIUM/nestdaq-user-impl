@@ -1,0 +1,6 @@
+# Local experiments, results, helper tools and build outputs.
+/test/
+/workspace/
+/tools/
+/bin/
+/build/
