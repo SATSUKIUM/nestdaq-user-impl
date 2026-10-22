@@ -712,7 +712,10 @@ bool LogicFilter::ConditionalRun()
 			fTrig->CleanUpSubTimeRegion();
 			std::vector<uint32_t> *hits = fTrig->ExecBatch(hbfs);
 
-			// Split global bins back into HBF-local TrgTime, keeping empty HBFs.
+			// Example: regionSize = 100, batchSize = 3, *hits = {10, 30, 105}
+			// -> fltdata[i] = {10, 30}, fltdata[i + 1] = {5}, fltdata[i + 2] = {}.
+			// bin / regionSize selects the HBF within this batch; bin % regionSize is its local TrgTime.
+			// Create an entry for every HBF first, including those with no hits.
 			for (size_t iHbf = 0 ; iHbf < batchSize ; iHbf++) fltdata.emplace_back();
 			const uint32_t regionSize = fTrig->GetTimeRegionSize();
 			for (uint32_t bin : *hits) fltdata[i + bin / regionSize].push_back(bin % regionSize);
