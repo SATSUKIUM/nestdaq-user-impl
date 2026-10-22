@@ -443,31 +443,33 @@ std::vector<uint32_t> *Trigger::ExecBatch(const std::vector<std::vector<HBFIndex
 {
     if (hbfs.size() != fActiveHbfCount) throw std::invalid_argument("PrepareHbfBatch and ExecBatch HBF counts differ");
     size_t nSegments = 0;
-    for (const auto& hbf : hbfs) nSegments += hbf.size();
-    size_t totalWords = 0, totalBlocks = 0;
+    for (const auto& hbf : hbfs){
+        nSegments += hbf.size();
+    }
+    size_t totalWords = 0, totalBlocks = 0; // DAQ words and CUDA kernel blocks needed
     fMarkSegments.clear();
     fMarkSegments.reserve(nSegments);
+
+    // hbfs.size is batch size
     for (size_t iHbf = 0; iHbf < hbfs.size(); ++iHbf) {
         for (const auto& seg : hbfs[iHbf]) {
-            if (seg.size < int(sizeof(uint64_t))) continue;
+            // if (seg.size < int(sizeof(uint64_t))) continue;
             const size_t count = size_t(seg.size) / sizeof(uint64_t);
             const size_t blocks = (count + numThreadsPerBlock - 1) / numThreadsPerBlock;
-            if (totalBlocks + blocks > size_t(INT_MAX) ||
-                count > std::numeric_limits<size_t>::max() / sizeof(uint64_t) - totalWords)
-                throw std::overflow_error("Batched Mark input exceeds capacity");
-            fMarkSegments.push_back({totalWords, count, seg.femId, seg.femType, uint32_t(totalBlocks), uint32_t(iHbf)});
+            // if (totalBlocks + blocks > size_t(INT_MAX) ||
+            //     count > std::numeric_limits<size_t>::max() / sizeof(uint64_t) - totalWords)
+            //     throw std::overflow_error("Batched Mark input exceeds capacity");
+            fMarkSegments.push_back({totalWords, count, seg.femId, seg.femType, uint32_t(totalBlocks), uint32_t(iHbf)}); // offset, DAQ word count, femId, tdcType, first index of CUDA block, batch index
             totalWords += count;
             totalBlocks += blocks;
         }
     }
-    if (totalWords && !devDecoderPtr) throw std::runtime_error("FEEAddrDecoder is not initialized");
+    // if (totalWords && !devDecoderPtr) throw std::runtime_error("FEEAddrDecoder is not initialized");
 
     // check if we need to reallocate the mark buffers
     if (totalWords > fMarkWordCapacity) {
         // Allow 2x headroom to avoid reallocating for small increases in HBF size.
         constexpr size_t safetyFactor = 2;
-        if (totalWords > std::numeric_limits<size_t>::max() / sizeof(uint64_t) / safetyFactor)
-            throw std::overflow_error("Batched Mark buffer capacity overflow");
         const size_t capacity = totalWords * safetyFactor;
         ErrorHandleCuda(cudaFree(devMarkWords));
         devMarkWords = nullptr;
