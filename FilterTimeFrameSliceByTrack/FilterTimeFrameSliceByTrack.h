@@ -49,7 +49,7 @@ namespace nestdaq {
 }
 
 struct nestdaq::DCRawHit {
-   DCRawHit(chmap::DETIdItem* detid, uint32_t tdc, uint32_t tot) : detid(detid), tdc(tdc), tot(tot) {};
+   DCRawHit(const chmap::DETIdItem* detid, uint32_t tdc, uint32_t tot) : detid(detid), tdc(tdc), tot(tot) {};
    const chmap::DETIdItem* detid;
    uint32_t tdc; // unit: ns
    uint32_t tot; // unit: ns
@@ -118,6 +118,7 @@ protected:
    bool isCreateInvMap{true};
    chmap::ChannelMapDopeness* fChMap{nullptr};
    std::string fChMapDataFile;
+   uint8_t fKLDCNameIndex{0};
 
    // ================================
    // detector configuration

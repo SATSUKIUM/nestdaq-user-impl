@@ -107,12 +107,15 @@ void FilterTimeFrameSliceByTrack::InitTask()
    chmap.initialize(fChMapDataFile, isCreateInvMap);
 
    fChMap = &chmap;
+   // Resolve once: detector name IDs depend on the CSV (0 means unavailable).
+   fKLDCNameIndex = 0;
+   fChMap->detname_dictionary.StringToIndex("kldc", fKLDCNameIndex);
    std::cout << "[FilterTimeFrameSliceABC::InitTask] ChannelMapDopeness initialized with " << fChMapDataFile << std::endl;
    std::cout << "\t# of channels: " << std::dec << fChMap->getNumberOfChannels() << std::endl;
 
    #if CHECK_COUT_CHMAP
-   uint32_t dopeKey_FEtoDET;
-   uint32_t dopeKey_DETtoFE;
+   const chmap::DETIdItem* mapped_det = nullptr;
+   const chmap::FEAddrItem* mapped_fe = nullptr;
    chmap::DETIdItem detiditem;
    chmap::FEAddrItem feaddritem;
 
@@ -121,10 +124,10 @@ void FilterTimeFrameSliceByTrack::InitTask()
    uint8_t test_ip4th_T1right = 0xAA;
    uint8_t test_ch_T1right = 12;
    std::cout << "\n\tchecking T1 right DETIdItem search..." << std::endl;
-   bool _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(test_ip3rd_T1right, test_ip4th_T1right, test_ch_T1right, dopeKey_FEtoDET);
+   bool _FOUND_FEtoDET = ((mapped_det = fChMap->findDET(test_ip3rd_T1right, test_ip4th_T1right, test_ch_T1right)) != nullptr);
    if(_FOUND_FEtoDET == true){
       std::cout << "\t\t-> found." << std::endl;
-      detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+      detiditem = *mapped_det;
       detiditem.decode();
    }
    else{
@@ -138,10 +141,10 @@ void FilterTimeFrameSliceByTrack::InitTask()
 
    // check existance of kldc 2 U 95 DETIdItem
    std::cout << "\n\t" << "checking kldc 2 U 95 DETIdItem search" << std::endl;
-   _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(test_ip3rd_kldc2u95, test_ip4th_kldc2u95, test_ch_kldc2u95, dopeKey_FEtoDET);
+   _FOUND_FEtoDET = ((mapped_det = fChMap->findDET(test_ip3rd_kldc2u95, test_ip4th_kldc2u95, test_ch_kldc2u95)) != nullptr);
    if(_FOUND_FEtoDET == true){
       std::cout << "\t" << funcname << "-> found." << std::endl;
-      detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+      detiditem = *mapped_det;
       detiditem.decode();
    }
    else{
@@ -150,10 +153,10 @@ void FilterTimeFrameSliceByTrack::InitTask()
 
    // check the counterpart of kldc 2 U 95 DETidItem
    std::cout << "\t" << "checking kldc 2 U 95 FEAddrItem search..." << std::endl;
-   bool _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(detiditem, dopeKey_DETtoFE);
+   bool _FOUND_DETtoFE = ((mapped_fe = fChMap->findFE(detiditem)) != nullptr);
    if(_FOUND_DETtoFE == true){
       std::cout << "\t" << funcname << "-> found." << std::endl;
-      feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+      feaddritem = *mapped_fe;
       feaddritem.decode();
    }
    else{
@@ -168,15 +171,15 @@ void FilterTimeFrameSliceByTrack::InitTask()
    const uint16_t test_channelnumber_utofright = 0;
    const std::string_view test_channelname_utofright = "right";
    std::cout << "\n\t" << "checking utof right FEAddrItem search..." << std::endl;
-   _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_utofright, test_planename_utofright, test_segment_utofright, test_channelname_utofright, test_channelnumber_utofright, dopeKey_DETtoFE);
+   _FOUND_DETtoFE = ((mapped_fe = fChMap->findFE(test_detectorname_utofright, test_planename_utofright, test_segment_utofright, test_channelname_utofright, test_channelnumber_utofright)) != nullptr);
    if(_FOUND_DETtoFE == true){
       std::cout << "\t" << "utof right FEAddrItem -> found." << std::endl;
-      feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+      feaddritem = *mapped_fe;
       feaddritem.decode();
-      _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+      _FOUND_FEtoDET = ((mapped_det = fChMap->findDET(feaddritem)) != nullptr);
       if(_FOUND_FEtoDET == true){
          std::cout << "\t" << "utof right DETIdItem -> found." << std::endl;
-         detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+         detiditem = *mapped_det;
          detiditem.decode();
       }
    }
@@ -188,15 +191,15 @@ void FilterTimeFrameSliceByTrack::InitTask()
    const uint16_t test_channelnumber_utofleft = 0;
    const std::string_view test_channelname_utofleft = "left";
    std::cout << "\n\t" << "checking utof left FEAddrItem search..." << std::endl;
-   _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_utofleft, test_planename_utofleft, test_segment_utofleft, test_channelname_utofleft, test_channelnumber_utofleft, dopeKey_DETtoFE);
+   _FOUND_DETtoFE = ((mapped_fe = fChMap->findFE(test_detectorname_utofleft, test_planename_utofleft, test_segment_utofleft, test_channelname_utofleft, test_channelnumber_utofleft)) != nullptr);
    if(_FOUND_DETtoFE == true){
       std::cout << "\t" << "utof left FEAddrItem -> found." << std::endl;
-      feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+      feaddritem = *mapped_fe;
       feaddritem.decode();
-      _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+      _FOUND_FEtoDET = ((mapped_det = fChMap->findDET(feaddritem)) != nullptr);
       if(_FOUND_FEtoDET == true){
          std::cout << "\t" << "utof left DETIdItem -> found." << std::endl;
-         detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+         detiditem = *mapped_det;
          detiditem.decode();
          // fZPosUTOF = detiditem.detconf->membername_geom->GetGlobalZ();
          fZPosUTOF = 0.0; // interim
@@ -244,15 +247,15 @@ void FilterTimeFrameSliceByTrack::InitTask()
    const uint8_t test_segment_kldc1u63 = 1;
    const uint16_t test_channelnumber_kldc1u63 = 63;
    const std::string_view test_channelname_kldc1u63 = "0";
-   _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(test_detectorname_kldc1u63, test_planename_kldc1u63, test_segment_kldc1u63, test_channelname_kldc1u63, test_channelnumber_kldc1u63, dopeKey_DETtoFE);
+   _FOUND_DETtoFE = ((mapped_fe = fChMap->findFE(test_detectorname_kldc1u63, test_planename_kldc1u63, test_segment_kldc1u63, test_channelname_kldc1u63, test_channelnumber_kldc1u63)) != nullptr);
    if(_FOUND_DETtoFE == true){
       std::cout << "\t" << "-> found." << std::endl;
-      feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
+      feaddritem = *mapped_fe;
       feaddritem.decode();
-      _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+      _FOUND_FEtoDET = ((mapped_det = fChMap->findDET(feaddritem)) != nullptr);
       if(_FOUND_FEtoDET == true){
          std::cout << "\t" << "-> found." << std::endl;
-         detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+         detiditem = *mapped_det;
          detiditem.decode();
          // check detector configuration for kldc 1 U 63
          // geometry
@@ -336,12 +339,12 @@ void FilterTimeFrameSliceByTrack::InitTask()
       for(int ipl=0; ipl<4; ++ipl){
          const std::string_view plane_name = PLANES[ipl];
          uint8_t segment = iseg + 1;
-         _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string(plane_name), segment, std::string("0"), static_cast<uint16_t>(64-1), dopeKey_DETtoFE); // 64th wire, 0-indexed
+         _FOUND_DETtoFE = ((mapped_fe = fChMap->findFE(std::string("kldc"), std::string(plane_name), segment, std::string("0"), static_cast<uint16_t>(64-1))) != nullptr); // 64th wire, 0-indexed
          if(_FOUND_DETtoFE == true){
-            feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
-            _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+            feaddritem = *mapped_fe;
+            _FOUND_FEtoDET = ((mapped_det = fChMap->findDET(feaddritem)) != nullptr);
             if(_FOUND_FEtoDET == true){
-               detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+               detiditem = *mapped_det;
                detiditem.decode();
                const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
                if(geomitemdc != nullptr){
@@ -373,14 +376,14 @@ void FilterTimeFrameSliceByTrack::InitTask()
          const std::string_view plane_name = PLANES[ipl];
          uint8_t segment = iseg + 1;
          for(int ich=32; ich<128-32; ++ich){
-            _FOUND_DETtoFE = fChMap->getDopeKey_DETtoFE(std::string("kldc"), std::string(plane_name), segment, std::string("0"), static_cast<uint16_t>(ich), dopeKey_DETtoFE);
+            _FOUND_DETtoFE = ((mapped_fe = fChMap->findFE(std::string("kldc"), std::string(plane_name), segment, std::string("0"), static_cast<uint16_t>(ich))) != nullptr);
             if(_FOUND_DETtoFE == true){
                nFOUND_DETtoFE++;
-               feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
-               _FOUND_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem, dopeKey_FEtoDET);
+               feaddritem = *mapped_fe;
+               _FOUND_FEtoDET = ((mapped_det = fChMap->findDET(feaddritem)) != nullptr);
                if(_FOUND_FEtoDET == true){
                   nFOUND_FEtoDET++;
-                  detiditem = fChMap->getDETIdItem(dopeKey_FEtoDET);
+                  detiditem = *mapped_det;
                } // if(_FOUND_FEtoDET == true)
             } // if(_FOUND_DETtoFE == true)
          } // for(int ich=0; ich<128; ++ich)
@@ -488,7 +491,7 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    const uint32_t lftdc = fLFTDC4n * 4; // FilterTimeFrameSliceABCの持ってるfield lftdc4n
    std::vector<double> utof_left_times;
 
-   chmap::DETIdItem* detiditem = nullptr;
+   const chmap::DETIdItem* detiditem = nullptr;
 
    // ================================
    // Scan, searching for UTOF
@@ -617,9 +620,9 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    // scan
    uint8_t femId_ip3rd = 0;
    uint8_t femId_ip4th = 0;
-   uint32_t keyFEtoDET;
-   const uint8_t kldc_detname_index = 0x06;
+   const chmap::DETIdItem* mapped_det = nullptr;
    std::vector<DCRawHit> kldcRawHits;
+   if (fKLDCNameIndex == 0) return false; // No KLDC entries in this map.
    for(auto& stf : tf){
       auto stfHeader = stf->GetHeader();
       if(stfHeader->femType == SubTimeFrame::TDC64L_V3){
@@ -637,16 +640,17 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
             ch = tdc.ch;
             ftdc_int = tdc.tdc;
             ftot_int = tdc.tot;
-            bool isFound = fChMap->getDopeKey_FEtoDET(femId_ip3rd, femId_ip4th, ch, keyFEtoDET);
-            if(isFound){
-               detiditem = &fChMap->getDETIdItem(keyFEtoDET);
-               if(detiditem->name == kldc_detname_index){
+            if (ch > 255) continue; // Reject before narrowing to the map's uint8_t CH.
+            mapped_det = fChMap->findDET(femId_ip3rd, femId_ip4th, static_cast<uint8_t>(ch));
+            if(mapped_det){
+               detiditem = mapped_det;
+               if(detiditem->name == fKLDCNameIndex){
                   if(ftdc_int >= standardTime){
                      DCRawHit hit(detiditem, ftdc_int, ftot_int);
                      kldcRawHits.push_back(hit);
                   } // if(ftdc_int >= standardTime)
-               } // if(detiditem->name == kldc_detname_index)
-            } // if(isFound)
+               } // if(detiditem->name == fKLDCNameIndex)
+            } // if(mapped_det)
          } // for(uint32_t i=0; i<nData; ++i)
       } // else if(stfHeader->femType == SubTimeFrame::TDC64L_V3)
       else{
@@ -1309,16 +1313,16 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
             geomitemdc->SetWireGeometry(wireCenterNumber, wirePitch, offset);
             geomitemdc->CalcWirePosition(ChannelNumber);
 
-            uint32_t dopeKey_DETtoFE;
-            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, std::string("0"), static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE); // map has data based on 0-indexed channel number
+            const chmap::FEAddrItem* mapped_fe = nullptr;
+            bool found_DETtoFE = ((mapped_fe = fChMap->findFE(DetectorName, PlaneName, SegmentNumber, std::string("0"), ChannelNumber)) != nullptr); // map has data based on 0-indexed channel number
             if(found_DETtoFE){
-               chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
-               uint32_t dopeKeyFEtoDET;
-               bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
+               chmap::FEAddrItem feaddritem = *mapped_fe;
+               const chmap::DETIdItem* mapped_det = nullptr;
+               bool found_FEtoDET = ((mapped_det = fChMap->findDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch)) != nullptr);
                if(found_FEtoDET){
-                  fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(dopeKeyFEtoDET, std::move(geomitemdc), &chmap::DETConfItem::membername_geom);
+                  fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(*mapped_det, std::move(geomitemdc), &chmap::DETConfItem::membername_geom);
 
-                  chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
+                  chmap::DETIdItem detiditem = *mapped_det;
                   #if 0
                   if(ChannelNumber == detiditem.channel_number){
                      std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
@@ -1408,20 +1412,20 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
       // Register KLDC
       if(DetectorName == "kldc"){
          int ChannelNumber = wireId; // wireId is 0-indexed, ChannelNumber is also 0-indexed
-         uint32_t dopeKey_DETtoFE;
-         bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, SegmentNumber, ChannelName, static_cast<uint16_t>(ChannelNumber), dopeKey_DETtoFE);
+         const chmap::FEAddrItem* mapped_fe = nullptr;
+         bool found_DETtoFE = ((mapped_fe = fChMap->findFE(DetectorName, PlaneName, SegmentNumber, ChannelName, ChannelNumber)) != nullptr);
          if(found_DETtoFE){
-            chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
-            uint32_t dopeKeyFEtoDET;
-            bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
+            chmap::FEAddrItem feaddritem = *mapped_fe;
+            const chmap::DETIdItem* mapped_det = nullptr;
+            bool found_FEtoDET = ((mapped_det = fChMap->findDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch)) != nullptr);
             if(found_FEtoDET){
-               chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
+               chmap::DETIdItem detiditem = *mapped_det;
                #if 0
                if(ChannelNumber == detiditem.channel_number){
                   std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
                }
                #endif
-               bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(dopeKeyFEtoDET, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
+               bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(*mapped_det, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
                #if 0
                if(registered){
                   std::cout << funcname << "Registered TDC calibration for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
@@ -1507,20 +1511,20 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
             std::unique_ptr<chmap::CalibrationItem_DCDriftLength> calibitem_dcdriftlength = std::make_unique<chmap::CalibrationItem_DCDriftLength>();
             calibitem_dcdriftlength->SetApproximation(approxOrder, coefficients);
             int ChannelNumber = i; // i is 0-indexed, ChannelNumber is 0-indexed
-            uint32_t dopeKey_DETtoFE;
-            bool found_DETtoFE = fChMap->getDopeKey_DETtoFE(DetectorName, PlaneName, static_cast<uint8_t>(SegmentNumber), ChannelName, static_cast<uint8_t>(ChannelNumber), dopeKey_DETtoFE);
+            const chmap::FEAddrItem* mapped_fe = nullptr;
+            bool found_DETtoFE = ((mapped_fe = fChMap->findFE(DetectorName, PlaneName, SegmentNumber, ChannelName, ChannelNumber)) != nullptr);
             if(found_DETtoFE){
-               chmap::FEAddrItem feaddritem = fChMap->getFEAddrItem(dopeKey_DETtoFE);
-               uint32_t dopeKeyFEtoDET;
-               bool found_FEtoDET = fChMap->getDopeKey_FEtoDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch, dopeKeyFEtoDET);
+               chmap::FEAddrItem feaddritem = *mapped_fe;
+               const chmap::DETIdItem* mapped_det = nullptr;
+               bool found_FEtoDET = ((mapped_det = fChMap->findDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch)) != nullptr);
                if(found_FEtoDET){
-                  chmap::DETIdItem detiditem = fChMap->getDETIdItem(dopeKeyFEtoDET);
+                  chmap::DETIdItem detiditem = *mapped_det;
                   #if 0
                   if(ChannelNumber == detiditem.channel_number){
                      std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
                   }
                   #endif
-                  bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCDriftLength>(dopeKeyFEtoDET, std::move(calibitem_dcdriftlength), &chmap::DETConfItem::membername_calib_dcdriftlen);
+                  bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCDriftLength>(*mapped_det, std::move(calibitem_dcdriftlength), &chmap::DETConfItem::membername_calib_dcdriftlen);
                   registered_count_geomitemdc_kldc++;
                   #if 0
                   if(registered){
