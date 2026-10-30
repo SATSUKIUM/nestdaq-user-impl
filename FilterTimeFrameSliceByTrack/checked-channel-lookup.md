@@ -1,3 +1,24 @@
+# Initialization-only readiness checks (2026-10-30)
+
+Requires channel-map d0e88a8f971ad713e6698c90b76efe6697973c27 or later, from main.
+Rebuild both the library and this consumer against matching headers.
+
+InitTask validates isInitialized(), hasInverseMap(), and the KLDC dictionary
+entry once. Lookup functions no longer check readiness per call. Do not call
+findDET before successful initialization, or findFE without an inverse map.
+Detector configuration registration retains its readiness/input checks.
+ProcessSlice no longer repeats the KLDC presence check. Hit address range and
+hole checks remain. Tracking is still disabled by the existing #if 0; the
+active ProcessSlice returns false. This change does not enable tracking.
+
+Library regression tests and optimized assembly inspection passed. Full
+consumer compilation/DAQ performance measurement remain unavailable due to
+missing dependencies in this environment.
+
+Earlier migration history follows.
+
+---
+
 # Map-owned configuration migration (2026-10-30)
 
 Requires channel-map `7b2762346b4d3d41679e17f96e7af6cce7547a1a` (branch `feat/map-owned-config`).

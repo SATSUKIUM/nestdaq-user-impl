@@ -22,6 +22,7 @@
 // for the Parser of detector configurations
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 
 // for registering the detector configurations
 #include <map>
@@ -105,11 +106,16 @@ void FilterTimeFrameSliceByTrack::InitTask()
    fChMapDataFile = fConfig->GetProperty<std::string>(opt::ChannelMapDataFile.data());
    chmap::ChannelMapDopeness& chmap = chmap::ChannelMapDopeness::get_instance();
    chmap.initialize(fChMapDataFile, isCreateInvMap);
+   if (!chmap.isInitialized() || !chmap.hasInverseMap()) {
+      throw std::runtime_error("Tracking requires initialized forward and inverse channel maps");
+   }
 
    fChMap = &chmap;
    // Resolve once: detector name IDs depend on the CSV (0 means unavailable).
    fKLDCNameIndex = 0;
-   fChMap->detname_dictionary.StringToIndex("kldc", fKLDCNameIndex);
+   if (!fChMap->detname_dictionary.StringToIndex("kldc", fKLDCNameIndex)) {
+      throw std::runtime_error("Tracking requires a kldc detector in the channel map");
+   }
    std::cout << "[FilterTimeFrameSliceABC::InitTask] ChannelMapDopeness initialized with " << fChMapDataFile << std::endl;
    std::cout << "\t# of channels: " << std::dec << fChMap->getNumberOfChannels() << std::endl;
 
@@ -622,7 +628,6 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
    uint8_t femId_ip4th = 0;
    const chmap::DETIdItem* mapped_det = nullptr;
    std::vector<DCRawHit> kldcRawHits;
-   if (fKLDCNameIndex == 0) return false; // No KLDC entries in this map.
    for(auto& stf : tf){
       auto stfHeader = stf->GetHeader();
       if(stfHeader->femType == SubTimeFrame::TDC64L_V3){
