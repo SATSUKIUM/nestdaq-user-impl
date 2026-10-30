@@ -281,6 +281,11 @@ void Trigger::InitializeFEEAddrDecoder(const std::vector<cudamap::FEEAddr>& feeA
 	if (!decoder.initialize(feeAddrs, triggerConfigs)){
         throw std::runtime_error("FEEAddrDecoder initialization failed");
     }
+    // INIT TASK may be repeated with the same visibility.
+    ErrorHandleCuda(cudaFree(devDecoderPtr));
+    devDecoderPtr = nullptr;
+    ErrorHandleCuda(cudaFree(devTriggerConfigs));
+    devTriggerConfigs = nullptr;
 	const uint32_t nConfigs = decoder.getSizeSpaceOfKey();
 	ErrorHandleCuda(cudaMalloc(&devTriggerConfigs, nConfigs * sizeof(cudamap::TriggerConfig)));
 	ErrorHandleCuda(cudaMemcpy(devTriggerConfigs, decoder.getTriggerConfigArray(), nConfigs * sizeof(cudamap::TriggerConfig), cudaMemcpyHostToDevice));

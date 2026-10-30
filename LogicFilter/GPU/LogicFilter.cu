@@ -21,6 +21,9 @@
 #include <vector>
 
 #include <cstring>
+#include <cstdlib>
+#include <cerrno>
+#include <optional>
 
 #include "utility/MessageUtil.h"
 
@@ -45,6 +48,7 @@ struct LogicFilter : fair::mq::Device
 		static constexpr std::string_view DQMChannelName     {"dqm-chan-name"};
 		static constexpr std::string_view DataSuppress       {"data-suppress"};
 		static constexpr std::string_view RemoveHB           {"remove-hb"};
+		static constexpr std::string_view CudaVisibleDevices {"cuda-visible-devices"};
 		static constexpr std::string_view HbfBatchSize {"hbf-batch-size"};
 		static constexpr std::string_view PollTimeout        {"poll-timeout"};
 		static constexpr std::string_view SplitMethod        {"split"};
@@ -88,6 +92,7 @@ struct LogicFilter : fair::mq::Device
 	void PostRun() override;
 
 private:
+    void ConfigureCuda();
     uint32_t fHbfBatchSize {4};
     using ElapsedClock = std::chrono::steady_clock;
     std::vector<double> fElapsedTimes; // Microseconds; saved at STOP or device destruction.
@@ -139,9 +144,63 @@ private:
 
 };
 
+// Process lifetime guard: RESET TASK must not allow CUDA visibility to change.
+void LogicFilter::ConfigureCuda()
+{
+    std::string option;
+    try {
+        option = fConfig->GetProperty<std::string>(OptionKey::CudaVisibleDevices.data());
+    } catch (const boost::bad_any_cast&) {
+        // ParameterConfigPlugin::ToArray converts comma-separated Redis values.
+        const auto devices = fConfig->GetProperty<std::vector<std::string>>(
+            OptionKey::CudaVisibleDevices.data());
+        for (size_t i = 0; i < devices.size(); ++i) {
+            if (i) option += ",";
+            option += devices[i];
+        }
+    }
+    const char* inherited = std::getenv("CUDA_VISIBLE_DEVICES");
+    const std::optional<std::string> environment = inherited
+        ? std::optional<std::string>(inherited) : std::nullopt;
+    const auto requested = option.empty() ? environment : std::optional<std::string>(option);
+    static bool cudaStarted = false;
+    static std::optional<std::string> frozenVisibility;
+    if (cudaStarted && requested != frozenVisibility) {
+        LOG(error) << "CUDA visibility change rejected; restart the process (プロセスを再起動してください)";
+        throw std::runtime_error("CUDA visibility cannot change after initialization; restart the process");
+    }
+    if (!option.empty() && setenv("CUDA_VISIBLE_DEVICES", option.c_str(), 1) != 0) {
+        const auto message = std::string("setenv CUDA_VISIBLE_DEVICES failed: ") + std::strerror(errno);
+        LOG(error) << message;
+        throw std::runtime_error(message);
+    }
+    LOG(info) << "cuda-visible-devices='" << option << "'; CUDA_VISIBLE_DEVICES="
+              << (requested ? "'" + *requested + "'" : "<unset>")
+              << (cudaStarted ? " (unchanged allocation)" : " (before first CUDA API)");
+    // Freeze before the first API, including failed initialization attempts.
+    frozenVisibility = requested;
+    cudaStarted = true;
+    const auto check = [](cudaError_t result, const char* operation) {
+        if (result != cudaSuccess) {
+            const auto message = std::string(operation) + ": " + cudaGetErrorString(result);
+            LOG(error) << message;
+            throw std::runtime_error(message);
+        }
+    };
+    int device = 0;
+    check(cudaGetDevice(&device), "cudaGetDevice");
+    cudaDeviceProp properties{};
+    check(cudaGetDeviceProperties(&properties, device), "cudaGetDeviceProperties");
+    char pciBusId[32]{};
+    check(cudaDeviceGetPCIBusId(pciBusId, sizeof(pciBusId), device), "cudaDeviceGetPCIBusId");
+    LOG(info) << "CUDA selected logical device=" << device << "; name=" << properties.name
+              << "; PCI bus ID=" << pciBusId;
+}
+
 void LogicFilter::InitTask()
 {
 	using opt = OptionKey;
+    ConfigureCuda(); // After plugin configuration, before any CUDA allocation/query.
     // ParameterConfigPlugin supplies custom Redis options as strings.
     const auto batchOption = fConfig->GetProperty<std::string>(opt::HbfBatchSize.data());
     size_t parsed = 0;
@@ -332,11 +391,15 @@ void LogicFilter::InitTask()
 		std::cerr << "#E iSubTimeRegionMainTimeRegion.size(): " << iSubTimeRegionMainTimeRegion.size() << std::endl;
 		throw std::runtime_error("fNSubTimeRegions != iSubTimeRegionMainTimeRegion.size()");
 	}
-	cudaMallocHost(&fNEntryInSubTimeRegion, sizeof(uint32_t) * fNSubTimeRegions);
+    if (fNEntryInSubTimeRegion) ErrorHandleCuda(cudaFreeHost(fNEntryInSubTimeRegion));
+    fNEntryInSubTimeRegion = nullptr;
+    if (fNSubTimeRegions) ErrorHandleCuda(cudaMallocHost(&fNEntryInSubTimeRegion, sizeof(uint32_t) * fNSubTimeRegions));
 	for(size_t i=0; i<nEntryInSubTimeRegion.size(); ++i){
 		fNEntryInSubTimeRegion[i] = nEntryInSubTimeRegion[i];
 	}
-	cudaMallocHost(&fiSubTimeRegionMainTimeRegion, sizeof(uint32_t) * fNSubTimeRegions);
+    if (fiSubTimeRegionMainTimeRegion) ErrorHandleCuda(cudaFreeHost(fiSubTimeRegionMainTimeRegion));
+    fiSubTimeRegionMainTimeRegion = nullptr;
+    if (fNSubTimeRegions) ErrorHandleCuda(cudaMallocHost(&fiSubTimeRegionMainTimeRegion, sizeof(uint32_t) * fNSubTimeRegions));
 	for(size_t i=0; i<iSubTimeRegionMainTimeRegion.size(); ++i){
 		fiSubTimeRegionMainTimeRegion[i] = iSubTimeRegionMainTimeRegion[i];
 	}
@@ -941,6 +1004,8 @@ void addCustomOptions(bpo::options_description& options)
 		(opt::RemoveHB.data(),
 			bpo::value<std::string>()->default_value("false"),
 			"Remove HB without hit")
+		(opt::CudaVisibleDevices.data(), bpo::value<std::string>()->default_value(""),
+            "Override CUDA_VISIBLE_DEVICES before CUDA initialization (empty: preserve environment)")
 		(opt::HbfBatchSize.data(), bpo::value<std::string>()->default_value("4"),
             "Independent HBF regions per GPU batch (1..4)")
 		(opt::PollTimeout.data(), 
