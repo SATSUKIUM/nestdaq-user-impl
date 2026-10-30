@@ -1,3 +1,32 @@
+# Map-owned configuration migration (2026-10-30)
+
+Requires channel-map `7b2762346b4d3d41679e17f96e7af6cce7547a1a` (branch `feat/map-owned-config`).
+Rebuild/install channel-map, then rebuild this consumer with matching headers
+and library. Previous raw-pointer/template registration APIs have been removed.
+
+This branch combines a8e6946 (checked lookups) and origin/LogicFilterMore32GPU
+at e14424d (CUDA visibility), which had one unique commit each. main at 22e01d0
+and LogicFilterMore32 at a4ef1c8 were already ancestors of the checked-lookup
+branch. Neither existing branch alone contained both updates. No existing branch
+was rebased or force-pushed; the latest GPU change was merged normally.
+
+Configuration registration now calls setGeometry, setTdcCalibration and
+setDriftCalibration. The map owns every accepted object until its destruction;
+borrowed const pointers are returned by getConfiguration and its typed getters.
+Duplicate assignments return false without replacing existing objects. Failed
+arguments are consumed/destroyed. Tracking registration checks failures and
+counts only successful calibration registrations. DCHit uses the const accessors.
+
+Validation: channel-map build/install, skeleton, ownership and regression tests
+passed. Consumer CMake configuration remains blocked by unavailable FairMQ,
+hiredis, redis++ and UHBOOK dependencies. Full tracking/CUDA build and runtime
+validation must be performed in the deployment environment. Do not mix this
+source with an older installed channel-map.
+
+The record below describes the previous lookup-only migration, not the new API.
+
+---
+
 # Checked channel lookup migration
 
 Base: LogicFilterMore32GPU, 17bc9438967feda5ff0e659021d6576c0e53d582.

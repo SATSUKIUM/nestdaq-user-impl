@@ -201,7 +201,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
          std::cout << "\t" << "utof left DETIdItem -> found." << std::endl;
          detiditem = *mapped_det;
          detiditem.decode();
-         // fZPosUTOF = detiditem.detconf->membername_geom->GetGlobalZ();
+         // fZPosUTOF = detiditem.getConfiguration()->getGeometry()->GetGlobalZ();
          fZPosUTOF = 0.0; // interim
       }
    }
@@ -259,7 +259,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
          detiditem.decode();
          // check detector configuration for kldc 1 U 63
          // geometry
-         const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
+         const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.getConfiguration()->getGeometry());
          if(retrieved_geomitemdc != nullptr){
             std::cout << "\t" << "-> found detector configuration for kldc 1 U 63." << std::endl;
          }
@@ -268,7 +268,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
          }
 
          // TDC calibration
-         const chmap::CalibrationItem_DCTdcCalib* retrieved_calibitem_dctdccalib = dynamic_cast<const chmap::CalibrationItem_DCTdcCalib*>(detiditem.detconf->membername_calib_dctdccalib.get());
+         const chmap::CalibrationItem_DCTdcCalib* retrieved_calibitem_dctdccalib = detiditem.getConfiguration()->getTdcCalibration();
          if(retrieved_calibitem_dctdccalib != nullptr){
             std::cout << "\t" << "-> found TDC calibration for kldc 1 U 63." << std::endl;
          }
@@ -277,7 +277,7 @@ void FilterTimeFrameSliceByTrack::InitTask()
          }
 
          // Drift Length calibration
-         const chmap::CalibrationItem_DCDriftLength* retrieved_calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detiditem.detconf->membername_calib_dcdriftlen.get());
+         const chmap::CalibrationItem_DCDriftLength* retrieved_calibitem_dcdriftlen = detiditem.getConfiguration()->getDriftCalibration();
          if(retrieved_calibitem_dcdriftlen != nullptr){
             std::cout << "\t" << "-> found Drift Length calibration for kldc 1 U 63." << std::endl;
          }
@@ -346,17 +346,17 @@ void FilterTimeFrameSliceByTrack::InitTask()
             if(_FOUND_FEtoDET == true){
                detiditem = *mapped_det;
                detiditem.decode();
-               const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
+               const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.getConfiguration()->getGeometry());
                if(geomitemdc != nullptr){
                   std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << std::endl;
                   geomitemdc->decode();
                }
-               const chmap::CalibrationItem_DCTdcCalib* calibitem_dctdccalib = dynamic_cast<const chmap::CalibrationItem_DCTdcCalib*>(detiditem.detconf->membername_calib_dctdccalib.get());
+               const chmap::CalibrationItem_DCTdcCalib* calibitem_dctdccalib = detiditem.getConfiguration()->getTdcCalibration();
                if(calibitem_dctdccalib != nullptr){
                   std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << std::endl;
                   calibitem_dctdccalib->decode();
                }
-               const chmap::CalibrationItem_DCDriftLength* calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detiditem.detconf->membername_calib_dcdriftlen.get());
+               const chmap::CalibrationItem_DCDriftLength* calibitem_dcdriftlen = detiditem.getConfiguration()->getDriftCalibration();
                if(calibitem_dcdriftlen != nullptr){
                   std::cout << "\t" << "KLDC" << iseg+1 << " " << plane_name << std::endl;
                   calibitem_dcdriftlen->decode();
@@ -706,15 +706,15 @@ bool FilterTimeFrameSliceByTrack::ProcessSlice(TTF& tf)
          fKLDCHitContainer[planeNumber].back().AddHit(tdc, tot);
       }
       else{
-         if(detiditem->detconf != nullptr){
-            const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->detconf->membername_geom.get());
+         if(detiditem->getConfiguration() != nullptr){
+            const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem->getConfiguration()->getGeometry());
             if(geomitemdc != nullptr){
                wirePos = geomitemdc->GetWirePosition();
                wireAngle = geomitemdc->GetTiltAngle();
             }
             DCHit h(wirePos, wireAngle, detiditem, tdc, tot);
             fKLDCHitContainer[planeNumber].push_back(h);
-         } // if(detiditem->detconf != nullptr)
+         } // if(detiditem->getConfiguration() != nullptr)
       }
    } // for(auto& hit : kldcRawHits)
    #if DEBUG_KLDC_TRACK_SEARCH && 0
@@ -1320,19 +1320,22 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_Geometry()
                const chmap::DETIdItem* mapped_det = nullptr;
                bool found_FEtoDET = ((mapped_det = fChMap->findDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch)) != nullptr);
                if(found_FEtoDET){
-                  fChMap->registerDETConfSubItem<chmap::GeomItem, chmap::GeomItemDC>(*mapped_det, std::move(geomitemdc), &chmap::DETConfItem::membername_geom);
+                  if (!fChMap->setGeometry(*mapped_det, std::move(geomitemdc))) {
+                     std::cerr << funcname << "Geometry registration failed (missing or already configured channel)" << std::endl;
+                     continue;
+                  }
 
-                  chmap::DETIdItem detiditem = *mapped_det;
+                  const chmap::DETIdItem& detiditem = *mapped_det;
                   #if 0
                   if(ChannelNumber == detiditem.channel_number){
                      std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
                   }
                   #endif
-                  const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.detconf->membername_geom.get());
+                  const chmap::GeomItemDC* retrieved_geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detiditem.getConfiguration()->getGeometry());
                   #if 0
                   std::cout << "pointer address of geomitemdc after move: " << geomitemdc.get() << std::endl;
-                  std::cout << "pointer address of detiditem.detconf: " << detiditem.detconf << std::endl;
-                  std::cout << "pointer address of detiditem.detconf->membername_geom.get(): " << detiditem.detconf->membername_geom.get() << std::endl;
+                  std::cout << "pointer address of detiditem.getConfiguration(): " << detiditem.getConfiguration() << std::endl;
+                  std::cout << "pointer address of detiditem.getConfiguration()->getGeometry(): " << detiditem.getConfiguration()->getGeometry() << std::endl;
                   std::cout << "pointer address of retrieved_geomitemdc: " << retrieved_geomitemdc << std::endl;
                   #endif
                   if(retrieved_geomitemdc != nullptr){
@@ -1419,13 +1422,13 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
             const chmap::DETIdItem* mapped_det = nullptr;
             bool found_FEtoDET = ((mapped_det = fChMap->findDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch)) != nullptr);
             if(found_FEtoDET){
-               chmap::DETIdItem detiditem = *mapped_det;
+               const chmap::DETIdItem& detiditem = *mapped_det;
                #if 0
                if(ChannelNumber == detiditem.channel_number){
                   std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
                }
                #endif
-               bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCTdcCalib>(*mapped_det, std::move(calibitem_dctdccalib), &chmap::DETConfItem::membername_calib_dctdccalib);
+               bool registered = fChMap->setTdcCalibration(*mapped_det, std::move(calibitem_dctdccalib));
                #if 0
                if(registered){
                   std::cout << funcname << "Registered TDC calibration for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
@@ -1434,7 +1437,8 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCTdcCalib()
                   std::cout << funcname << "Failed to register TDC calibration for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;
                }
                #endif
-               registered_count_dctdccalib_kldc++;
+               if (registered) ++registered_count_dctdccalib_kldc;
+               else std::cerr << funcname << "TDC calibration registration failed (missing or already configured channel)" << std::endl;
             } // if(found_FEtoDET)
             else{
                ++missing_count_DETIdItem;
@@ -1518,14 +1522,15 @@ bool FilterTimeFrameSliceByTrack::RegisterDetectorConfig_DCDriftParam()
                const chmap::DETIdItem* mapped_det = nullptr;
                bool found_FEtoDET = ((mapped_det = fChMap->findDET(feaddritem.ip3rd, feaddritem.ip4th, feaddritem.ch)) != nullptr);
                if(found_FEtoDET){
-                  chmap::DETIdItem detiditem = *mapped_det;
+                  const chmap::DETIdItem& detiditem = *mapped_det;
                   #if 0
                   if(ChannelNumber == detiditem.channel_number){
                      std::cout << "\t\t" << funcname << "indexing matches: " << ChannelNumber << " == " << detiditem.channel_number << std::endl;
                   }
                   #endif
-                  bool registered = fChMap->registerDETConfSubItem<chmap::CalibrationItem, chmap::CalibrationItem_DCDriftLength>(*mapped_det, std::move(calibitem_dcdriftlength), &chmap::DETConfItem::membername_calib_dcdriftlen);
-                  registered_count_geomitemdc_kldc++;
+                  bool registered = fChMap->setDriftCalibration(*mapped_det, std::move(calibitem_dcdriftlength));
+                  if (registered) ++registered_count_geomitemdc_kldc;
+                  else std::cerr << funcname << "Drift calibration registration failed (missing or already configured channel)" << std::endl;
                   #if 0
                   if(registered){
                      std::cout << funcname << "Registered drift parameter for DetectorName: " << DetectorName << ", PlaneName: " << PlaneName << ", SegmentNumber: " << static_cast<int>(SegmentNumber) << ", ChannelNumber: " << ChannelNumber << std::endl;

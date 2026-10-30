@@ -17,11 +17,11 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
         return false;
     }
     else{
-        if(detid->detconf == nullptr){
+        if(detid->getConfiguration() == nullptr){
             return false;
         }
         else{
-            const chmap::CalibrationItem_DCTdcCalib* calibitem_dctdccalib = dynamic_cast<const chmap::CalibrationItem_DCTdcCalib*>(detid->detconf->membername_calib_dctdccalib.get());
+            const chmap::CalibrationItem_DCTdcCalib* calibitem_dctdccalib = detid->getConfiguration()->getTdcCalibration();
             if(calibitem_dctdccalib == nullptr){
             return false;
             }
@@ -69,7 +69,7 @@ bool DCHit::CalcDriftTimes(double standardTime, const DCTimeRange& DCTimeRange){
                 #endif
             }
             } // for(const auto& tdc : tdcs)
-        } // if(detid->detconf == nullptr)
+        } // if(detid->getConfiguration() == nullptr)
     } // if(detid == nullptr)
 
     #if CHECK_COUT_MAKEPAIRPLANEHITCLUSTER
@@ -99,11 +99,11 @@ bool DCHit::CalcDriftLengths(){
         double min_drift_length = DCConstants::fMinDLKLDC[iplane];
         double max_drift_length = DCConstants::fMaxDLKLDC[iplane];
 
-        if(detid->detconf == nullptr){
+        if(detid->getConfiguration() == nullptr){
             return false;
         }
         else{
-            const chmap::CalibrationItem_DCDriftLength* calibitem_dcdriftlen = dynamic_cast<const chmap::CalibrationItem_DCDriftLength*>(detid->detconf->membername_calib_dcdriftlen.get());
+            const chmap::CalibrationItem_DCDriftLength* calibitem_dcdriftlen = detid->getConfiguration()->getDriftCalibration();
             if(calibitem_dcdriftlen == nullptr){
                 std::cout << funcname << "Error: calibitem_dcdriftlen is nullptr for detid: " << std::endl;
                 detid->decode();
@@ -125,7 +125,7 @@ bool DCHit::CalcDriftLengths(){
                     #endif
                 }
             } // for(const auto& driftTime : driftTimes)
-        } // if(detid->detconf == nullptr)
+        } // if(detid->getConfiguration() == nullptr)
     } // if(detid == nullptr)
     #if CHECK_COUT_MAKEPAIRPLANEHITCLUSTER
     std::cout << "\tDriftLengths.size(): " << DriftLengths.size() << std::endl;
@@ -141,14 +141,14 @@ double DCHit::GetGlobalZ() const{
         return 0.0;
     }
     else{
-        if(detid->detconf == nullptr){
+        if(detid->getConfiguration() == nullptr){
             #if CHECK_COUT_GLOBALZ
-            std::cout << "[DCHit::GetGlobalZ] detid->detconf is nullptr" << std::endl;
+            std::cout << "[DCHit::GetGlobalZ] detid->getConfiguration() is nullptr" << std::endl;
             #endif
             return 0.0;
         }
         else{
-            const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detid->detconf->membername_geom.get());
+            const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detid->getConfiguration()->getGeometry());
             if(geomitemdc == nullptr){
                 #if CHECK_COUT_GLOBALZ
                 std::cout << "[DCHit::GetGlobalZ] geomitemdc is nullptr" << std::endl;
@@ -158,7 +158,7 @@ double DCHit::GetGlobalZ() const{
             else{
                 return geomitemdc->GetGlobalZ();
             } // if(geomitemdc == nullptr)
-        } // if(detid->detconf == nullptr)
+        } // if(detid->getConfiguration() == nullptr)
     }
 } // double nestdaq::FilterTimeFrameSliceByTrack::DCHit::GetGlobalZ() const
 
@@ -167,18 +167,18 @@ double DCHit::GetResolution() const{
         return 0.0;
     }
     else{
-        if(detid->detconf == nullptr){
+        if(detid->getConfiguration() == nullptr){
             return 0.0;
         }
         else{
-            const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detid->detconf->membername_geom.get());
+            const chmap::GeomItemDC* geomitemdc = dynamic_cast<const chmap::GeomItemDC*>(detid->getConfiguration()->getGeometry());
             if(geomitemdc == nullptr){
                 return 0.0;
             }
             else{
                 return geomitemdc->GetResolutionX(); // 実は現状、resolutionZ, resolutionX, resolutionYには同じ値を登録している
             } // if(geomitemdc == nullptr)
-        } // if(detid->detconf == nullptr)
+        } // if(detid->getConfiguration() == nullptr)
     }
 }
 
